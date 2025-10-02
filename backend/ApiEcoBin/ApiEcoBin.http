@@ -1,0 +1,6 @@
+@ApiEcoBin_HostAddress = http://localhost:5160
+
+GET {{ApiEcoBin_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

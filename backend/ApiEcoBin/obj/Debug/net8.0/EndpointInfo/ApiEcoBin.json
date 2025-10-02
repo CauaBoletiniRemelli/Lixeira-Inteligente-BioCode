@@ -1,0 +1,334 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "ApiEcoBin",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/v1/EcoBin/usuarios": {
+      "post": {
+        "tags": [
+          "EcoBin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuariosVM"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuariosVM"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuariosVM"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/EcoBin/condominios": {
+      "post": {
+        "tags": [
+          "EcoBin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CondominiosVM"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CondominiosVM"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CondominiosVM"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/EcoBin/sensores": {
+      "post": {
+        "tags": [
+          "EcoBin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensoresVM"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensoresVM"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensoresVM"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/EcoBin/provisionamentos": {
+      "post": {
+        "tags": [
+          "EcoBin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionamentosVM"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionamentosVM"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionamentosVM"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/EcoBin/telemetrias": {
+      "post": {
+        "tags": [
+          "EcoBin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetriasVM"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetriasVM"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetriasVM"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CondominiosVM": {
+        "required": [
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "endereco": {
+            "maxLength": 255,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProvisionamentosVM": {
+        "required": [
+          "criadoPor",
+          "expiracao",
+          "senhaWifiCriptografada",
+          "sensorId",
+          "ssidCriptografado"
+        ],
+        "type": "object",
+        "properties": {
+          "sensorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ssidCriptografado": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "senhaWifiCriptografada": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "type": "string"
+          },
+          "nomeSensor": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "criadoPor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiracao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "usado": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SensoresVM": {
+        "required": [
+          "deviceId",
+          "deviceKey",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "deviceKey": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "condominioId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "ultimaConexao": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelemetriasVM": {
+        "required": [
+          "sensorId"
+        ],
+        "type": "object",
+        "properties": {
+          "sensorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nivelOcupacao": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bateria": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "temperatura": {
+            "maximum": 100,
+            "minimum": -50,
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "dadosBrutos": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsuariosVM": {
+        "required": [
+          "email",
+          "nome",
+          "senhaHash",
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "format": "email"
+          },
+          "senhaHash": {
+            "minLength": 6,
+            "type": "string"
+          },
+          "tipo": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
