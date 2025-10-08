@@ -1,82 +1,22 @@
 [
   {
-    "ContainingType": "ApiEcoBin.Controllers.EcoBin",
-    "Method": "AddCondominio",
-    "RelativePath": "api/v1/EcoBin/condominios",
-    "HttpMethod": "POST",
+    "ContainingType": "ApiEcoBin.Controllers.UsuarioController",
+    "Method": "GetUsers",
+    "RelativePath": "api/Usuario/ListarUsuarios",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [
+    "Parameters": [],
+    "ReturnTypes": [
       {
-        "Name": "condominioView",
-        "Type": "ApiEcoBin.ViewModel.CondominiosVM",
-        "IsRequired": true
+        "Type": "ApiEcoBin.Models.ResponseModel\u00601[[System.Collections.Generic.List\u00601[[ApiEcoBin.Models.UsuarioModel, ApiEcoBin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
       }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "ApiEcoBin.Controllers.EcoBin",
-    "Method": "AddProvisionamento",
-    "RelativePath": "api/v1/EcoBin/provisionamentos",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "provisionamentoView",
-        "Type": "ApiEcoBin.ViewModel.ProvisionamentosVM",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "ApiEcoBin.Controllers.EcoBin",
-    "Method": "AddSensor",
-    "RelativePath": "api/v1/EcoBin/sensores",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "sensorView",
-        "Type": "ApiEcoBin.ViewModel.SensoresVM",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "ApiEcoBin.Controllers.EcoBin",
-    "Method": "AddTelemetria",
-    "RelativePath": "api/v1/EcoBin/telemetrias",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "telemetriaView",
-        "Type": "ApiEcoBin.ViewModel.TelemetriasVM",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "ApiEcoBin.Controllers.EcoBin",
-    "Method": "AddUsuario",
-    "RelativePath": "api/v1/EcoBin/usuarios",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "usuariosView",
-        "Type": "ApiEcoBin.ViewModel.UsuariosVM",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
+    ]
   }
 ]

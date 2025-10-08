@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\ApiEcoBin.csproj": {}
+    "E:\\AppFacensUPX\\backend\\APIEcoBin\\ApiEcoBin.csproj": {}
   },
   "projects": {
-    "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\ApiEcoBin.csproj": {
+    "E:\\AppFacensUPX\\backend\\APIEcoBin\\ApiEcoBin.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\ApiEcoBin.csproj",
+        "projectUniqueName": "E:\\AppFacensUPX\\backend\\APIEcoBin\\ApiEcoBin.csproj",
         "projectName": "ApiEcoBin",
-        "projectPath": "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\ApiEcoBin.csproj",
+        "projectPath": "E:\\AppFacensUPX\\backend\\APIEcoBin\\ApiEcoBin.csproj",
         "packagesPath": "C:\\Users\\cauab\\.nuget\\packages\\",
-        "outputPath": "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\obj\\",
+        "outputPath": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\DevExpress 23.2\\Components\\Offline Packages",
@@ -59,15 +59,23 @@
           "dependencies": {
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[9.0.9, )"
+              "version": "[8.0.8, )"
             },
-            "Npgsql": {
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
               "target": "Package",
-              "version": "[9.0.3, )"
+              "version": "[8.0.8, )"
             },
-            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+            "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[9.0.4, )"
+              "version": "[8.0.8, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.8, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",

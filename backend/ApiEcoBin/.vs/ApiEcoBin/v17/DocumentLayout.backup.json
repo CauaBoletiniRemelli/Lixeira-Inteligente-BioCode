@@ -1,10 +1,18 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\",
+  "WorkspaceRootPath": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{9B39889A-DD40-45A1-B14F-D6D12B9A9E11}|ApiEcoBin.csproj|e:\\appfacensupx\\backend\\controller\\apiecobin\\controllers\\ecobin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{9B39889A-DD40-45A1-B14F-D6D12B9A9E11}|ApiEcoBin.csproj|solutionrelative:controllers\\ecobin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{79151901-ABEB-418F-98E6-036129A638A7}|ApiEcoBin.csproj|e:\\appfacensupx\\backend\\apiecobin\\services\\usuario\\usuarioservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{79151901-ABEB-418F-98E6-036129A638A7}|ApiEcoBin.csproj|solutionrelative:services\\usuario\\usuarioservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{79151901-ABEB-418F-98E6-036129A638A7}|ApiEcoBin.csproj|e:\\appfacensupx\\backend\\apiecobin\\controllers\\usuariocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{79151901-ABEB-418F-98E6-036129A638A7}|ApiEcoBin.csproj|solutionrelative:controllers\\usuariocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{79151901-ABEB-418F-98E6-036129A638A7}|ApiEcoBin.csproj|e:\\appfacensupx\\backend\\apiecobin\\services\\usuario\\iusuariointerface.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{79151901-ABEB-418F-98E6-036129A638A7}|ApiEcoBin.csproj|solutionrelative:services\\usuario\\iusuariointerface.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 14,
+          "SelectedChildIndex": 15,
           "Children": [
             {
               "$type": "Bookmark",
@@ -74,16 +82,41 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "EcoBin.cs",
-              "DocumentMoniker": "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\Controllers\\EcoBin.cs",
-              "RelativeDocumentMoniker": "Controllers\\EcoBin.cs",
-              "ToolTip": "E:\\AppFacensUPX\\backend\\Controller\\ApiEcoBin\\Controllers\\EcoBin.cs",
-              "RelativeToolTip": "Controllers\\EcoBin.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAiwBUAAAAYAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "UsuarioController.cs",
+              "DocumentMoniker": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Controllers\\UsuarioController.cs",
+              "RelativeDocumentMoniker": "Controllers\\UsuarioController.cs",
+              "ToolTip": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Controllers\\UsuarioController.cs",
+              "RelativeToolTip": "Controllers\\UsuarioController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-02T18:39:56.256Z",
+              "WhenOpened": "2025-10-08T01:00:53.012Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "UsuarioService.cs",
+              "DocumentMoniker": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Services\\Usuario\\UsuarioService.cs",
+              "RelativeDocumentMoniker": "Services\\Usuario\\UsuarioService.cs",
+              "ToolTip": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Services\\Usuario\\UsuarioService.cs",
+              "RelativeToolTip": "Services\\Usuario\\UsuarioService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T00:55:41.264Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "IUsuarioInterface.cs",
+              "DocumentMoniker": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Services\\Usuario\\IUsuarioInterface.cs",
+              "RelativeDocumentMoniker": "Services\\Usuario\\IUsuarioInterface.cs",
+              "ToolTip": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Services\\Usuario\\IUsuarioInterface.cs",
+              "RelativeToolTip": "Services\\Usuario\\IUsuarioInterface.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAA/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-08T00:56:06.394Z"
             }
           ]
         }

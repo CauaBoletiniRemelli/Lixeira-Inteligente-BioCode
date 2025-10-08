@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ApiEcoBin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78d45daab4249b59fa56f6b5f8d0da342745d949")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+186bd4d54e35b6afb1dfdbe849975b5c1f71fafa")]
 [assembly: System.Reflection.AssemblyProductAttribute("ApiEcoBin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ApiEcoBin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
