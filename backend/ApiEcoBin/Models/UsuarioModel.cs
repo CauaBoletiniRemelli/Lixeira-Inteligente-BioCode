@@ -14,12 +14,12 @@ namespace ApiEcoBin.Models
         [Required]
         [Column("USUNome")]
         [MaxLength(100)]
-        public string Nome { get; set; }
+        public string? Nome { get; set; }
 
         [Required]
         [Column("USUEmail")]
         [MaxLength(100)]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [Required]
         [Column("USUSenhaHash")]

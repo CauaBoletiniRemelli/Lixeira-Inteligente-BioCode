@@ -14,5 +14,6 @@ namespace ApiEcoBin.Data
         public DbSet<TelemetriaModel> Telemetrias { get; set; }
         public DbSet<SensorModel> Sensores { get; set; }
         public DbSet<ProvisionamentoModel> Provisionamentos { get; set; } 
+        public DbSet<RefreshTokenModel> RefreshTokens { get; set; }
     }
 }

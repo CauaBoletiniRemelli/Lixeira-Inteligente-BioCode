@@ -106,6 +106,44 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("PROvisionamentos");
                 });
 
+            modelBuilder.Entity("ApiEcoBin.Models.RefreshTokenModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("REFCriadoEm");
+
+                    b.Property<DateTime>("Expiracao")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("REFExpiracao");
+
+                    b.Property<bool>("Revogado")
+                        .HasColumnType("bit")
+                        .HasColumnName("REFRevogado");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("REFToken");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int")
+                        .HasColumnName("REF_USUId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("REFreshTokens");
+                });
+
             modelBuilder.Entity("ApiEcoBin.Models.SensorModel", b =>
                 {
                     b.Property<int>("Id")
@@ -245,6 +283,17 @@ namespace ApiEcoBin.Migrations
                         .IsRequired();
 
                     b.Navigation("Sensor");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ApiEcoBin.Models.RefreshTokenModel", b =>
+                {
+                    b.HasOne("ApiEcoBin.Models.UsuarioModel", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Usuario");
                 });

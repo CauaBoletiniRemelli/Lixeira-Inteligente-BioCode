@@ -2,12 +2,14 @@
 using ApiEcoBin.Models;
 using ApiEcoBin.Services.Usuario;
 using Microsoft.EntityFrameworkCore;
+using ApiEcoBin.Services.PasswordHash;
 
 namespace ApiEcoBin.Services.Usuarios
 {
-    public class UsuarioService(AppDbContext context) : IUsuarioInterface
+    public class UsuarioService(AppDbContext context, IPasswordHashService passwordHashService) : IUsuarioInterface
     {
         private readonly AppDbContext _context = context;
+        private readonly IPasswordHashService _passwordHashService = passwordHashService;
 
         public async Task<ResponseModel<UsuarioModel>> GetUserById(int idUser)
         {
@@ -68,6 +70,31 @@ namespace ApiEcoBin.Services.Usuarios
         public Task<ResponseModel<List<UsuarioModel>>> GetUsersByIdCon(int idCondominio)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<ResponseModel<UsuarioModel>> CreateUser(UsuarioModel usuario, string senha)
+        {
+            ResponseModel<UsuarioModel> response = new ResponseModel<UsuarioModel>();
+            
+            try
+            {
+                usuario.SenhaHash = _passwordHashService.HashPassword(senha);
+                usuario.CriadoEm = DateTime.Now;
+                
+                _context.Usuarios.Add(usuario);
+                await _context.SaveChangesAsync();
+                
+                response.Dados = usuario;
+                response.Mensagem = "Usuário criado com sucesso.";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+            
+            return response;
         }
     }
 }
