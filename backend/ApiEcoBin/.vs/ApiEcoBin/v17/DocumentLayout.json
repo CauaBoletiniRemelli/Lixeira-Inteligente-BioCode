@@ -90,8 +90,7 @@
               "RelativeToolTip": "Controllers\\UsuarioController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-08T01:00:53.012Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T01:00:53.012Z"
             },
             {
               "$type": "Document",
@@ -101,7 +100,7 @@
               "RelativeDocumentMoniker": "Services\\Usuario\\UsuarioService.cs",
               "ToolTip": "E:\\AppFacensUPX\\backend\\ApiEcoBin\\Services\\Usuario\\UsuarioService.cs",
               "RelativeToolTip": "Services\\Usuario\\UsuarioService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACoAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-08T00:55:41.264Z",
               "EditorCaption": ""
