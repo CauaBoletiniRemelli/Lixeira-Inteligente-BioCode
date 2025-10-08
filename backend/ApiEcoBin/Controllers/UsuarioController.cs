@@ -27,5 +27,16 @@ namespace ApiEcoBin.Controllers
 
             return BadRequest(response);
         }
+
+        [HttpGet("ListarUsuarioPorId/{idUsuario}")]
+        public async Task<ActionResult<ResponseModel<UsuarioModel>>>  GetUserById(int idUser)
+        {
+            ResponseModel<UsuarioModel> response = await _usuarioInterface.GetUserById(idUser);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
     }
 }

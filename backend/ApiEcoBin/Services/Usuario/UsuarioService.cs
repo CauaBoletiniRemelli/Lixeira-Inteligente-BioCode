@@ -9,14 +9,37 @@ namespace ApiEcoBin.Services.Usuarios
     {
         private readonly AppDbContext _context = context;
 
-        public Task<ResponseModel<UsuarioModel>> GetUserById(int idUsuario)
+        public async Task<ResponseModel<UsuarioModel>> GetUserById(int idUser)
         {
-            throw new NotImplementedException();
+            ResponseModel<UsuarioModel> response = new();
+            try
+            {
+                UsuarioModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == idUser);
+
+                if (user == null)
+                {
+                    response.Mensagem = "Usuário não encontrado.";
+                    response.Status = false;
+                    return response;
+                }
+
+                response.Dados = user;
+                response.Mensagem = "Usuário encontrado com sucesso.";
+                response.Status = true;
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+                return response;
+            }
         }
 
         public async Task<ResponseModel<List<UsuarioModel>>> GetUsers()
         {
-            ResponseModel<List<UsuarioModel>> response = new ResponseModel<List<UsuarioModel>>();
+            ResponseModel<List<UsuarioModel>> response = new();
             try
             {
                 List<UsuarioModel> users = await _context.Usuarios.ToListAsync();
