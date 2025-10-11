@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ApiEcoBin.Models
 {
     [Table("PROvisionamentos")]
-    public class ProvisionamentoModel
+    public class ProvisionamentosModel
     {
         [Key]
         [Column("ID")]
@@ -43,9 +43,9 @@ namespace ApiEcoBin.Models
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
 
         [ForeignKey("SensorId")]
-        public virtual required SensorModel Sensor { get; set; }
+        public virtual required SensoresModel Sensor { get; set; }
 
         [ForeignKey("UsuarioId")]
-        public virtual required UsuarioModel Usuario { get; set; }
+        public virtual required UsuariosModel Usuario { get; set; }
     }
 }

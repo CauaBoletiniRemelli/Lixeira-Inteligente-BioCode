@@ -3,6 +3,7 @@ using ApiEcoBin.Models;
 using ApiEcoBin.Services.Usuario;
 using Microsoft.EntityFrameworkCore;
 using ApiEcoBin.Services.PasswordHash;
+using ApiEcoBin.Dto.Usuarios;
 
 namespace ApiEcoBin.Services.Usuarios
 {
@@ -11,12 +12,12 @@ namespace ApiEcoBin.Services.Usuarios
         private readonly AppDbContext _context = context;
         private readonly IPasswordHashService _passwordHashService = passwordHashService;
 
-        public async Task<ResponseModel<UsuarioModel>> GetUserById(int idUser)
+        public async Task<ResponseModel<UsuariosModel>> GetUserById(int idUser)
         {
-            ResponseModel<UsuarioModel> response = new();
+            ResponseModel<UsuariosModel> response = new();
             try
             {
-                UsuarioModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == idUser);
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == idUser);
 
                 if (user == null)
                 {
@@ -39,12 +40,12 @@ namespace ApiEcoBin.Services.Usuarios
             }
         }
 
-        public async Task<ResponseModel<List<UsuarioModel>>> GetUsers()
+        public async Task<ResponseModel<List<UsuariosModel>>> GetUsers()
         {
-            ResponseModel<List<UsuarioModel>> response = new();
+            ResponseModel<List<UsuariosModel>> response = new();
             try
             {
-                List<UsuarioModel> users = await _context.Usuarios.ToListAsync();
+                List<UsuariosModel> users = await _context.Usuarios.ToListAsync();
 
                 if (users.Count > 0)
                 {
@@ -67,19 +68,22 @@ namespace ApiEcoBin.Services.Usuarios
             }
         }
 
-        public Task<ResponseModel<List<UsuarioModel>>> GetUsersByIdCon(int idCondominio)
+        public async Task<ResponseModel<UsuariosModel>> CreateUser(UserCreateDTO userCreateDTO)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task<ResponseModel<UsuarioModel>> CreateUser(UsuarioModel usuario, string senha)
-        {
-            ResponseModel<UsuarioModel> response = new ResponseModel<UsuarioModel>();
+            ResponseModel<UsuariosModel> response = new();
             
             try
             {
-                usuario.SenhaHash = _passwordHashService.HashPassword(senha);
-                usuario.CriadoEm = DateTime.Now;
+                UsuariosModel usuario = new()
+                {
+                    Nome = userCreateDTO.Nome,
+                    SenhaHash = userCreateDTO.SenhaHash,
+                    Email = userCreateDTO.Email,
+                    Tipo = userCreateDTO.Tipo,
+                    CriadoEm = DateTime.Now
+                };
+
+                usuario.SenhaHash = _passwordHashService.HashPassword(usuario.SenhaHash!);
                 
                 _context.Usuarios.Add(usuario);
                 await _context.SaveChangesAsync();
@@ -94,6 +98,88 @@ namespace ApiEcoBin.Services.Usuarios
                 response.Status = false;
             }
             
+            return response;
+        }
+
+        public async Task<ResponseModel<UsuariosModel>> UpdateUser(UserEditDTO userCreateDTO)
+        {
+            ResponseModel<UsuariosModel> response = new();
+
+            try
+            {
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == userCreateDTO.Id);
+
+                if (user == null)
+                {
+                    response.Mensagem = "Nenhum usuário localizado!";
+                    response.Status = true;
+                    return response;
+                }
+
+                if (!string.IsNullOrWhiteSpace(userCreateDTO.Nome))
+                {
+                    user.Nome = userCreateDTO.Nome;
+                }
+
+                if (!string.IsNullOrWhiteSpace(userCreateDTO.Email))
+                {
+                    user.Email = userCreateDTO.Email;
+                }
+
+                if (userCreateDTO.Tipo >= 0)
+                {
+                    user.Tipo = userCreateDTO.Tipo;
+                }
+
+                if (!string.IsNullOrWhiteSpace(userCreateDTO.SenhaHash))
+                {
+                    user.SenhaHash = _passwordHashService.HashPassword(userCreateDTO.SenhaHash);
+                }
+
+                _context.Usuarios.Update(user);
+                await _context.SaveChangesAsync();
+
+                response.Dados = user;
+                response.Mensagem = "Usuário atualizado com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+
+            return response;
+        }
+
+        public async Task<ResponseModel<List<UsuariosModel>>> DeleteUser(int idUser)
+        {
+            ResponseModel<List<UsuariosModel>> response = new();
+
+            try
+            {
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == idUser);
+
+                if (user == null)
+                {
+                    response.Mensagem = "Nenhum usuário localizado!";
+                    response.Status = true;
+                    return response;
+                }
+
+                _context.Usuarios.Remove(user);
+                await _context.SaveChangesAsync();
+
+                response.Dados = await _context.Usuarios.ToListAsync();
+                response.Mensagem = "Usuário removido com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+
             return response;
         }
     }

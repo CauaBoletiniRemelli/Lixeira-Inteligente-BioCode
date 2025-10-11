@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace ApiEcoBin.Models
 {
     [Table("USUarios")]
-    public class UsuarioModel
+    public class UsuariosModel
     {
         [Key]
         [Column("ID")]
@@ -34,6 +34,6 @@ namespace ApiEcoBin.Models
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
 
         [JsonIgnore]
-        public virtual ICollection<ProvisionamentoModel> Provisionamentos { get; set; } = [];
+        public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = [];
     }
 }

@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace ApiEcoBin.Models
 {
     [Table("SENsores")]
-    public class SensorModel
+    public class SensoresModel
     {
         [Key]
         [Column("ID")]
@@ -35,12 +35,12 @@ namespace ApiEcoBin.Models
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
 
         [ForeignKey("CondominioId")]
-        public virtual CondominioModel? Condominio { get; set; }  
+        public virtual CondominiosModel? Condominio { get; set; }  
 
         [JsonIgnore]
-        public virtual ICollection<ProvisionamentoModel> Provisionamentos { get; set; } = [];
+        public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = [];
 
         [JsonIgnore]
-        public virtual ICollection<TelemetriaModel> Telemetrias { get; set; } = [];
+        public virtual ICollection<TelemetriasModel> Telemetrias { get; set; } = [];
     }
 }

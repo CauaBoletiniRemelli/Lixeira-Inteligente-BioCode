@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ApiEcoBin.Models
 {
     [Table("REFreshTokens")]
-    public class RefreshTokenModel
+    public class RefreshTokensModel
     {
         [Key]
         [Column("ID")]
@@ -30,6 +30,6 @@ namespace ApiEcoBin.Models
         public bool Revogado { get; set; } = false;
 
         [ForeignKey("UsuarioId")]
-        public virtual required UsuarioModel Usuario { get; set; }
+        public virtual required UsuariosModel Usuario { get; set; }
     }
 }

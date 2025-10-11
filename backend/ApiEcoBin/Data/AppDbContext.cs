@@ -9,11 +9,11 @@ namespace ApiEcoBin.Data
         {
         }
 
-        public DbSet<UsuarioModel> Usuarios { get; set; }
-        public DbSet<CondominioModel> Condominios { get; set; }
-        public DbSet<TelemetriaModel> Telemetrias { get; set; }
-        public DbSet<SensorModel> Sensores { get; set; }
-        public DbSet<ProvisionamentoModel> Provisionamentos { get; set; } 
-        public DbSet<RefreshTokenModel> RefreshTokens { get; set; }
+        public DbSet<UsuariosModel> Usuarios { get; set; }
+        public DbSet<CondominiosModel> Condominios { get; set; }
+        public DbSet<TelemetriasModel> Telemetrias { get; set; }
+        public DbSet<SensoresModel> Sensores { get; set; }
+        public DbSet<ProvisionamentosModel> Provisionamentos { get; set; } 
+        public DbSet<RefreshTokensModel> RefreshTokens { get; set; }
     }
 }

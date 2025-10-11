@@ -1,12 +1,14 @@
-﻿using ApiEcoBin.Models;
+﻿using ApiEcoBin.Dto.Usuarios;
+using ApiEcoBin.Models;
 
 namespace ApiEcoBin.Services.Usuario
 {
     public interface IUsuarioInterface
     {
-        Task<ResponseModel<List<UsuarioModel>>> GetUsers();
-        Task<ResponseModel<UsuarioModel>> GetUserById(int idUsuario);
-        Task<ResponseModel<List<UsuarioModel>>> GetUsersByIdCon(int idCondominio);
-        Task<ResponseModel<UsuarioModel>> CreateUser(UsuarioModel usuario, string senha);
+        Task<ResponseModel<List<UsuariosModel>>> GetUsers();
+        Task<ResponseModel<UsuariosModel>> GetUserById(int idUsuario);
+        Task<ResponseModel<UsuariosModel>> CreateUser(UserCreateDTO userCreateDTO);
+        Task<ResponseModel<UsuariosModel>> UpdateUser(UserEditDTO userCreateDTO);
+        Task<ResponseModel<List<UsuariosModel>>> DeleteUser(int idUser);
     }
 }

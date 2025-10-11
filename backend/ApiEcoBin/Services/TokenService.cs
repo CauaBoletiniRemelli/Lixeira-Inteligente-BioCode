@@ -9,14 +9,15 @@ namespace ApiEcoBin.Services
 {
     public class TokenService
     {
-        public static object GenerateToken(UsuarioModel user)
+        public static object GenerateToken(UsuariosModel user)
         {
             byte[] key = Encoding.ASCII.GetBytes(Key.Secret);
             SecurityTokenDescriptor? tokenConfig = new SecurityTokenDescriptor
             {
                 Subject = new System.Security.Claims.ClaimsIdentity(
                 [
-                    new Claim("userId", user.Id.ToString())
+                    new Claim("userId", user.Id.ToString()),
+                    new Claim("Tipo", user.Tipo.ToString())
                 ]),
                 Expires = DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

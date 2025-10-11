@@ -37,7 +37,7 @@ namespace ApiEcoBin.Controllers
                 });
             }
 
-            UsuarioModel? usuario = await _context.Usuarios
+            UsuariosModel? usuario = await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (usuario == null || string.IsNullOrEmpty(usuario.SenhaHash) || !_passwordHashService.VerifyPassword(request.Password, usuario.SenhaHash))
@@ -53,7 +53,7 @@ namespace ApiEcoBin.Controllers
             object token = TokenService.GenerateToken(usuario);
             string refreshToken = TokenService.GenerateRefreshToken();
 
-            RefreshTokenModel refreshTokenModel = new RefreshTokenModel
+            RefreshTokensModel refreshTokenModel = new RefreshTokensModel
             {
                 UsuarioId = usuario.Id,
                 Token = refreshToken,
@@ -118,7 +118,7 @@ namespace ApiEcoBin.Controllers
 
                 int userId = int.Parse(userIdClaim);
 
-                RefreshTokenModel? storedRefreshToken = await _context.RefreshTokens
+                RefreshTokensModel? storedRefreshToken = await _context.RefreshTokens
                     .Include(rt => rt.Usuario)
                     .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken && rt.UsuarioId == userId);
 
@@ -137,7 +137,7 @@ namespace ApiEcoBin.Controllers
 
                 storedRefreshToken.Revogado = true;
 
-                RefreshTokenModel newRefreshTokenModel = new RefreshTokenModel
+                RefreshTokensModel newRefreshTokenModel = new RefreshTokensModel
                 {
                     UsuarioId = userId,
                     Token = newRefreshToken,
@@ -186,7 +186,7 @@ namespace ApiEcoBin.Controllers
                 });
             }
 
-            RefreshTokenModel? storedRefreshToken = await _context.RefreshTokens
+            RefreshTokensModel? storedRefreshToken = await _context.RefreshTokens
                 .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
 
             if (storedRefreshToken != null)

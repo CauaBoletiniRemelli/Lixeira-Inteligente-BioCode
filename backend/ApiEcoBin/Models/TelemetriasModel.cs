@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ApiEcoBin.Models
 {
     [Table("TELemetrias")]
-    public class TelemetriaModel
+    public class TelemetriasModel
     {
         [Key]
         [Column("ID")]
@@ -30,6 +30,6 @@ namespace ApiEcoBin.Models
         public string? DadosBrutos { get; set; }
 
         [ForeignKey("SensorId")]
-        public required virtual SensorModel Sensor { get; set; }
+        public required virtual SensoresModel Sensor { get; set; }
     }
 }

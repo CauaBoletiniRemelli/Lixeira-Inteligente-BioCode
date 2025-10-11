@@ -31,6 +31,10 @@ namespace ApiEcoBin.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool?>("Ativo")
+                        .HasColumnType("bit")
+                        .HasColumnName("CONAtivo");
+
                     b.Property<DateTime?>("CriadoEm")
                         .HasColumnType("datetime2")
                         .HasColumnName("CONCriadoEm");

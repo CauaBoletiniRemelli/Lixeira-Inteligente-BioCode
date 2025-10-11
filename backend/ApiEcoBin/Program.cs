@@ -53,7 +53,10 @@ namespace ApiEcoBin
 
             builder.Services.AddScoped<IUsuarioInterface, UsuarioService>();
             builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
-            builder.Services.AddSingleton<TokenService>(); 
+            builder.Services.AddSingleton<TokenService>();
+            builder.Services.AddAuthorizationBuilder()
+                .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", "1"))
+                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo", "1", "2"));
 
             Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key não configurada");
 
@@ -92,6 +95,7 @@ namespace ApiEcoBin
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
