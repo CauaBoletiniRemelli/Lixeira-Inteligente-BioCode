@@ -101,13 +101,13 @@ namespace ApiEcoBin.Services.Usuarios
             return response;
         }
 
-        public async Task<ResponseModel<UsuariosModel>> UpdateUser(UserEditDTO userCreateDTO)
+        public async Task<ResponseModel<UsuariosModel>> UpdateUser(UserEditDTO userEditDTO)
         {
             ResponseModel<UsuariosModel> response = new();
 
             try
             {
-                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == userCreateDTO.Id);
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == userEditDTO.Id);
 
                 if (user == null)
                 {
@@ -116,24 +116,24 @@ namespace ApiEcoBin.Services.Usuarios
                     return response;
                 }
 
-                if (!string.IsNullOrWhiteSpace(userCreateDTO.Nome))
+                if (!string.IsNullOrWhiteSpace(userEditDTO.Nome))
                 {
-                    user.Nome = userCreateDTO.Nome;
+                    user.Nome = userEditDTO.Nome;
                 }
 
-                if (!string.IsNullOrWhiteSpace(userCreateDTO.Email))
+                if (!string.IsNullOrWhiteSpace(userEditDTO.Email))
                 {
-                    user.Email = userCreateDTO.Email;
+                    user.Email = userEditDTO.Email;
                 }
 
-                if (userCreateDTO.Tipo >= 0)
+                if (userEditDTO.Tipo >= 0)
                 {
-                    user.Tipo = userCreateDTO.Tipo;
+                    user.Tipo = userEditDTO.Tipo;
                 }
 
-                if (!string.IsNullOrWhiteSpace(userCreateDTO.SenhaHash))
+                if (!string.IsNullOrWhiteSpace(userEditDTO.SenhaHash))
                 {
-                    user.SenhaHash = _passwordHashService.HashPassword(userCreateDTO.SenhaHash);
+                    user.SenhaHash = _passwordHashService.HashPassword(userEditDTO.SenhaHash);
                 }
 
                 _context.Usuarios.Update(user);

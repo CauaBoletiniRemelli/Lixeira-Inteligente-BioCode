@@ -10,40 +10,21 @@ namespace ApiEcoBin.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsuarioController : ControllerBase
+    public class UsuariosController : ControllerBase
     {
         #region Propriedades
         private readonly IUsuarioInterface _usuarioInterface;
         #endregion
 
         #region Construtores
-        public UsuarioController(IUsuarioInterface usuarioInterface)
+        public UsuariosController(IUsuarioInterface usuarioInterface)
         {
             _usuarioInterface = usuarioInterface;
         }
         #endregion
 
-        #region Métodos de POST
-        [Authorize(Policy = "AppOnly")]
-        [HttpPost("usuarios")]
-        public async Task<ActionResult<ResponseModel<UserCreateDTO>>> CreateUser([FromBody] UserCreateDTO userDTO)
-        {
-
-            ResponseModel<UsuariosModel> response = await _usuarioInterface.CreateUser(userDTO);
-            
-            if (response.Status)
-            {
-                return Ok(response);
-            }
-            
-            return BadRequest(response);
-        }
-        #endregion
-
-        #region Métodos de GET
-
         [Authorize]
-        [HttpGet("usuarios")]
+        [HttpGet]
         public async Task<ActionResult<ResponseModel<List<UsuariosModel>>>> GetUsers()
         {
             ResponseModel<List<UsuariosModel>> response = await _usuarioInterface.GetUsers();
@@ -57,7 +38,7 @@ namespace ApiEcoBin.Controllers
         }
 
         [Authorize]
-        [HttpGet("usuarios/{idUser}")]
+        [HttpGet("{idUser}")]
         public async Task<ActionResult<ResponseModel<UsuariosModel>>>  GetUserById(int idUser)
         {
             ResponseModel<UsuariosModel> response = await _usuarioInterface.GetUserById(idUser);
@@ -68,12 +49,23 @@ namespace ApiEcoBin.Controllers
             return BadRequest(response);
         }
 
-        #endregion
+        [Authorize(Policy = "AppOnly")]
+        [HttpPost]
+        public async Task<ActionResult<ResponseModel<UserCreateDTO>>> CreateUser([FromBody] UserCreateDTO userCreateDTO)
+        {
 
-        #region Métodos de PUT e DELETE
+            ResponseModel<UsuariosModel> response = await _usuarioInterface.CreateUser(userCreateDTO);
+
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+
+            return BadRequest(response);
+        }
 
         [Authorize(Policy = "AdminOnly")]
-        [HttpPut("usuario")]
+        [HttpPut]
         public async Task<ActionResult<ResponseModel<UsuariosModel>>> UpdateUser([FromBody] UserEditDTO userEditDTO)
         {
             ResponseModel<UsuariosModel> response = await _usuarioInterface.UpdateUser(userEditDTO);
@@ -85,7 +77,7 @@ namespace ApiEcoBin.Controllers
         }
 
         [Authorize(Policy = "AdminOnly")]
-        [HttpDelete("usuario/{idUser}")]
+        [HttpDelete("{idUser}")]
         public async Task<ActionResult<ResponseModel<List<UsuariosModel>>>> DeleteUser(int idUser)
         {
             ResponseModel<List<UsuariosModel>> response = await _usuarioInterface.DeleteUser(idUser);
@@ -95,7 +87,5 @@ namespace ApiEcoBin.Controllers
             }
             return BadRequest(response);
         }
-
-        #endregion
     }
 }

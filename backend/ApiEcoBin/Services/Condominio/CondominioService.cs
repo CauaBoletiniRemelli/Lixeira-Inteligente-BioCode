@@ -1,4 +1,5 @@
 ﻿using ApiEcoBin.Data;
+using ApiEcoBin.Dto.Condominios;
 using ApiEcoBin.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,12 +36,19 @@ namespace ApiEcoBin.Services.Condominio
             }
         }
 
-        public async Task<ResponseModel<CondominiosModel>> PostCondominio(CondominiosModel condominio)
+        public async Task<ResponseModel<CondominiosModel>> CreateCondominio(CondominiosCreateDTO condominioCreateDTO)
         {
             ResponseModel<CondominiosModel> response = new();
             try
             {
-                condominio.CriadoEm = DateTime.Now;
+                CondominiosModel condominio = new()
+                {
+                    CriadoEm = DateTime.Now,
+                    Nome = condominioCreateDTO.Nome,
+                    Endereco = condominioCreateDTO.Endereco,
+                    Ativo = condominioCreateDTO.Ativo,
+                };
+
                 _context.Condominios.Add(condominio);
 
                 await _context.SaveChangesAsync();
@@ -57,6 +65,78 @@ namespace ApiEcoBin.Services.Condominio
                 response.Status = false;
                 return response;
             }
+        }
+
+        public async Task<ResponseModel<CondominiosModel>> UpdateCondominio(CondominioEditDTO condominioEditDTO)
+        {
+            ResponseModel<CondominiosModel > response = new();
+
+            try
+            {
+                CondominiosModel? condominio = await _context.Condominios.FirstOrDefaultAsync(condominio =>
+                condominio.Id == condominioEditDTO.Id);
+
+                if (condominio == null)
+                {
+                    response.Mensagem = "Nenhum condomínio localizado!";
+                    response.Status = true;
+                    return response;
+                }
+
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Nome))
+                    condominio.Nome = condominioEditDTO.Nome;
+
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Endereco))
+                    condominio.Endereco = condominioEditDTO.Endereco;
+
+                if (condominio.Ativo != condominioEditDTO.Ativo)
+                    condominio.Ativo = condominioEditDTO.Ativo;
+
+                _context.Update(condominio);
+                await _context.SaveChangesAsync();
+
+                response.Dados = condominio;
+                response.Mensagem = "Condomínio atualizado com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+
+            return response;
+        }
+
+        public async Task<ResponseModel<List<CondominiosModel>>> DeleteCondominio(int idCond)
+        {
+            ResponseModel<List<CondominiosModel>> response = new();
+
+            try
+            {
+                CondominiosModel? condominio = await _context.Condominios.FirstOrDefaultAsync(cond => cond.Id == idCond);
+
+                if (condominio == null)
+                {
+                    response.Mensagem = "Nenhum condomínio localizado!";
+                    response.Status = true;
+                    return response;
+                }
+
+                _context.Condominios.Remove(condominio);
+                await _context.SaveChangesAsync();
+
+                response.Dados = await _context.Condominios.ToListAsync();
+                response.Mensagem = "Usuário removido com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+
+            return response;
         }
     }
 }

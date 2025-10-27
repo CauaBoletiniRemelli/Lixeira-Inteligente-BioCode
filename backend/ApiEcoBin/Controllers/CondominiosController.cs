@@ -1,4 +1,5 @@
-﻿using ApiEcoBin.Models;
+﻿using ApiEcoBin.Dto.Condominios;
+using ApiEcoBin.Models;
 using ApiEcoBin.Services.Condominio;
 using ApiEcoBin.Services.Usuario;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +24,7 @@ namespace ApiEcoBin.Controllers
         #endregion
 
         [Authorize]
-        [HttpGet("condominios")]
+        [HttpGet]
         public async Task<ActionResult<ResponseModel<List<CondominiosModel>>>> GetCondominios()
         {
             ResponseModel<List<CondominiosModel>> response = await _condominioInterface.GetCondominios();
@@ -34,15 +35,43 @@ namespace ApiEcoBin.Controllers
             return BadRequest(response);
         }
 
-        [Authorize]
-        [HttpPost("condominios")]
-        public async Task<ActionResult<ResponseModel<CondominiosModel>>> PostCondominio([FromBody] CondominiosModel condominio)
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<ActionResult<ResponseModel<CondominiosModel>>> PostCondominio([FromBody] CondominiosCreateDTO condominio)
         {
-            ResponseModel<CondominiosModel> response = await _condominioInterface.PostCondominio(condominio);
+            ResponseModel<CondominiosModel> response = await _condominioInterface.CreateCondominio(condominio);
             if (response.Status)
             {
                 return Ok(response);
             }
+            return BadRequest(response);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut]
+        public async Task<ActionResult<ResponseModel<CondominiosModel>>> UpdateCondominio([FromBody] CondominioEditDTO condominio)
+        {
+            ResponseModel<CondominiosModel> response = await _condominioInterface.UpdateCondominio(condominio);
+
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+
+            return BadRequest(response);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpDelete]
+        public async Task<ActionResult<ResponseModel<List<CondominiosModel>>>> DeleteCondominio(int idCond)
+        {
+            ResponseModel<List<CondominiosModel>> response = await _condominioInterface.DeleteCondominio(idCond);
+
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+
             return BadRequest(response);
         }
     }
