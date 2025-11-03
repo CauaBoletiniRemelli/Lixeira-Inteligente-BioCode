@@ -197,6 +197,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Modal de Seleção de Tipo */}
       <Modal
@@ -350,6 +351,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.xs,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
