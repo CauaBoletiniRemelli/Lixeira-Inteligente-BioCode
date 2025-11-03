@@ -5,3 +5,5 @@ export * from './MapScreen';
 export * from './ProfileScreen';
 export * from './UserManagementScreen';
 export * from './UserFormScreen';
+export * from './CondominiumManagementScreen';
+export * from './CondominiumFormScreen';

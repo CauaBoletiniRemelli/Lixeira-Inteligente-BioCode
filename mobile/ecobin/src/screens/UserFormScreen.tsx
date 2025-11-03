@@ -83,6 +83,27 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
     onBack();
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Confirmar Exclusão',
+      `Tem certeza que deseja remover o usuário ${user?.name}? Esta ação não pode ser desfeita.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Sucesso', 'Usuário removido com sucesso!');
+            onBack();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
@@ -103,11 +124,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
           keyboardShouldPersistTaps="handled"
         >
         <View style={styles.titleContainer}>
-          <Ionicons 
-            name={isEditing ? "person-circle-outline" : "person-add-outline"} 
-            size={48} 
-            color={COLORS.primary} 
-          />
+
           <Text style={styles.title}>
             {isEditing ? 'Editar Usuário' : 'Cadastrar Usuário'}
           </Text>
@@ -150,7 +167,6 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             </View>
           </View>
 
-          {/* Card de Permissões e Localização */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="settings-outline" size={20} color={COLORS.primary} />
@@ -194,12 +210,21 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
               onPress={handleSave}
               style={styles.saveButton}
             />
+            
+            {isEditing && (
+              <TouchableOpacity 
+                style={styles.deleteButton}
+                onPress={handleDelete}
+              >
+                <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                <Text style={styles.deleteButtonText}>Remover Usuário</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal de Seleção de Tipo */}
       <Modal
         visible={showRoleModal}
         transparent
@@ -446,6 +471,24 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     minHeight: 50,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    backgroundColor: `${COLORS.error}10`,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    minHeight: 50,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.error,
   },
   // Modal styles
   modalOverlay: {

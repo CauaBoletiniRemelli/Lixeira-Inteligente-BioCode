@@ -1,11 +1,19 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { HomeScreen, MapScreen, ProfileScreen, UserManagementScreen, UserFormScreen } from '../screens';
+import { 
+  HomeScreen, 
+  MapScreen, 
+  ProfileScreen, 
+  UserManagementScreen, 
+  UserFormScreen,
+  CondominiumManagementScreen,
+  CondominiumFormScreen 
+} from '../screens';
 import { COLORS, SPACING } from '../constants';
 
 type TabScreen = 'home' | 'map' | 'profile';
-type ManagementScreen = 'userManagement' | 'userForm';
+type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm';
 
 interface User {
   id: string;
@@ -14,10 +22,19 @@ interface User {
   role: 'coletor' | 'sindico' | 'admin';
 }
 
+interface Condominium {
+  id: string;
+  name: string;
+  address: string;
+  cep: string;
+  status: 'active' | 'inactive';
+}
+
 export const MainNavigator: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState<TabScreen>('home');
   const [managementScreen, setManagementScreen] = React.useState<ManagementScreen | null>(null);
   const [editingUser, setEditingUser] = React.useState<User | undefined>(undefined);
+  const [editingCondominium, setEditingCondominium] = React.useState<Condominium | undefined>(undefined);
 
   const handleNavigateToUserManagement = () => {
     setManagementScreen('userManagement');
@@ -28,14 +45,29 @@ export const MainNavigator: React.FC = () => {
     setManagementScreen('userForm');
   };
 
+  const handleNavigateToCondominiumManagement = () => {
+    setManagementScreen('condominiumManagement');
+  };
+
+  const handleNavigateToCondominiumForm = (condominium?: Condominium) => {
+    setEditingCondominium(condominium);
+    setManagementScreen('condominiumForm');
+  };
+
   const handleBackToHome = () => {
     setManagementScreen(null);
     setEditingUser(undefined);
+    setEditingCondominium(undefined);
   };
 
   const handleBackToUserManagement = () => {
     setManagementScreen('userManagement');
     setEditingUser(undefined);
+  };
+
+  const handleBackToCondominiumManagement = () => {
+    setManagementScreen('condominiumManagement');
+    setEditingCondominium(undefined);
   };
 
   const renderManagementScreen = () => {
@@ -58,19 +90,48 @@ export const MainNavigator: React.FC = () => {
       );
     }
 
+    if (managementScreen === 'condominiumManagement') {
+      return (
+        <CondominiumManagementScreen 
+          onBack={handleBackToHome}
+          onEditCondominium={handleNavigateToCondominiumForm}
+          onCreateCondominium={() => handleNavigateToCondominiumForm()}
+        />
+      );
+    }
+    
+    if (managementScreen === 'condominiumForm') {
+      return (
+        <CondominiumFormScreen 
+          onBack={handleBackToCondominiumManagement}
+          condominium={editingCondominium}
+        />
+      );
+    }
+
     return null;
   };
 
   const renderScreen = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeScreen onNavigateToUserManagement={handleNavigateToUserManagement} />;
+        return (
+          <HomeScreen 
+            onNavigateToUserManagement={handleNavigateToUserManagement}
+            onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
+          />
+        );
       case 'map':
         return <MapScreen />;
       case 'profile':
         return <ProfileScreen />;
       default:
-        return <HomeScreen onNavigateToUserManagement={handleNavigateToUserManagement} />;
+        return (
+          <HomeScreen 
+            onNavigateToUserManagement={handleNavigateToUserManagement}
+            onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
+          />
+        );
     }
   };
 

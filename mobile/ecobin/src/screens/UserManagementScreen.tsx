@@ -80,7 +80,7 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Gerenciamento de Usuários</Text>
+        <Text style={styles.title}>Gerenciar Usuários</Text>
 
         <TouchableOpacity style={styles.createButton} onPress={onCreateUser}>
           <Text style={styles.createButtonText}>Cadastrar Novo Usuário</Text>
@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text.primary,
     marginBottom: SPACING.lg,
+    textAlign: 'center',
   },
   createButton: {
     backgroundColor: COLORS.primary,
