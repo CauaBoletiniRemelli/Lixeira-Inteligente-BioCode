@@ -25,6 +25,9 @@
     },
     "web": {
       "favicon": "./assets/EcoBinLogoVerdeCompleta.png"
-    }
+    },
+    "plugins": [
+      "expo-barcode-scanner"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { TextInput, View, Text, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
@@ -8,14 +8,14 @@ interface PasswordInputProps extends Omit<TextInputProps, 'secureTextEntry'> {
     error?: string;
 }
 
-export const PasswordInput: React.FC<PasswordInputProps> = ({
+export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(({
     label,
     error,
     style,
     onFocus,
     onBlur,
     ...rest
-}) => {
+}, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -34,6 +34,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
             {label && <Text style={styles.label}>{label}</Text>}
             <View style={styles.inputWrapper}>
                 <TextInput
+                    ref={ref}
                     style={[
                         styles.input,
                         isFocused && styles.inputFocused,
@@ -62,7 +63,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
             {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

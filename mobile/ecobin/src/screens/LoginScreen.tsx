@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Button, Input, PasswordInput } from '../components';
@@ -18,6 +18,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
+    const passwordInputRef = useRef<TextInput>(null);
 
     const handleLogin = async () => {
         setEmailError('');
@@ -89,14 +90,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
                                 autoCapitalize="none"
                                 autoCorrect={false}
                                 error={emailError}
+                                returnKeyType="next"
+                                onSubmitEditing={() => passwordInputRef.current?.focus()}
+                                blurOnSubmit={false}
                             />
 
                             <PasswordInput
+                                ref={passwordInputRef}
                                 label="Senha"
                                 placeholder="Digite sua senha"
                                 value={password}
                                 onChangeText={setPassword}
                                 error={passwordError}
+                                returnKeyType="done"
+                                onSubmitEditing={handleLogin}
                             />
 
                             <TouchableOpacity

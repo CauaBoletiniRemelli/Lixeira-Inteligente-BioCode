@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,9 +27,10 @@ const MenuCard: React.FC<MenuCardProps> = ({ title, subtitle, iconComponent, onP
 interface HomeScreenProps {
     onNavigateToUserManagement?: () => void;
     onNavigateToCondominiumManagement?: () => void;
+    onNavigateToSensorSetup?: () => void;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManagement, onNavigateToCondominiumManagement }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManagement, onNavigateToCondominiumManagement, onNavigateToSensorSetup }) => {
     const { user, logout, hasPermission } = useAuth();
 
     return (
@@ -81,7 +83,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManageme
                         title="Cadastrar Novo Sensor"
                         subtitle="Configurar um novo sensor"
                         iconComponent={<MaterialCommunityIcons name="qrcode-scan" size={60} color={COLORS.primary} />}
-                        onPress={() => console.log('Cadastrar Sensor')}
+                        onPress={() => onNavigateToSensorSetup?.()}
                     />
                 )}
 

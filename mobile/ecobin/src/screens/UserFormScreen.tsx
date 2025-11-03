@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -45,6 +45,10 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
     const [password, setPassword] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole>(user?.role || 'coletor');
     const [selectedCondominium, setSelectedCondominium] = useState('Edifício Tulipas');
+
+    // Referencias para os inputs
+    const emailInputRef = useRef<TextInput>(null);
+    const passwordInputRef = useRef<TextInput>(null);
 
     // Estados dos modais
     const [showRoleModal, setShowRoleModal] = useState(false);
@@ -133,22 +137,31 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                                     value={name}
                                     onChangeText={setName}
                                     placeholder="João Da Silva"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => emailInputRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
 
                                 <Text style={styles.label}>E-Mail:</Text>
                                 <Input
+                                    ref={emailInputRef}
                                     value={email}
                                     onChangeText={setEmail}
                                     placeholder="joaosilva@gmail.com"
                                     keyboardType="email-address"
                                     autoCapitalize="none"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => passwordInputRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
 
                                 <PasswordInput
+                                    ref={passwordInputRef}
                                     value={password}
                                     onChangeText={setPassword}
                                     label="Senha"
                                     placeholder={isEditing ? "Deixe em branco para manter" : "**********"}
+                                    returnKeyType="done"
                                 />
                             </View>
                         </View>

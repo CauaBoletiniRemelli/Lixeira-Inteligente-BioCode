@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +36,11 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     );
     const [cep, setCep] = useState(condominium?.cep || '');
     const [status, setStatus] = useState<CondominiumStatus>(condominium?.status || 'active');
+
+    // Referencias para os inputs
+    const streetInputRef = useRef<TextInput>(null);
+    const numberInputRef = useRef<TextInput>(null);
+    const cepInputRef = useRef<TextInput>(null);
 
     const handleSave = () => {
         if (!name || !street || !number || !cep) {
@@ -113,29 +118,42 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                                     value={name}
                                     onChangeText={setName}
                                     placeholder="Edifício Tulipas"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => streetInputRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
 
                                 <Text style={styles.label}>Rua</Text>
                                 <Input
+                                    ref={streetInputRef}
                                     value={street}
                                     onChangeText={setStreet}
                                     placeholder="Rua Arnaldo Costa"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => numberInputRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
 
                                 <Text style={styles.label}>Número</Text>
                                 <Input
+                                    ref={numberInputRef}
                                     value={number}
                                     onChangeText={setNumber}
                                     placeholder="118"
                                     keyboardType="numeric"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => cepInputRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
 
                                 <Text style={styles.label}>CEP</Text>
                                 <Input
+                                    ref={cepInputRef}
                                     value={cep}
                                     onChangeText={setCep}
                                     placeholder="00000-000"
                                     keyboardType="numeric"
+                                    returnKeyType="done"
                                 />
                             </View>
                         </View>

@@ -1,11 +1,22 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { HomeScreen, MapScreen, ProfileScreen, UserManagementScreen, UserFormScreen, CondominiumManagementScreen, CondominiumFormScreen } from '../screens';
+import { 
+    HomeScreen, 
+    MapScreen, 
+    ProfileScreen, 
+    UserManagementScreen, 
+    UserFormScreen, 
+    CondominiumManagementScreen, 
+    CondominiumFormScreen,
+    QRCodeScannerScreen,
+    SensorWiFiSetupScreen,
+    SensorSetupSuccessScreen
+} from '../screens';
 import { COLORS, SPACING } from '../constants';
 
 type TabScreen = 'home' | 'map' | 'profile';
-type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm';
+type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm' | 'qrScanner' | 'sensorWiFiSetup' | 'sensorSuccess';
 
 interface User {
     id: string;
@@ -27,6 +38,7 @@ export const MainNavigator: React.FC = () => {
     const [managementScreen, setManagementScreen] = React.useState<ManagementScreen | null>(null);
     const [editingUser, setEditingUser] = React.useState<User | undefined>(undefined);
     const [editingCondominium, setEditingCondominium] = React.useState<Condominium | undefined>(undefined);
+    const [scannedSensorId, setScannedSensorId] = React.useState<string>('');
 
     const handleNavigateToUserManagement = () => {
         setManagementScreen('userManagement');
@@ -46,10 +58,24 @@ export const MainNavigator: React.FC = () => {
         setManagementScreen('condominiumForm');
     };
 
+    const handleNavigateToSensorSetup = () => {
+        setManagementScreen('qrScanner');
+    };
+
+    const handleQRScanSuccess = (sensorId: string) => {
+        setScannedSensorId(sensorId);
+        setManagementScreen('sensorWiFiSetup');
+    };
+
+    const handleSensorWiFiSuccess = () => {
+        setManagementScreen('sensorSuccess');
+    };
+
     const handleBackToHome = () => {
         setManagementScreen(null);
         setEditingUser(undefined);
         setEditingCondominium(undefined);
+        setScannedSensorId('');
     };
 
     const handleBackToUserManagement = () => {
@@ -101,6 +127,33 @@ export const MainNavigator: React.FC = () => {
             );
         }
 
+        if (managementScreen === 'qrScanner') {
+            return (
+                <QRCodeScannerScreen
+                    onBack={handleBackToHome}
+                    onScanSuccess={handleQRScanSuccess}
+                />
+            );
+        }
+
+        if (managementScreen === 'sensorWiFiSetup') {
+            return (
+                <SensorWiFiSetupScreen
+                    onBack={() => setManagementScreen('qrScanner')}
+                    onSuccess={handleSensorWiFiSuccess}
+                    sensorId={scannedSensorId}
+                />
+            );
+        }
+
+        if (managementScreen === 'sensorSuccess') {
+            return (
+                <SensorSetupSuccessScreen
+                    onFinish={handleBackToHome}
+                />
+            );
+        }
+
         return null;
     };
 
@@ -111,6 +164,7 @@ export const MainNavigator: React.FC = () => {
                     <HomeScreen
                         onNavigateToUserManagement={handleNavigateToUserManagement}
                         onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
+                        onNavigateToSensorSetup={handleNavigateToSensorSetup}
                     />
                 );
             case 'map':
@@ -122,6 +176,7 @@ export const MainNavigator: React.FC = () => {
                     <HomeScreen
                         onNavigateToUserManagement={handleNavigateToUserManagement}
                         onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
+                        onNavigateToSensorSetup={handleNavigateToSensorSetup}
                     />
                 );
         }
@@ -129,6 +184,7 @@ export const MainNavigator: React.FC = () => {
 
     // Se estiver em uma tela de gerenciamento, mostra ela sem as tabs
     if (managementScreen) {
+        console.log('Renderizando management screen:', managementScreen);
         return <View style={styles.container}>{renderManagementScreen()}</View>;
     }
 
