@@ -66,23 +66,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManageme
                     onPress={() => onNavigateToMap?.()}
                     activeOpacity={0.7}
                 >
-                    {/* Imagem do mapa */}
                     <Image 
                         source={require('../../assets/map-preview.png')}
                         style={styles.mapImage}
                         resizeMode="cover"
                     />
                     
-                    {/* Overlay semi-transparente */}
                     <View style={styles.mapOverlay} />
                     
-                    {/* Ícone de mapa no canto */}
                     <View style={styles.mapIconContainer}>
                         <Ionicons name="map" size={20} color={COLORS.primary} />
                         <Text style={styles.mapLabel}>Ver Mapa Completo</Text>
                     </View>
 
-                    {/* Pins coloridos por status */}
                     <View style={styles.mapPin1}>
                         <Ionicons name="location" size={36} color={COLORS.error} />
                     </View>

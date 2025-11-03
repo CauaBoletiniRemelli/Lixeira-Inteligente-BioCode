@@ -92,7 +92,6 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
-        // Sucesso
         setPassword('***********');
         setShowPasswordModal(false);
         setCurrentPassword('');
