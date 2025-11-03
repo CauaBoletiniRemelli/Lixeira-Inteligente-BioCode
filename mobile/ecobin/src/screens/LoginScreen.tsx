@@ -75,7 +75,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
                         <View style={styles.headerTextContainer}>
                             <Text style={styles.welcomeText}>Fazer Login</Text>
                             <Text style={styles.subtitleText}>
-                                Insira seu email e senha para realizar o login.
+                                Insira seu e-mail e senha para realizar o login.
                             </Text>
                         </View>
 
@@ -138,8 +138,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingTop: SPACING.xxl * 1.5,
-        paddingBottom: SPACING.lg,
+        paddingTop: SPACING.md * 1.5,
     },
     logo: {
         width: 200,

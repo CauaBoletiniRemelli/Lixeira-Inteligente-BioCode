@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, StyleSheet, ViewProps } from 'react-native';
+import { View, StyleSheet, ViewProps } from 'react-native';
 import { BackButton } from './BackButton';
 import { SPACING } from '../constants';
 
@@ -32,8 +32,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xxl + SPACING.md,
-    paddingBottom: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
   },
   logoSmall: {
     width: 32,

@@ -50,6 +50,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
+            <HeaderWithLogo onBackPress={onBackToLogin} />
             <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -59,8 +60,6 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="never"
                 >
-                    <HeaderWithLogo onBackPress={onBackToLogin} />
-
                     <View style={styles.logoContainer}>
                         <Image
                             source={require('../../assets/EcoBinLogoVerdeCompleta.png')}
@@ -111,41 +110,39 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: SPACING.lg,
     },
-            logoContainer: {
-                alignItems: 'center',
-            justifyContent: 'center',
-            paddingTop: SPACING.xl,
-            paddingBottom: SPACING.xxl,
-  },
-            logo: {
-                width: 200,
-            height: 200,
-  },
-            contentContainer: {
-                flex: 1,
-            paddingHorizontal: SPACING.lg,
-  },
-            title: {
-                fontSize: 20,
-            fontWeight: 'bold',
-            color: COLORS.text.primary,
-            textAlign: 'center',
-            marginBottom: SPACING.xs,
-  },
-            subtitle: {
-                fontSize: 14,
-            color: COLORS.text.secondary,
-            textAlign: 'center',
-            marginBottom: SPACING.xl,
-            lineHeight: 20,
-            paddingHorizontal: SPACING.sm,
-  },
-            inputContainer: {
-                marginBottom: SPACING.md,
-  },
-            recoverButton: {
-                marginTop: SPACING.md,
-  },
+    logoContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: SPACING.md,
+    },
+    logo: {
+        width: 200,
+        height: 200,
+    },
+    contentContainer: {
+        flex: 1,
+        paddingHorizontal: SPACING.lg,
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: COLORS.text.primary,
+        textAlign: 'center',
+        marginBottom: SPACING.xs,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: COLORS.text.secondary,
+        textAlign: 'center',
+        marginBottom: SPACING.xl,
+        lineHeight: 20,
+        paddingHorizontal: SPACING.sm,
+    },
+    inputContainer: {
+        marginBottom: SPACING.md,
+    },
+    recoverButton: {
+        marginTop: SPACING.md,
+    },
 });

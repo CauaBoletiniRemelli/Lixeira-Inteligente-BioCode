@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  ActivityIndicator,
-  Text,
-  StyleSheet,
-  ViewProps,
-} from 'react-native';
+import { View, ActivityIndicator, Text,StyleSheet,  ViewProps } from 'react-native';
 import { COLORS, SPACING } from '../constants';
 
 interface LoadingProps extends ViewProps {
