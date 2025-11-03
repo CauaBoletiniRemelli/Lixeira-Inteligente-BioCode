@@ -11,12 +11,13 @@ import {
     CondominiumFormScreen,
     QRCodeScannerScreen,
     SensorWiFiSetupScreen,
-    SensorSetupSuccessScreen
+    SensorSetupSuccessScreen,
+    NotificationsScreen
 } from '../screens';
 import { COLORS, SPACING } from '../constants';
 
 type TabScreen = 'home' | 'map' | 'profile';
-type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm' | 'qrScanner' | 'sensorWiFiSetup' | 'sensorSuccess';
+type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm' | 'qrScanner' | 'sensorWiFiSetup' | 'sensorSuccess' | 'notifications';
 
 interface User {
     id: string;
@@ -60,6 +61,10 @@ export const MainNavigator: React.FC = () => {
 
     const handleNavigateToSensorSetup = () => {
         setManagementScreen('qrScanner');
+    };
+
+    const handleNavigateToNotifications = () => {
+        setManagementScreen('notifications');
     };
 
     const handleQRScanSuccess = (sensorId: string) => {
@@ -154,7 +159,23 @@ export const MainNavigator: React.FC = () => {
             );
         }
 
+        if (managementScreen === 'notifications') {
+            return (
+                <NotificationsScreen
+                    onBack={handleBackToHome}
+                />
+            );
+        }
+
         return null;
+    };
+
+    const handleNavigateToMap = () => {
+        setActiveTab('map');
+    };
+
+    const handleBackFromMap = () => {
+        setActiveTab('home');
     };
 
     const renderScreen = () => {
@@ -165,10 +186,17 @@ export const MainNavigator: React.FC = () => {
                         onNavigateToUserManagement={handleNavigateToUserManagement}
                         onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
                         onNavigateToSensorSetup={handleNavigateToSensorSetup}
+                        onNavigateToMap={handleNavigateToMap}
+                        onNavigateToNotifications={handleNavigateToNotifications}
                     />
                 );
             case 'map':
-                return <MapScreen />;
+                return (
+                    <MapScreen 
+                        onNavigateToSensorSetup={handleNavigateToSensorSetup}
+                        onBack={handleBackFromMap}
+                    />
+                );
             case 'profile':
                 return <ProfileScreen />;
             default:
@@ -177,6 +205,7 @@ export const MainNavigator: React.FC = () => {
                         onNavigateToUserManagement={handleNavigateToUserManagement}
                         onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
                         onNavigateToSensorSetup={handleNavigateToSensorSetup}
+                        onNavigateToMap={handleNavigateToMap}
                     />
                 );
         }
@@ -184,7 +213,6 @@ export const MainNavigator: React.FC = () => {
 
     // Se estiver em uma tela de gerenciamento, mostra ela sem as tabs
     if (managementScreen) {
-        console.log('Renderizando management screen:', managementScreen);
         return <View style={styles.container}>{renderManagementScreen()}</View>;
     }
 

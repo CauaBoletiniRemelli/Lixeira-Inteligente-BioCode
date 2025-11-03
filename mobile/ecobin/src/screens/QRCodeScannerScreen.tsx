@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, Camera } from 'expo-camera';
+import { BackButton } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 
 interface QRCodeScannerScreenProps {
@@ -26,7 +27,6 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
         if (scanned) return;
         
         setScanned(true);
-        console.log(`Código QR escaneado - Tipo: ${type}, Dados: ${data}`);
         
         Alert.alert(
             'QR Code Escaneado',
@@ -64,9 +64,7 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
             <StatusBar style="light" />
 
             <View style={styles.header}>
-                <TouchableOpacity style={styles.headerBackButton} onPress={onBack}>
-                    <Ionicons name="arrow-back" size={24} color={COLORS.text.white} />
-                </TouchableOpacity>
+                <BackButton onPress={onBack} color={COLORS.text.white} />
                 <Text style={styles.headerTitle}>Escanear QR Code</Text>
                 <View style={styles.headerSpacer} />
             </View>
@@ -124,9 +122,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.md,
         backgroundColor: COLORS.primary,
-    },
-    headerBackButton: {
-        padding: SPACING.xs,
     },
     headerTitle: {
         fontSize: 18,

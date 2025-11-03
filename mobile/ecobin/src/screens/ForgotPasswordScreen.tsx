@@ -32,7 +32,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
 
             Alert.alert(
                 'Email Enviado!',
-                'Enviamos um link de recuperação para seu email. Verifique sua caixa de entrada.',
+                'Caso o e-mail esteja cadastrado, você receberá instruções para recuperar sua senha.',
                 [
                     {
                         text: 'OK',

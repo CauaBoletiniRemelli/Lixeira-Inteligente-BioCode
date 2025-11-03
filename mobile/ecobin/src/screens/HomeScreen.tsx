@@ -28,9 +28,11 @@ interface HomeScreenProps {
     onNavigateToUserManagement?: () => void;
     onNavigateToCondominiumManagement?: () => void;
     onNavigateToSensorSetup?: () => void;
+    onNavigateToMap?: () => void;
+    onNavigateToNotifications?: () => void;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManagement, onNavigateToCondominiumManagement, onNavigateToSensorSetup }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManagement, onNavigateToCondominiumManagement, onNavigateToSensorSetup, onNavigateToMap, onNavigateToNotifications }) => {
     const { user, logout, hasPermission } = useAuth();
 
     return (
@@ -46,7 +48,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManageme
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.notificationButton}
-                    onPress={() => console.log('Notificações')}
+                    onPress={() => onNavigateToNotifications?.()}
                 >
                     <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
                 </TouchableOpacity>
@@ -59,24 +61,50 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManageme
             >
                 <Text style={styles.greeting}>Seja bem-vindo, {user?.name}</Text>
 
-                <View style={styles.mapContainer}>
+                <TouchableOpacity 
+                    style={styles.mapContainer}
+                    onPress={() => onNavigateToMap?.()}
+                    activeOpacity={0.7}
+                >
+                    {/* Imagem do mapa */}
+                    <Image 
+                        source={require('../../assets/map-preview.png')}
+                        style={styles.mapImage}
+                        resizeMode="cover"
+                    />
+                    
+                    {/* Overlay semi-transparente */}
+                    <View style={styles.mapOverlay} />
+                    
+                    {/* Ícone de mapa no canto */}
+                    <View style={styles.mapIconContainer}>
+                        <Ionicons name="map" size={20} color={COLORS.primary} />
+                        <Text style={styles.mapLabel}>Ver Mapa Completo</Text>
+                    </View>
+
+                    {/* Pins coloridos por status */}
                     <View style={styles.mapPin1}>
-                        <View style={styles.pinCircle} />
-                        <View style={styles.pinPoint} />
+                        <Ionicons name="location" size={36} color={COLORS.error} />
                     </View>
                     <View style={styles.mapPin2}>
-                        <View style={styles.pinCircle} />
-                        <View style={styles.pinPoint} />
+                        <Ionicons name="location" size={36} color={COLORS.success} />
                     </View>
                     <View style={styles.mapPin3}>
-                        <View style={styles.pinCircle} />
-                        <View style={styles.pinPoint} />
+                        <Ionicons name="location" size={36} color={COLORS.warning} />
                     </View>
                     <View style={styles.mapPin4}>
-                        <View style={styles.pinCircle} />
-                        <View style={styles.pinPoint} />
+                        <Ionicons name="location" size={36} color={COLORS.error} />
                     </View>
-                </View>
+                    <View style={styles.mapPin5}>
+                        <Ionicons name="location" size={36} color={COLORS.warning} />
+                    </View>
+                    <View style={styles.mapPin6}>
+                        <Ionicons name="location" size={36} color={COLORS.success} />
+                    </View>
+                    <View style={styles.mapPin7}>
+                        <Ionicons name="location" size={36} color={COLORS.error} />
+                    </View>
+                </TouchableOpacity>
 
                 {hasPermission(['sindico', 'admin']) && (
                     <MenuCard
@@ -148,52 +176,112 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md,
     },
     mapContainer: {
-        height: 150,
-        backgroundColor: '#F5F5F5',
+        height: 200,
+        backgroundColor: '#E0E0E0',
         borderRadius: BORDER_RADIUS.md,
         marginBottom: SPACING.md,
         position: 'relative',
         overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: COLORS.border,
+    },
+    mapImage: {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+    },
+    mapOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    },
+    mapIconContainer: {
+        position: 'absolute',
+        top: SPACING.sm,
+        right: SPACING.sm,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: BORDER_RADIUS.md,
+        paddingVertical: SPACING.xs,
+        paddingHorizontal: SPACING.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    mapLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: COLORS.primary,
     },
     mapPin1: {
         position: 'absolute',
-        top: 40,
-        left: 30,
+        top: 30,
+        left: '25%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
     mapPin2: {
         position: 'absolute',
-        top: 60,
-        left: 100,
+        top: 95,
+        left: '15%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
     mapPin3: {
         position: 'absolute',
-        top: 30,
-        right: 30,
+        top: 45,
+        right: '20%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
     mapPin4: {
         position: 'absolute',
+        bottom: 55,
+        left: '55%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+    },
+    mapPin5: {
+        position: 'absolute',
         bottom: 40,
-        left: 80,
+        right: '15%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
-    pinCircle: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        backgroundColor: '#FFB300',
-        marginBottom: -10,
+    mapPin6: {
+        position: 'absolute',
+        top: 70,
+        left: '65%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
-    pinPoint: {
-        width: 0,
-        height: 0,
-        backgroundColor: 'transparent',
-        borderStyle: 'solid',
-        borderLeftWidth: 6,
-        borderRightWidth: 6,
-        borderTopWidth: 8,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: '#FFB300',
-        marginLeft: 4,
+    mapPin7: {
+        position: 'absolute',
+        top: 120,
+        right: '35%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
     menuCard: {
         backgroundColor: '#F5F5F5',

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { Input, PasswordInput } from '../components';
+import { Input, PasswordInput, Button } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 
 export const ProfileScreen: React.FC = () => {
@@ -19,6 +19,87 @@ export const ProfileScreen: React.FC = () => {
                 'Coletor'
     );
     const [condominium, setCondominium] = useState('Edifício Tulipas');
+
+    // Estados para modal de email
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [currentEmail, setCurrentEmail] = useState('');
+    const [newEmail, setNewEmail] = useState('');
+    const [confirmNewEmail, setConfirmNewEmail] = useState('');
+
+    // Estados para modal de senha
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
+    const handleChangeEmail = () => {
+        // Validações
+        if (!currentEmail || !newEmail || !confirmNewEmail) {
+            Alert.alert('Erro', 'Preencha todos os campos');
+            return;
+        }
+
+        if (currentEmail !== email) {
+            Alert.alert('Erro', 'E-mail atual incorreto');
+            return;
+        }
+
+        if (newEmail !== confirmNewEmail) {
+            Alert.alert('Erro', 'Os novos e-mails não coincidem');
+            return;
+        }
+
+        if (newEmail === currentEmail) {
+            Alert.alert('Erro', 'O novo e-mail deve ser diferente do atual');
+            return;
+        }
+
+        // Validação de formato de e-mail
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail)) {
+            Alert.alert('Erro', 'Digite um e-mail válido');
+            return;
+        }
+
+        // Sucesso
+        setEmail(newEmail);
+        setShowEmailModal(false);
+        setCurrentEmail('');
+        setNewEmail('');
+        setConfirmNewEmail('');
+        Alert.alert('Sucesso', 'E-mail alterado com sucesso!');
+    };
+
+    const handleChangePassword = () => {
+        // Validações
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            Alert.alert('Erro', 'Preencha todos os campos');
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            Alert.alert('Erro', 'As novas senhas não coincidem');
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            Alert.alert('Erro', 'A nova senha deve ser diferente da atual');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            Alert.alert('Erro', 'A senha deve ter no mínimo 6 caracteres');
+            return;
+        }
+
+        // Sucesso
+        setPassword('***********');
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        Alert.alert('Sucesso', 'Senha alterada com sucesso!');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -119,7 +200,7 @@ export const ProfileScreen: React.FC = () => {
                 <View style={styles.actionButtons}>
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => console.log('Alterar E-Mail')}
+                        onPress={() => setShowEmailModal(true)}
                     >
                         <View style={styles.actionIconContainer}>
                             <Ionicons name="mail" size={24} color={COLORS.primary} />
@@ -131,7 +212,7 @@ export const ProfileScreen: React.FC = () => {
 
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => console.log('Alterar Senha')}
+                        onPress={() => setShowPasswordModal(true)}
                     >
                         <View style={styles.actionIconContainer}>
                             <Ionicons name="key" size={24} color={COLORS.primary} />
@@ -142,6 +223,166 @@ export const ProfileScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+
+            {/* Modal de Alterar E-mail */}
+            <Modal
+                visible={showEmailModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowEmailModal(false)}
+            >
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowEmailModal(false)}
+                    >
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={(e) => e.stopPropagation()}
+                        >
+                            <View style={styles.modalContent}>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Alterar E-mail</Text>
+                                    <TouchableOpacity onPress={() => setShowEmailModal(false)}>
+                                        <Ionicons name="close" size={24} color={COLORS.text.primary} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.modalBody}>
+                                    <Text style={styles.modalLabel}>E-mail atual:</Text>
+                                    <Input
+                                        value={currentEmail}
+                                        onChangeText={setCurrentEmail}
+                                        placeholder="Digite seu e-mail atual"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                    />
+
+                                    <Text style={styles.modalLabel}>Novo e-mail:</Text>
+                                    <Input
+                                        value={newEmail}
+                                        onChangeText={setNewEmail}
+                                        placeholder="Digite o novo e-mail"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                    />
+
+                                    <Text style={styles.modalLabel}>Confirme o novo e-mail:</Text>
+                                    <Input
+                                        value={confirmNewEmail}
+                                        onChangeText={setConfirmNewEmail}
+                                        placeholder="Digite novamente o novo e-mail"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                    />
+
+                                    <View style={styles.modalButtons}>
+                                        <TouchableOpacity
+                                            style={styles.modalCancelButton}
+                                            onPress={() => {
+                                                setShowEmailModal(false);
+                                                setCurrentEmail('');
+                                                setNewEmail('');
+                                                setConfirmNewEmail('');
+                                            }}
+                                        >
+                                            <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.modalConfirmButton}
+                                            onPress={handleChangeEmail}
+                                        >
+                                            <Text style={styles.modalConfirmButtonText}>Confirmar</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </KeyboardAvoidingView>
+            </Modal>
+
+            {/* Modal de Alterar Senha */}
+            <Modal
+                visible={showPasswordModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowPasswordModal(false)}
+            >
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowPasswordModal(false)}
+                    >
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={(e) => e.stopPropagation()}
+                        >
+                            <View style={styles.modalContent}>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Alterar Senha</Text>
+                                    <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+                                        <Ionicons name="close" size={24} color={COLORS.text.primary} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.modalBody}>
+                                    <Text style={styles.modalLabel}>Senha atual:</Text>
+                                    <PasswordInput
+                                        value={currentPassword}
+                                        onChangeText={setCurrentPassword}
+                                        placeholder="Digite sua senha atual"
+                                    />
+
+                                    <Text style={styles.modalLabel}>Nova senha:</Text>
+                                    <PasswordInput
+                                        value={newPassword}
+                                        onChangeText={setNewPassword}
+                                        placeholder="Digite a nova senha"
+                                    />
+
+                                    <Text style={styles.modalLabel}>Confirme a nova senha:</Text>
+                                    <PasswordInput
+                                        value={confirmNewPassword}
+                                        onChangeText={setConfirmNewPassword}
+                                        placeholder="Digite novamente a nova senha"
+                                    />
+
+                                    <View style={styles.modalButtons}>
+                                        <TouchableOpacity
+                                            style={styles.modalCancelButton}
+                                            onPress={() => {
+                                                setShowPasswordModal(false);
+                                                setCurrentPassword('');
+                                                setNewPassword('');
+                                                setConfirmNewPassword('');
+                                            }}
+                                        >
+                                            <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.modalConfirmButton}
+                                            onPress={handleChangePassword}
+                                        >
+                                            <Text style={styles.modalConfirmButtonText}>Confirmar</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </KeyboardAvoidingView>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -317,4 +558,78 @@ const styles = StyleSheet.create({
         top: '50%',
         marginTop: -10,
     },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING.lg,
+    },
+    modalContent: {
+        backgroundColor: COLORS.surface,
+        borderRadius: BORDER_RADIUS.lg,
+        width: '100%',
+        maxWidth: 400,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: SPACING.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.text.primary,
+    },
+    modalBody: {
+        padding: SPACING.lg,
+        gap: SPACING.md,
+    },
+    modalLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.text.primary,
+        marginBottom: SPACING.xs,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: SPACING.md,
+        marginTop: SPACING.md,
+    },
+    modalCancelButton: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: BORDER_RADIUS.md,
+        paddingVertical: SPACING.md,
+        alignItems: 'center',
+    },
+    modalCancelButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text.primary,
+    },
+    modalConfirmButton: {
+        flex: 1,
+        backgroundColor: COLORS.primary,
+        borderRadius: BORDER_RADIUS.md,
+        paddingVertical: SPACING.md,
+        alignItems: 'center',
+    },
+    modalConfirmButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text.white,
+    },
 });
+
