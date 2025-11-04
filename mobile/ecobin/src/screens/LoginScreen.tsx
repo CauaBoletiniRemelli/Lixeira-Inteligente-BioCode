@@ -46,8 +46,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
 
         try {
             await login(email, password);
-        } catch (error) {
-            Alert.alert('Erro', 'Falha ao fazer login. Verifique suas credenciais.');
+        } catch (error: any) {
+            console.error('Erro no login:', error);
+            Alert.alert(
+                'Erro ao fazer login', 
+                error.message || 'Falha ao fazer login. Verifique suas credenciais e tente novamente.'
+            );
         }
     };
 

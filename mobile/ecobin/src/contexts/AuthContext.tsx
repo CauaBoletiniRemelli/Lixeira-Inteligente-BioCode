@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, UserRole } from '../types';
+import { authService } from '../services';
+import { mapTipoToRole } from '../utils';
 
 interface AuthContextData {
     user: User | null;
@@ -14,6 +16,8 @@ interface AuthContextData {
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 const USER_STORAGE_KEY = '@ecobin:user';
+const TOKEN_STORAGE_KEY = '@ecobin:token';
+const REFRESH_TOKEN_STORAGE_KEY = '@ecobin:refreshToken';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -23,7 +27,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Carrega o usuário salvo ao iniciar o app
     useEffect(() => {
         loadStoredUser();
     }, []);
@@ -43,36 +46,74 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const login = async (email: string, password: string) => {
+        setLoading(true);
+        
         try {
-            setLoading(true);
+            const response = await authService.login({ email, password });
 
-            let role: UserRole = 'coletor';
-            if (email.includes('admin')) {
-                role = 'admin';
-            } else if (email.includes('sindico')) {
-                role = 'sindico';
+            if (!response.status || !response.dados) {
+                throw new Error(response.mensagem || 'Erro ao fazer login');
             }
 
-            const mockUser: User = {
-                id: '1',
-                name: email.includes('admin') ? 'Admin' : email.includes('sindico') ? 'Síndico' : 'Coletor',
-                email: email,
+            const { token: tokenObj, refreshToken, userId, email: userEmail, nome, tipo } = response.dados;
+
+            const token = typeof tokenObj === 'string' ? tokenObj : tokenObj.token;
+
+            const role: UserRole = mapTipoToRole(tipo ?? 0);
+
+            const authenticatedUser: User = {
+                id: userId.toString(),
+                name: nome,
+                email: userEmail,
                 role: role,
             };
 
-            setUser(mockUser);
-            // Salva o usuário no AsyncStorage
-            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(mockUser));
-        } catch (error) {
-            throw new Error('Erro ao fazer login');
-        } finally {
+            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authenticatedUser));
+            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+            await AsyncStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+
+            setUser(authenticatedUser);
             setLoading(false);
+        } catch (error: any) {
+            setLoading(false);
+            console.error('Erro ao fazer login:', error);
+            
+            let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
+            
+            if (error.response) {
+                if (error.response.data?.mensagem) {
+                    errorMessage = error.response.data.mensagem;
+                } else if (error.response.status === 401) {
+                    errorMessage = 'E-mail ou senha incorretos.';
+                } else if (error.response.status === 404) {
+                    errorMessage = 'Serviço não encontrado. Verifique sua conexão.';
+                } else if (error.response.status >= 500) {
+                    errorMessage = 'Erro no servidor. Tente novamente mais tarde.';
+                }
+            } else if (error.request) {
+                errorMessage = 'Erro de conexão. Verifique sua internet.';
+            }
+            
+            throw new Error(errorMessage);
         }
     };
 
     const logout = async () => {
         try {
+            const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+            
+            if (refreshToken) {
+                try {
+                    await authService.logout(refreshToken);
+                } catch (error) {
+                    console.error('Erro ao fazer logout na API:', error);
+                }
+            }
+
             await AsyncStorage.removeItem(USER_STORAGE_KEY);
+            await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+            await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+            
             setUser(null);
         } catch (error) {
             console.error('Erro ao fazer logout:', error);

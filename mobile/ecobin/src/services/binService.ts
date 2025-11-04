@@ -1,28 +1,127 @@
 import { api } from './api';
-import { Bin } from '../types';
+
+export type SensorStatus = 'empty' | 'medium' | 'full';
+
+export interface Sensor {
+  id: string;
+  name: string;
+  qrCode: string;
+  level: number;
+  status: SensorStatus;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  condominiumId: string;
+  condominiumName?: string;
+  wifiSSID?: string;
+  isOnline: boolean;
+  lastUpdate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSensorRequest {
+  name: string;
+  qrCode: string;
+  condominiumId: string;
+  wifiSSID: string;
+  wifiPassword: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface UpdateSensorRequest {
+  name?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+  wifiSSID?: string;
+  wifiPassword?: string;
+}
+
+export interface SensorReading {
+  sensorId: string;
+  level: number;
+  status: SensorStatus;
+  timestamp: string;
+}
 
 /**
- * Serviço para gerenciar lixeiras
+ * Serviço para gerenciar sensores/lixeiras
  */
-export const binService = {
+export const sensorService = {
   /**
-   * Busca todas as lixeiras
+   * Busca todos os sensores
    */
-  getAll: async (): Promise<Bin[]> => {
-    return api.get<Bin[]>('/bins');
+  getAll: async (): Promise<Sensor[]> => {
+    return api.get<Sensor[]>('/sensors');
   },
 
   /**
-   * Busca uma lixeira por ID
+   * Busca um sensor por ID
    */
-  getById: async (id: string): Promise<Bin> => {
-    return api.get<Bin>(`/bins/${id}`);
+  getById: async (id: string): Promise<Sensor> => {
+    return api.get<Sensor>(`/sensors/${id}`);
   },
 
   /**
-   * Atualiza o status de uma lixeira
+   * Busca sensores por condomínio
    */
-  updateStatus: async (id: string, status: Bin['status']): Promise<Bin> => {
-    return api.put<Bin>(`/bins/${id}`, { status });
+  getByCondominium: async (condominiumId: string): Promise<Sensor[]> => {
+    return api.get<Sensor[]>(`/sensors/condominium/${condominiumId}`);
+  },
+
+  /**
+   * Busca sensores por status
+   */
+  getByStatus: async (status: SensorStatus): Promise<Sensor[]> => {
+    return api.get<Sensor[]>(`/sensors/status/${status}`);
+  },
+
+  /**
+   * Cadastra um novo sensor
+   */
+  create: async (data: CreateSensorRequest): Promise<Sensor> => {
+    return api.post<Sensor>('/sensors', data);
+  },
+
+  /**
+   * Atualiza um sensor
+   */
+  update: async (id: string, data: UpdateSensorRequest): Promise<Sensor> => {
+    return api.put<Sensor>(`/sensors/${id}`, data);
+  },
+
+  /**
+   * Deleta um sensor
+   */
+  delete: async (id: string): Promise<void> => {
+    return api.delete(`/sensors/${id}`);
+  },
+
+  /**
+   * Busca o histórico de leituras de um sensor
+   */
+  getReadings: async (sensorId: string, startDate?: string, endDate?: string): Promise<SensorReading[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return api.get<SensorReading[]>(`/sensors/${sensorId}/readings${queryString}`);
+  },
+
+  /**
+   * Envia alerta sobre um sensor
+   */
+  sendAlert: async (sensorId: string, message?: string): Promise<{ message: string }> => {
+    return api.post(`/sensors/${sensorId}/alert`, { message });
   },
 };
+
+// Exportar também como binService para compatibilidade
+export const binService = sensorService;
