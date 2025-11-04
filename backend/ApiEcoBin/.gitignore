@@ -96,11 +96,13 @@ UpgradeLog*.htm
 ServiceFabricBackup/
 *.rptproj.bak
 
-# Node (se usar frontend)
+# Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.vs
+
 
 # macOS
 .DS_Store

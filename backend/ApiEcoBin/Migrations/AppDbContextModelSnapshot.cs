@@ -22,7 +22,7 @@ namespace ApiEcoBin.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ApiEcoBin.Models.CondominioModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.CondominiosModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -34,6 +34,11 @@ namespace ApiEcoBin.Migrations
                     b.Property<bool?>("Ativo")
                         .HasColumnType("bit")
                         .HasColumnName("CONAtivo");
+
+                    b.Property<string>("Cep")
+                        .HasMaxLength(9)
+                        .HasColumnType("nvarchar(9)")
+                        .HasColumnName("CONCep");
 
                     b.Property<DateTime?>("CriadoEm")
                         .HasColumnType("datetime2")
@@ -55,7 +60,7 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("CONdominios");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentoModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentosModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,7 +115,7 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("PROvisionamentos");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.RefreshTokenModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.RefreshTokensModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -148,7 +153,7 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("REFreshTokens");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.SensorModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.SensoresModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -177,6 +182,14 @@ namespace ApiEcoBin.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("SENDeviceKey");
 
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(10,8)")
+                        .HasColumnName("SENLatitude");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(11,8)")
+                        .HasColumnName("SENLongitude");
+
                     b.Property<int>("Status")
                         .HasColumnType("int")
                         .HasColumnName("SENStatus");
@@ -192,7 +205,7 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("SENsores");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.TelemetriaModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.TelemetriasModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -232,7 +245,7 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("TELemetrias");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.UsuarioModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.UsuariosModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -240,6 +253,10 @@ namespace ApiEcoBin.Migrations
                         .HasColumnName("ID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CondominioId")
+                        .HasColumnType("int")
+                        .HasColumnName("USU_CONId");
 
                     b.Property<DateTime?>("CriadoEm")
                         .HasColumnType("datetime2")
@@ -269,18 +286,20 @@ namespace ApiEcoBin.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CondominioId");
+
                     b.ToTable("USUarios");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentoModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentosModel", b =>
                 {
-                    b.HasOne("ApiEcoBin.Models.SensorModel", "Sensor")
+                    b.HasOne("ApiEcoBin.Models.SensoresModel", "Sensor")
                         .WithMany("Provisionamentos")
                         .HasForeignKey("SensorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ApiEcoBin.Models.UsuarioModel", "Usuario")
+                    b.HasOne("ApiEcoBin.Models.UsuariosModel", "Usuario")
                         .WithMany("Provisionamentos")
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -291,9 +310,9 @@ namespace ApiEcoBin.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.RefreshTokenModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.RefreshTokensModel", b =>
                 {
-                    b.HasOne("ApiEcoBin.Models.UsuarioModel", "Usuario")
+                    b.HasOne("ApiEcoBin.Models.UsuariosModel", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -302,18 +321,18 @@ namespace ApiEcoBin.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.SensorModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.SensoresModel", b =>
                 {
-                    b.HasOne("ApiEcoBin.Models.CondominioModel", "Condominio")
+                    b.HasOne("ApiEcoBin.Models.CondominiosModel", "Condominio")
                         .WithMany("Sensores")
                         .HasForeignKey("CondominioId");
 
                     b.Navigation("Condominio");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.TelemetriaModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.TelemetriasModel", b =>
                 {
-                    b.HasOne("ApiEcoBin.Models.SensorModel", "Sensor")
+                    b.HasOne("ApiEcoBin.Models.SensoresModel", "Sensor")
                         .WithMany("Telemetrias")
                         .HasForeignKey("SensorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -322,19 +341,28 @@ namespace ApiEcoBin.Migrations
                     b.Navigation("Sensor");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.CondominioModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.UsuariosModel", b =>
+                {
+                    b.HasOne("ApiEcoBin.Models.CondominiosModel", "Condominio")
+                        .WithMany()
+                        .HasForeignKey("CondominioId");
+
+                    b.Navigation("Condominio");
+                });
+
+            modelBuilder.Entity("ApiEcoBin.Models.CondominiosModel", b =>
                 {
                     b.Navigation("Sensores");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.SensorModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.SensoresModel", b =>
                 {
                     b.Navigation("Provisionamentos");
 
                     b.Navigation("Telemetrias");
                 });
 
-            modelBuilder.Entity("ApiEcoBin.Models.UsuarioModel", b =>
+            modelBuilder.Entity("ApiEcoBin.Models.UsuariosModel", b =>
                 {
                     b.Navigation("Provisionamentos");
                 });

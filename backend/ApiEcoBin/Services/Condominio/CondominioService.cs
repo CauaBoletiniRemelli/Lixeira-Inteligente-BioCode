@@ -83,11 +83,14 @@ namespace ApiEcoBin.Services.Condominio
                     return response;
                 }
 
-                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Nome))
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Nome) || condominio.Nome != condominioEditDTO.Nome)
                     condominio.Nome = condominioEditDTO.Nome;
 
-                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Endereco))
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Endereco) || condominio.Endereco != condominioEditDTO.Endereco)
                     condominio.Endereco = condominioEditDTO.Endereco;
+
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.CEP.ToString()) || condominio.Cep != condominioEditDTO.CEP.ToString())
+                    condominio.Cep = condominioEditDTO.CEP.ToString();
 
                 if (condominio.Ativo != condominioEditDTO.Ativo)
                     condominio.Ativo = condominioEditDTO.Ativo;

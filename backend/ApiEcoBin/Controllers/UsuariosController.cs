@@ -39,7 +39,7 @@ namespace ApiEcoBin.Controllers
 
         [Authorize]
         [HttpGet("{idUser}")]
-        public async Task<ActionResult<ResponseModel<UsuariosModel>>>  GetUserById(int idUser)
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> GetUserById(int idUser)
         {
             ResponseModel<UsuariosModel> response = await _usuarioInterface.GetUserById(idUser);
             if (response.Status)
@@ -81,6 +81,18 @@ namespace ApiEcoBin.Controllers
         public async Task<ActionResult<ResponseModel<List<UsuariosModel>>>> DeleteUser(int idUser)
         {
             ResponseModel<List<UsuariosModel>> response = await _usuarioInterface.DeleteUser(idUser);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [Authorize(Policy = "AppOnly")]
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ForgotMyPassword(string usuEmail)
+        {
+            ResponseModel<UsuariosModel> response = await _usuarioInterface.ForgotMyPassword(usuEmail);
             if (response.Status)
             {
                 return Ok(response);

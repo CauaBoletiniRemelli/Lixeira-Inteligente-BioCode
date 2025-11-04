@@ -1,4 +1,5 @@
 using ApiEcoBin.Data;
+using ApiEcoBin.Enums;
 using ApiEcoBin.Services;
 using ApiEcoBin.Services.Condominio;
 using ApiEcoBin.Services.PasswordHash;
@@ -59,8 +60,10 @@ namespace ApiEcoBin
             builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
             builder.Services.AddSingleton<TokenService>();
             builder.Services.AddAuthorizationBuilder()
-                .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", "1"))
-                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo", "1", "2"));
+                .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Administrador).ToString()))
+                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo",
+                    ((int)TipoUsuario.Administrador).ToString(),
+                    ((int)TipoUsuario.Aplicativo).ToString()));
 
             Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key não configurada");
 
@@ -85,7 +88,11 @@ namespace ApiEcoBin
 
             builder.Services.AddDbContext<AppDbContext>(options =>
             {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("EcoBinConnectionString"));
+                var connectionString = builder.Environment.IsDevelopment()
+                    ? builder.Configuration.GetConnectionString("LocalConnection")
+                    : builder.Configuration.GetConnectionString("EcoBinConnectionString");
+
+                options.UseSqlServer(connectionString);
             });
 
             var app = builder.Build();
@@ -95,6 +102,10 @@ namespace ApiEcoBin
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+
+                using var serviceScope = app.Services.CreateScope();
+                using var dbContext = serviceScope.ServiceProvider.GetService<AppDbContext>();
+                dbContext?.Database.Migrate();
             }
 
             app.UseHttpsRedirection();

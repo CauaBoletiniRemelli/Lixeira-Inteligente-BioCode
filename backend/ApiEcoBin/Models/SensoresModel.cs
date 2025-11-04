@@ -26,7 +26,13 @@ namespace ApiEcoBin.Models
         public int Status { get; set; } = 0;
 
         [Column("SEN_CONId")]
-        public int? CondominioId { get; set; } 
+        public int? CondominioId { get; set; }
+
+        [Column("SENLatitude", TypeName = "decimal(10,8)")]
+        public decimal? Latitude { get; set; }
+
+        [Column("SENLongitude", TypeName = "decimal(11,8)")]
+        public decimal? Longitude { get; set; }
 
         [Column("SENUltimaConexao")]
         public DateTime? UltimaConexao { get; set; }
@@ -35,7 +41,7 @@ namespace ApiEcoBin.Models
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
 
         [ForeignKey("CondominioId")]
-        public virtual CondominiosModel? Condominio { get; set; }  
+        public virtual CondominiosModel? Condominio { get; set; }
 
         [JsonIgnore]
         public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = [];

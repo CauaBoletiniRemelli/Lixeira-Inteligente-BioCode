@@ -4,6 +4,7 @@ using ApiEcoBin.Services.Usuario;
 using Microsoft.EntityFrameworkCore;
 using ApiEcoBin.Services.PasswordHash;
 using ApiEcoBin.Dto.Usuarios;
+using ApiEcoBin.Services.Email;
 
 namespace ApiEcoBin.Services.Usuarios
 {
@@ -80,6 +81,7 @@ namespace ApiEcoBin.Services.Usuarios
                     SenhaHash = userCreateDTO.SenhaHash,
                     Email = userCreateDTO.Email,
                     Tipo = userCreateDTO.Tipo,
+                    CondominioId = userCreateDTO.CondominioId,
                     CriadoEm = DateTime.Now
                 };
 
@@ -87,7 +89,16 @@ namespace ApiEcoBin.Services.Usuarios
                 
                 _context.Usuarios.Add(usuario);
                 await _context.SaveChangesAsync();
-                
+
+                string mensagemEmail = $@"<p>Olá <strong>{usuario.Nome}</strong>,</p>
+                                          <p>Seja muito bem-vindo ao <strong>EcoBin</strong>! Estamos felizes em tê-lo conosco.</p>
+                                          <p>Qualquer dúvida, envie um e-mail para grupoecobin@gmail.com</p>
+                                          <p>Atenciosamente,<br>
+                                          Equipe EcoBin</p>";
+
+                SendEmail email = new();
+                email.Send(usuario.Email!, "Seja bem-vindo ao EcoBin", mensagemEmail);
+
                 response.Dados = usuario;
                 response.Mensagem = "Usuário criado com sucesso.";
                 response.Status = true;
@@ -116,19 +127,24 @@ namespace ApiEcoBin.Services.Usuarios
                     return response;
                 }
 
-                if (!string.IsNullOrWhiteSpace(userEditDTO.Nome))
+                if (!string.IsNullOrWhiteSpace(userEditDTO.Nome) || user.Nome != userEditDTO.Nome)
                 {
                     user.Nome = userEditDTO.Nome;
                 }
 
-                if (!string.IsNullOrWhiteSpace(userEditDTO.Email))
+                if (!string.IsNullOrWhiteSpace(userEditDTO.Email) || user.Email != userEditDTO.Email)
                 {
                     user.Email = userEditDTO.Email;
                 }
 
-                if (userEditDTO.Tipo >= 0)
+                if (userEditDTO.Tipo > 0 || user.Tipo != userEditDTO.Tipo)
                 {
                     user.Tipo = userEditDTO.Tipo;
+                }
+
+                if (userEditDTO.CondominioId > 0 || user.CondominioId != userEditDTO.CondominioId)
+                {
+                    user.CondominioId = userEditDTO.CondominioId;
                 }
 
                 if (!string.IsNullOrWhiteSpace(userEditDTO.SenhaHash))
@@ -149,6 +165,49 @@ namespace ApiEcoBin.Services.Usuarios
                 response.Status = false;
             }
 
+            return response;
+        }
+
+        public async Task<ResponseModel<UsuariosModel>> ForgotMyPassword(string emailUsu)
+        {
+            ResponseModel<UsuariosModel> response = new();
+            try
+            {
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Email == emailUsu);
+                if (user == null)
+                {
+                    response.Mensagem = "Nenhum usuário localizado!";
+                    response.Status = true;
+                    return response;
+                }
+
+                string randomPassword = GenerateRandomPassword(6);
+                string mensagemEmail = $@"<p>Olá <strong>{user.Nome}</strong>,</p>
+                                          <p>Você solicitou a redefinição de sua senha.</p>
+
+                                          <p><strong>Sua nova senha temporária é:</strong> {randomPassword}</p>
+
+                                          <p>Por favor, faça login e altere sua senha o mais rápido possível.</p>
+
+                                          <p>Atenciosamente,<br>
+                                          Equipe EcoBin</p>";
+
+                SendEmail email = new();
+                email.Send(user.Email!, "Redefinição de Senha", mensagemEmail);
+
+                user.SenhaHash = _passwordHashService.HashPassword(randomPassword);
+                _context.Usuarios.Update(user);
+                await _context.SaveChangesAsync();
+
+                response.Dados = null;
+                response.Mensagem = "Instruções para redefinir a senha foram enviadas para o email cadastrado. Caso o e-mail não apareça, verifique sua caixa de SPAM";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
             return response;
         }
 
@@ -181,6 +240,18 @@ namespace ApiEcoBin.Services.Usuarios
             }
 
             return response;
+        }
+
+        private string GenerateRandomPassword(int length = 8)
+        {
+            const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()?_-";
+            Random random = new();
+            char[] chars = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                chars[i] = validChars[random.Next(validChars.Length)];
+            }
+            return new string(chars);
         }
     }
 }

@@ -62,7 +62,7 @@ namespace ApiEcoBin.Controllers
         }
 
         [Authorize(Policy = "AdminOnly")]
-        [HttpDelete]
+        [HttpDelete("{idCond}")]
         public async Task<ActionResult<ResponseModel<List<CondominiosModel>>>> DeleteCondominio(int idCond)
         {
             ResponseModel<List<CondominiosModel>> response = await _condominioInterface.DeleteCondominio(idCond);

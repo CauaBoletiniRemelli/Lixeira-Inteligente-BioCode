@@ -114,16 +114,16 @@ namespace ApiEcoBin.Services.Sensores
                     return response;
                 }
 
-                if (sensorEditDTO.DeviceId != null)
+                if (sensorEditDTO.DeviceId != null || sensor.DeviceId != sensorEditDTO.DeviceId)
                     sensor.DeviceId = sensorEditDTO.DeviceId;
 
-                if (sensorEditDTO.DeviceKey != null)
+                if (sensorEditDTO.DeviceKey != null || sensor.DeviceKey != sensorEditDTO.DeviceKey)
                     sensor.DeviceKey = sensorEditDTO.DeviceKey;
 
-                if (sensorEditDTO.Status != null)
+                if (sensorEditDTO.Status.HasValue && sensor.Status != sensorEditDTO.Status.Value)
                     sensor.Status = sensorEditDTO.Status.Value;
 
-                if (sensorEditDTO.CondominioId != null)
+                if (sensorEditDTO.CondominioId != null || sensor.CondominioId != sensorEditDTO.CondominioId)
                     sensor.CondominioId = sensorEditDTO.CondominioId;
 
                 _context.Sensores.Update(sensor);

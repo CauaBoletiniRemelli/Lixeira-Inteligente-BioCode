@@ -27,56 +27,68 @@ namespace ApiEcoBin.Controllers
         [HttpPost("Login")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> Auth([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            try
             {
-                return BadRequest(new ResponseModel<AuthModel>
+                if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+                {
+                    return BadRequest(new ResponseModel<AuthModel>
+                    {
+                        Dados = null,
+                        Mensagem = "Email e senha são obrigatórios.",
+                        Status = false
+                    });
+                }
+
+                UsuariosModel? usuario = await _context.Usuarios
+                    .FirstOrDefaultAsync(u => u.Email == request.Email);
+
+                if (usuario == null || string.IsNullOrEmpty(usuario.SenhaHash) || !_passwordHashService.VerifyPassword(request.Password, usuario.SenhaHash))
+                {
+                    return Unauthorized(new ResponseModel<AuthModel>
+                    {
+                        Dados = null,
+                        Mensagem = "E-mail ou senha incorretos.",
+                        Status = false
+                    });
+                }
+
+                object token = TokenService.GenerateToken(usuario);
+                string refreshToken = TokenService.GenerateRefreshToken();
+
+                RefreshTokensModel refreshTokenModel = new RefreshTokensModel
+                {
+                    UsuarioId = usuario.Id,
+                    Token = refreshToken,
+                    Expiracao = DateTime.UtcNow.AddDays(7),
+                    Usuario = usuario
+                };
+
+                _context.RefreshTokens.Add(refreshTokenModel);
+                await _context.SaveChangesAsync();
+
+                return Ok(new ResponseModel<AuthModel>
+                {
+                    Dados = new AuthModel
+                    {
+                        Token = token,
+                        RefreshToken = refreshToken,
+                        UserId = usuario.Id,
+                        Email = usuario.Email,
+                        Nome = usuario.Nome
+                    },
+                    Mensagem = "Login realizado com sucesso!",
+                    Status = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel<AuthModel>
                 {
                     Dados = null,
-                    Mensagem = "Email e senha são obrigatórios.",
+                    Mensagem = ex.Message,
                     Status = false
                 });
             }
-
-            UsuariosModel? usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-            if (usuario == null || string.IsNullOrEmpty(usuario.SenhaHash) || !_passwordHashService.VerifyPassword(request.Password, usuario.SenhaHash))
-            {
-                return Unauthorized(new ResponseModel<AuthModel>
-                {
-                    Dados = null,
-                    Mensagem = "E-mail ou senha incorretos.",
-                    Status = false
-                });
-            }
-
-            object token = TokenService.GenerateToken(usuario);
-            string refreshToken = TokenService.GenerateRefreshToken();
-
-            RefreshTokensModel refreshTokenModel = new RefreshTokensModel
-            {
-                UsuarioId = usuario.Id,
-                Token = refreshToken,
-                Expiracao = DateTime.UtcNow.AddDays(7),
-                Usuario = usuario
-            };
-
-            _context.RefreshTokens.Add(refreshTokenModel);
-            await _context.SaveChangesAsync();
-
-            return Ok(new ResponseModel<AuthModel>
-            {
-                Dados = new AuthModel
-                {
-                    Token = token,
-                    RefreshToken = refreshToken,
-                    UserId = usuario.Id,
-                    Email = usuario.Email,
-                    Nome = usuario.Nome
-                },
-                Mensagem = "Login realizado com sucesso!",
-                Status = true
-            });
         }
 
         [HttpPost("RefreshToken")]

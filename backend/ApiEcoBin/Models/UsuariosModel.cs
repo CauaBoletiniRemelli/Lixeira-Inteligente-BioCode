@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ApiEcoBin.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -28,10 +29,16 @@ namespace ApiEcoBin.Models
 
         [Required]
         [Column("USUTipo")]
-        public int Tipo { get; set; } = 0;
+        public TipoUsuario Tipo { get; set; } = TipoUsuario.NaoIdentificado;
+
+        [Column("USU_CONId")]
+        public int? CondominioId { get; set; }
 
         [Column("USUCriadoEm")]
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
+
+        [ForeignKey("CondominioId")]
+        public virtual CondominiosModel? Condominio { get; set; }
 
         [JsonIgnore]
         public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = [];

@@ -48,7 +48,7 @@ namespace ApiEcoBin.Controllers
 
         [Authorize(Policy = "AdminOnly")]
         [HttpPut]
-        public async Task<ActionResult<SensoresModel>> PutSensores(SensorEditDTO sensorEditDTO)
+        public async Task<ActionResult<SensoresModel>> UpdateSensores(SensorEditDTO sensorEditDTO)
         {
             ResponseModel<SensoresModel> response = await _sensoresInterface.UpdateSensor(sensorEditDTO);
             if (response.Status)
@@ -65,6 +65,7 @@ namespace ApiEcoBin.Controllers
                 return Ok(response);
             return BadRequest(response);
         }
+
 
     }
 }
