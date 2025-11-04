@@ -74,7 +74,9 @@ namespace ApiEcoBin.Controllers
                         RefreshToken = refreshToken,
                         UserId = usuario.Id,
                         Email = usuario.Email,
-                        Nome = usuario.Nome
+                        Nome = usuario.Nome,
+                        Tipo = usuario.Tipo,
+                        CondominioId = usuario.CondominioId!.Value
                     },
                     Mensagem = "Login realizado com sucesso!",
                     Status = true
