@@ -76,7 +76,7 @@ namespace ApiEcoBin.Controllers
                         Email = usuario.Email,
                         Nome = usuario.Nome,
                         Tipo = usuario.Tipo,
-                        CondominioId = usuario.CondominioId!.Value
+                        CondominioId = usuario.CondominioId
                     },
                     Mensagem = "Login realizado com sucesso!",
                     Status = true
