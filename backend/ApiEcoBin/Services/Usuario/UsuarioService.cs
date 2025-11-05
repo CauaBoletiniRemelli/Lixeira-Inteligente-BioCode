@@ -202,49 +202,6 @@ namespace ApiEcoBin.Services.Usuarios
             return response;
         }
 
-        public async Task<ResponseModel<UsuariosModel>> ForgotMyPassword(string emailUsu)
-        {
-            ResponseModel<UsuariosModel> response = new();
-            try
-            {
-                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Email == emailUsu);
-                if (user == null)
-                {
-                    response.Mensagem = "Nenhum usuário localizado!";
-                    response.Status = true;
-                    return response;
-                }
-
-                string randomPassword = GenerateRandomPassword(6);
-                string mensagemEmail = $@"<p>Olá <strong>{user.Nome}</strong>,</p>
-                                          <p>Você solicitou a redefinição de sua senha.</p>
-
-                                          <p><strong>Sua nova senha temporária é:</strong> {randomPassword}</p>
-
-                                          <p>Por favor, faça login e altere sua senha o mais rápido possível.</p>
-
-                                          <p>Atenciosamente,<br>
-                                          Equipe EcoBin</p>";
-
-                SendEmail email = new();
-                email.Send(user.Email!, "Redefinição de Senha", mensagemEmail);
-
-                user.SenhaHash = _passwordHashService.HashPassword(randomPassword);
-                _context.Usuarios.Update(user);
-                await _context.SaveChangesAsync();
-
-                response.Dados = null;
-                response.Mensagem = "Instruções para redefinir a senha foram enviadas para o email cadastrado. Caso o e-mail não apareça, verifique sua caixa de SPAM";
-                response.Status = true;
-            }
-            catch (Exception ex)
-            {
-                response.Mensagem = ex.Message;
-                response.Status = false;
-            }
-            return response;
-        }
-
         public async Task<ResponseModel<List<UsuariosModel>>> DeleteUser(int idUser)
         {
             ResponseModel<List<UsuariosModel>> response = new();
