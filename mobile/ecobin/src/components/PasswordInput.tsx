@@ -51,12 +51,13 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(({
                 <TouchableOpacity
                     style={styles.eyeButton}
                     onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.6}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                     <Ionicons
                         name={showPassword ? "eye-off-outline" : "eye-outline"}
                         size={24}
-                        color={COLORS.text.secondary}
+                        color={isFocused ? COLORS.primary : COLORS.text.secondary}
                     />
                 </TouchableOpacity>
             </View>
@@ -112,6 +113,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
+
+        zIndex: 10,
     },
     errorText: {
         fontSize: 12,

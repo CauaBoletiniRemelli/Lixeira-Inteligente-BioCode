@@ -7,9 +7,9 @@ import { MainNavigator } from './src/navigation/MainNavigator';
 import { COLORS } from './src/constants';
 
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, initialLoading } = useAuth();
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />

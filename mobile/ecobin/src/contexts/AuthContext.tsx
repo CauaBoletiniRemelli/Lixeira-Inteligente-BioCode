@@ -9,7 +9,8 @@ interface AuthContextData {
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
-    loading: boolean;
+    loading: boolean; 
+    initialLoading: boolean; 
     hasPermission: (requiredRoles: UserRole[]) => boolean;
 }
 
@@ -25,7 +26,8 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Loading de ações (login/logout)
+    const [initialLoading, setInitialLoading] = useState(true); // Loading inicial
 
     useEffect(() => {
         loadStoredUser();
@@ -33,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const loadStoredUser = async () => {
         try {
-            setLoading(true);
+            setInitialLoading(true);
             const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
@@ -41,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
             console.error('Erro ao carregar usuário:', error);
         } finally {
-            setLoading(false);
+            setInitialLoading(false);
         }
     };
 
@@ -73,9 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await AsyncStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
 
             setUser(authenticatedUser);
-            setLoading(false);
         } catch (error: any) {
-            setLoading(false);
             console.error('Erro ao fazer login:', error);
             
             let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
@@ -95,6 +95,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             
             throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -133,6 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 login,
                 logout,
                 loading,
+                initialLoading,
                 hasPermission,
             }}
         >

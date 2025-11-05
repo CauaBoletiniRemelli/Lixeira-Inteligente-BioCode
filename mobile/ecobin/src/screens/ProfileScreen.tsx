@@ -10,30 +10,27 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 export const ProfileScreen: React.FC = () => {
     const { user } = useAuth();
 
-    const [name, setName] = useState(user?.name || 'João Da Silva');
-    const [email, setEmail] = useState(user?.email || 'joaosilva@gmail.com');
-    const [password, setPassword] = useState('***********');
-    const [userType, setUserType] = useState(
-        user?.role === 'admin' ? 'Administrador' :
-            user?.role === 'sindico' ? 'Síndico' :
-                'Coletor'
-    );
-    const [condominium, setCondominium] = useState('Edifício Tulipas');
+    const [name, setName] = useState(user?.name || '');
+    const [email, setEmail] = useState(user?.email || '');
+    const [userType, setUserType] = useState(user?.role === 'admin' ? 'Administrador' : user?.role === 'sindico' ? 'Síndico' : 'Coletor');
+    const [condominium, setCondominium] = useState(user?.condominium || 'Nenhum condomínio associado');
 
-    // Estados para modal de email
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [currentEmail, setCurrentEmail] = useState('');
     const [newEmail, setNewEmail] = useState('');
     const [confirmNewEmail, setConfirmNewEmail] = useState('');
 
-    // Estados para modal de senha
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
+    const newPasswordRef = React.useRef<any>(null);
+    const confirmNewPasswordRef = React.useRef<any>(null);
+
+    const passwordsMatch = !confirmNewPassword || newPassword === confirmNewPassword;
+
     const handleChangeEmail = () => {
-        // Validações
         if (!currentEmail || !newEmail || !confirmNewEmail) {
             Alert.alert('Erro', 'Preencha todos os campos');
             return;
@@ -61,7 +58,6 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
-        // Sucesso
         setEmail(newEmail);
         setShowEmailModal(false);
         setCurrentEmail('');
@@ -71,7 +67,6 @@ export const ProfileScreen: React.FC = () => {
     };
 
     const handleChangePassword = () => {
-        // Validações
         if (!currentPassword || !newPassword || !confirmNewPassword) {
             Alert.alert('Erro', 'Preencha todos os campos');
             return;
@@ -92,8 +87,6 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
-        setPassword('***********');
-        setShowPasswordModal(false);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmNewPassword('');
@@ -167,21 +160,6 @@ export const ProfileScreen: React.FC = () => {
 
                     <View style={styles.inputGroup}>
                         <View style={styles.inputHeader}>
-                            <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} />
-                            <Text style={styles.label}>Senha</Text>
-                        </View>
-                        <PasswordInput
-                            value={password}
-                            onChangeText={setPassword}
-                            placeholder="Digite sua senha"
-                            editable={false}
-                        />
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.inputGroup}>
-                        <View style={styles.inputHeader}>
                             <Ionicons name="home-outline" size={20} color={COLORS.primary} />
                             <Text style={styles.label}>Condomínio</Text>
                         </View>
@@ -223,21 +201,20 @@ export const ProfileScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            {/* Modal de Alterar E-mail */}
             <Modal
                 visible={showEmailModal}
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowEmailModal(false)}
             >
-                <KeyboardAvoidingView
+                <TouchableOpacity
                     style={styles.modalOverlay}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    activeOpacity={1}
+                    onPress={() => setShowEmailModal(false)}
                 >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setShowEmailModal(false)}
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        style={styles.keyboardAvoidingView}
                     >
                         <TouchableOpacity
                             activeOpacity={1}
@@ -302,25 +279,24 @@ export const ProfileScreen: React.FC = () => {
                                 </View>
                             </View>
                         </TouchableOpacity>
-                    </TouchableOpacity>
-                </KeyboardAvoidingView>
+                    </KeyboardAvoidingView>
+                </TouchableOpacity>
             </Modal>
 
-            {/* Modal de Alterar Senha */}
             <Modal
                 visible={showPasswordModal}
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowPasswordModal(false)}
             >
-                <KeyboardAvoidingView
+                <TouchableOpacity
                     style={styles.modalOverlay}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    activeOpacity={1}
+                    onPress={() => setShowPasswordModal(false)}
                 >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setShowPasswordModal(false)}
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        style={styles.keyboardAvoidingView}
                     >
                         <TouchableOpacity
                             activeOpacity={1}
@@ -340,21 +316,36 @@ export const ProfileScreen: React.FC = () => {
                                         value={currentPassword}
                                         onChangeText={setCurrentPassword}
                                         placeholder="Digite sua senha atual"
+                                        returnKeyType="next"
+                                        onSubmitEditing={() => newPasswordRef.current?.focus()}
                                     />
 
                                     <Text style={styles.modalLabel}>Nova senha:</Text>
                                     <PasswordInput
+                                        ref={newPasswordRef}
                                         value={newPassword}
                                         onChangeText={setNewPassword}
                                         placeholder="Digite a nova senha"
+                                        returnKeyType="next"
+                                        onSubmitEditing={() => confirmNewPasswordRef.current?.focus()}
                                     />
 
                                     <Text style={styles.modalLabel}>Confirme a nova senha:</Text>
                                     <PasswordInput
+                                        ref={confirmNewPasswordRef}
                                         value={confirmNewPassword}
                                         onChangeText={setConfirmNewPassword}
                                         placeholder="Digite novamente a nova senha"
+                                        returnKeyType="done"
+                                        error={!passwordsMatch ? 'As senhas não coincidem' : ''}
                                     />
+
+                                    {!passwordsMatch && (
+                                        <View style={styles.passwordMismatchWarning}>
+                                            <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+                                            <Text style={styles.passwordMismatchText}>As senhas digitadas são diferentes</Text>
+                                        </View>
+                                    )}
 
                                     <View style={styles.modalButtons}>
                                         <TouchableOpacity
@@ -379,8 +370,8 @@ export const ProfileScreen: React.FC = () => {
                                 </View>
                             </View>
                         </TouchableOpacity>
-                    </TouchableOpacity>
-                </KeyboardAvoidingView>
+                    </KeyboardAvoidingView>
+                </TouchableOpacity>
             </Modal>
         </SafeAreaView>
     );
@@ -565,6 +556,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: SPACING.lg,
     },
+    keyboardAvoidingView: {
+        width: '100%',
+        maxWidth: 400,
+    },
     modalContent: {
         backgroundColor: COLORS.surface,
         borderRadius: BORDER_RADIUS.lg,
@@ -629,6 +624,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: COLORS.text.white,
+    },
+    passwordMismatchWarning: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: `${COLORS.error}15`,
+        padding: SPACING.sm,
+        borderRadius: BORDER_RADIUS.sm,
+        gap: SPACING.xs,
+        marginTop: -SPACING.xs,
+    },
+    passwordMismatchText: {
+        fontSize: 13,
+        color: COLORS.error,
+        fontWeight: '600',
+        flex: 1,
     },
 });
 

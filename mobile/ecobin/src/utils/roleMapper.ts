@@ -2,20 +2,22 @@ import { UserRole } from '../types';
 
 /**
  * Mapeia o tipo (número) do backend para o role (string) do frontend
- * @param tipo - 0 = naoDefinido, 1 = admin, 2 = sindico, 3 = coletor
+ * @param tipo - 0 = admin (NaoIdentificado/Admin padrão), 1 = admin, 2 = sindico, 3 = coletor
  * @returns UserRole correspondente
  */
 export const mapTipoToRole = (tipo: number): UserRole => {
   switch (tipo) {
+    case 0:
+      // Tipo 0 = NaoIdentificado, tratado como admin
+      return 'admin';
     case 1:
       return 'admin';
     case 2:
       return 'sindico';
     case 3:
       return 'coletor';
-    case 0:
     default:
-      // Se o tipo não for definido ou for inválido, retorna coletor como padrão
+      // Para tipos inválidos, retorna coletor (menor privilégio)
       return 'coletor';
   }
 };

@@ -12,10 +12,3 @@ export const isValidEmail = (email: string): boolean => {
 export const isNotEmpty = (value: string): boolean => {
   return value.trim().length > 0;
 };
-
-/**
- * Valida senha (mínimo 6 caracteres)
- */
-export const isValidPassword = (password: string): boolean => {
-  return password.length >= 6;
-};

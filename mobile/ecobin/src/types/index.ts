@@ -15,8 +15,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
   role: UserRole;
+  condominium?: string;
 }
 
 export interface Collection {
