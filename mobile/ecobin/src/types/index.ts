@@ -12,7 +12,7 @@ export interface Bin {
 }
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   role: UserRole;

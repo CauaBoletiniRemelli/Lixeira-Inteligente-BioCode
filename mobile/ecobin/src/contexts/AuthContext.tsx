@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const role: UserRole = mapTipoToRole(tipo ?? 0);
 
             const authenticatedUser: User = {
-                id: userId.toString(),
+                id: userId,
                 name: nome,
                 email: userEmail,
                 role: role,

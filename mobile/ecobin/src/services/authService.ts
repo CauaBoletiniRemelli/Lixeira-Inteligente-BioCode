@@ -13,7 +13,9 @@ export interface AuthModel {
   userId: number;
   email: string;
   nome: string;
-  tipo?: number; // 0 = naoDefinido, 1 = admin, 2 = sindico, 3 = coletor
+  tipo?: number;
+  condominiumId?: number;
+  condominiumName?: string;
 }
 
 export interface ResponseModel<T> {
@@ -61,48 +63,19 @@ export interface UpdateProfileRequest {
 }
 
 export const authService = {
-  // Login
   login: async (data: LoginRequest): Promise<LoginResponse> => {
-    return api.post<LoginResponse>('/api/auth/login', data);
+    return api.post<LoginResponse>('auth/login', data);
   },
 
-  // Refresh Token
   refreshToken: async (data: RefreshTokenRequest): Promise<LoginResponse> => {
-    return api.post<LoginResponse>('/api/auth/refreshtoken', data);
+    return api.post<LoginResponse>('auth/refreshtoken', data);
   },
 
-  // Registro
-  register: async (data: RegisterRequest): Promise<LoginResponse> => {
-    return api.post<LoginResponse>('/auth/register', data);
-  },
-
-  // Esqueci a senha
   forgotPassword: async (data: ForgotPasswordRequest): Promise<{ message: string }> => {
     return api.post('/auth/forgot-password', data);
   },
 
-  // Resetar senha
-  resetPassword: async (data: ResetPasswordRequest): Promise<{ message: string }> => {
-    return api.post('/auth/reset-password', data);
-  },
-
-  // Alterar senha
-  changePassword: async (data: ChangePasswordRequest): Promise<ResponseModel<null>> => {
-    return api.post('/auth/change-password', data);
-  },
-
-  // Atualizar perfil
-  updateProfile: async (data: UpdateProfileRequest): Promise<ResponseModel<AuthModel>> => {
-    return api.put('/auth/profile', data);
-  },
-
-  // Obter perfil atual
-  getProfile: async (): Promise<ResponseModel<AuthModel>> => {
-    return api.get('/auth/profile');
-  },
-
-  // Logout
   logout: async (refreshToken: string): Promise<ResponseModel<null>> => {
-    return api.post('/api/auth/logout', { refreshToken });
+    return api.post('auth/logout', { refreshToken });
   },
 };

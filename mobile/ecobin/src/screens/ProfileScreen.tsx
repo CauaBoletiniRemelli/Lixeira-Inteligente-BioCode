@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { Input, PasswordInput, Button } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { authService, userService } from '../services';
 
 export const ProfileScreen: React.FC = () => {
     const { user } = useAuth();
@@ -51,7 +52,6 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
-        // Validação de formato de e-mail
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newEmail)) {
             Alert.alert('Erro', 'Digite um e-mail válido');
@@ -72,24 +72,23 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
-        if (newPassword !== confirmNewPassword) {
-            Alert.alert('Erro', 'As novas senhas não coincidem');
-            return;
-        }
-
         if (newPassword === currentPassword) {
             Alert.alert('Erro', 'A nova senha deve ser diferente da atual');
             return;
         }
 
-        if (newPassword.length < 6) {
-            Alert.alert('Erro', 'A senha deve ter no mínimo 6 caracteres');
+        if (!user?.id) {
+            Alert.alert('Erro', 'Usuário não identificado');
             return;
         }
 
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmNewPassword('');
+        const dto = {
+            id: user.id,
+            oldPassword: currentPassword,
+            newPassword: newPassword,
+        }
+
+        userService.updatePassword(dto)
         Alert.alert('Sucesso', 'Senha alterada com sucesso!');
     };
 
@@ -339,13 +338,6 @@ export const ProfileScreen: React.FC = () => {
                                         returnKeyType="done"
                                         error={!passwordsMatch ? 'As senhas não coincidem' : ''}
                                     />
-
-                                    {!passwordsMatch && (
-                                        <View style={styles.passwordMismatchWarning}>
-                                            <Ionicons name="alert-circle" size={16} color={COLORS.error} />
-                                            <Text style={styles.passwordMismatchText}>As senhas digitadas são diferentes</Text>
-                                        </View>
-                                    )}
 
                                     <View style={styles.modalButtons}>
                                         <TouchableOpacity
