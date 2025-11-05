@@ -23,7 +23,7 @@ namespace ApiEcoBin.Controllers
         }
         #endregion
 
-        [Authorize]
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<ActionResult<ResponseModel<List<CondominiosModel>>>> GetCondominios()
         {

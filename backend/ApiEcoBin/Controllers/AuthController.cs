@@ -52,7 +52,7 @@ namespace ApiEcoBin.Controllers
 
                 var appUser = new UsuariosModel
                 {
-                    Id = 5,
+                    Id = 0, 
                     Email = "app@ecobin.com",
                     Nome = "EcoBin Mobile App",
                     Tipo = TipoUsuario.Aplicativo,
@@ -61,14 +61,6 @@ namespace ApiEcoBin.Controllers
 
                 object token = TokenService.GenerateToken(appUser);
                 string refreshToken = TokenService.GenerateRefreshToken();
-
-                RefreshTokensModel refreshTokenModel = new RefreshTokensModel
-                {
-                    UsuarioId = 5,
-                    Token = refreshToken,
-                    Expiracao = DateTime.UtcNow.AddDays(30),
-                    Usuario = appUser
-                };
 
                 return Ok(new ResponseModel<AuthModel>
                 {
@@ -96,7 +88,7 @@ namespace ApiEcoBin.Controllers
             }
         }
 
-        [Authorize("AppOnly")]
+        [Authorize(Policy = "AppOnly")]
         [HttpPost("Login")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> Auth([FromBody] LoginRequest request)
         {
@@ -169,7 +161,7 @@ namespace ApiEcoBin.Controllers
             }
         }
 
-        [Authorize("AppOnly")]
+        [Authorize(Policy = "AppOnly")]
         [HttpPost("RefreshToken")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -264,7 +256,7 @@ namespace ApiEcoBin.Controllers
             }
         }
 
-        [Authorize("AppOnly")]
+        [Authorize(Policy = "AppOnly")]
         [HttpPost("Logout")]
         public async Task<ActionResult<ResponseModel<object>>> Logout([FromBody] RefreshTokenRequest request)
         {
@@ -295,7 +287,7 @@ namespace ApiEcoBin.Controllers
             });
         }
 
-        [Authorize("AppOnly")]
+        [Authorize(Policy = "AppOnly")]
         [HttpPost("forgot-password")]
         public async Task<ActionResult<ResponseModel<UsuariosModel>>> ForgotMyPassword(string usuEmail)
         {

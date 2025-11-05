@@ -49,7 +49,7 @@ namespace ApiEcoBin.Controllers
             return BadRequest(response);
         }
 
-        [Authorize(Policy = "AppOnly")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<ActionResult<ResponseModel<UserCreateDTO>>> CreateUser([FromBody] UserCreateDTO userCreateDTO)
         {
