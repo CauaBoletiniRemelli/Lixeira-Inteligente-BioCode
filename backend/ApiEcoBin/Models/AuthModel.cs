@@ -9,6 +9,7 @@ namespace ApiEcoBin.Models
         public int UserId { get; set; }
         public TipoUsuario Tipo { get; set; }
         public int? CondominioId { get; set; }
+        public string? NomeCondominio { get; set; }
         public object? Token { get; set; }
         public string? RefreshToken { get; set; }
     }

@@ -99,5 +99,17 @@ namespace ApiEcoBin.Controllers
             }
             return BadRequest(response);
         }
+
+        [Authorize(Policy = "AppOnly")]
+        [HttpPost("change-password")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ChangePassword([FromBody] ChangePasswordDTO changePasswordDTO)
+        {
+            ResponseModel<UsuariosModel> response = await _usuarioInterface.ChangePassword(changePasswordDTO);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
     }
 }

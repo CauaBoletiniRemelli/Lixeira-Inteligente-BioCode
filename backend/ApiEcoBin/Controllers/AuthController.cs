@@ -66,6 +66,8 @@ namespace ApiEcoBin.Controllers
                 _context.RefreshTokens.Add(refreshTokenModel);
                 await _context.SaveChangesAsync();
 
+                CondominiosModel? condominio = await _context.Condominios.FirstOrDefaultAsync(c => c.Id == usuario.CondominioId);
+
                 return Ok(new ResponseModel<AuthModel>
                 {
                     Dados = new AuthModel
@@ -76,7 +78,8 @@ namespace ApiEcoBin.Controllers
                         Email = usuario.Email,
                         Nome = usuario.Nome,
                         Tipo = usuario.Tipo,
-                        CondominioId = usuario.CondominioId
+                        CondominioId = usuario.CondominioId,
+                        NomeCondominio = condominio?.Nome
                     },
                     Mensagem = "Login realizado com sucesso!",
                     Status = true

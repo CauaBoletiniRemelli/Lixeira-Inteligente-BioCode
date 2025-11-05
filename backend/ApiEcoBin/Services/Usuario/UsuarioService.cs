@@ -168,6 +168,40 @@ namespace ApiEcoBin.Services.Usuarios
             return response;
         }
 
+        public async Task<ResponseModel<UsuariosModel>> ChangePassword(ChangePasswordDTO changePasswordDTO)
+        {
+            ResponseModel<UsuariosModel> response = new();
+            try
+            {
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == changePasswordDTO.ID);
+                if (user == null)
+                {
+                    response.Mensagem = "Nenhum usuário localizado!";
+                    response.Status = true;
+                    return response;
+                }
+                bool isOldPasswordValid = _passwordHashService.VerifyPassword(changePasswordDTO.OldPassword!, user.SenhaHash!);
+                if (!isOldPasswordValid)
+                {
+                    response.Mensagem = "Senha antiga incorreta!";
+                    response.Status = true;
+                    return response;
+                }
+                user.SenhaHash = _passwordHashService.HashPassword(changePasswordDTO.NewPassword!);
+                _context.Usuarios.Update(user);
+                await _context.SaveChangesAsync();
+                response.Dados = user;
+                response.Mensagem = "Senha alterada com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+            return response;
+        }
+
         public async Task<ResponseModel<UsuariosModel>> ForgotMyPassword(string emailUsu)
         {
             ResponseModel<UsuariosModel> response = new();
