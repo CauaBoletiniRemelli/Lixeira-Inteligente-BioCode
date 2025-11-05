@@ -275,17 +275,5 @@ namespace ApiEcoBin.Services.Usuarios
 
             return response;
         }
-
-        private string GenerateRandomPassword(int length = 8)
-        {
-            const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()?_-";
-            Random random = new();
-            char[] chars = new char[length];
-            for (int i = 0; i < length; i++)
-            {
-                chars[i] = validChars[random.Next(validChars.Length)];
-            }
-            return new string(chars);
-        }
     }
 }

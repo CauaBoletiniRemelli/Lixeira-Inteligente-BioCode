@@ -88,19 +88,7 @@ namespace ApiEcoBin.Controllers
             return BadRequest(response);
         }
 
-        [Authorize(Policy = "AppOnly")]
-        [HttpPost("forgot-password")]
-        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ForgotMyPassword(string usuEmail)
-        {
-            ResponseModel<UsuariosModel> response = await _usuarioInterface.ForgotMyPassword(usuEmail);
-            if (response.Status)
-            {
-                return Ok(response);
-            }
-            return BadRequest(response);
-        }
-
-        [Authorize(Policy = "AppOnly")]
+        [Authorize]
         [HttpPost("change-password")]
         public async Task<ActionResult<ResponseModel<UsuariosModel>>> ChangePassword([FromBody] ChangePasswordDTO changePasswordDTO)
         {

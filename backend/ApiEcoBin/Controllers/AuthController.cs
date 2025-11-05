@@ -1,8 +1,11 @@
 ﻿using ApiEcoBin.Data;
+using ApiEcoBin.Enums;
 using ApiEcoBin.Models;
-using ApiEcoBin.Services;
-using ApiEcoBin.Services.PasswordHash;
 using ApiEcoBin.Requests;
+using ApiEcoBin.Services;
+using ApiEcoBin.Services.Email;
+using ApiEcoBin.Services.PasswordHash;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -16,14 +19,84 @@ namespace ApiEcoBin.Controllers
         private readonly AppDbContext _context;
         private readonly IPasswordHashService _passwordHashService;
         private readonly TokenService _tokenService;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context, IPasswordHashService passwordHashService, TokenService tokenService)
+        public AuthController(AppDbContext context, IPasswordHashService passwordHashService, TokenService tokenService, IConfiguration configuration)
         {
             _context = context;
             _passwordHashService = passwordHashService;
             _tokenService = tokenService;
+            _configuration = configuration;
         }
 
+        [HttpPost("AppLogin")]
+        public ActionResult<ResponseModel<AuthModel>> AppLogin([FromBody] AppLoginRequest request)
+        {
+            try
+            {
+                var appId = _configuration["AppCredentials:AppId"];
+                var appSecret = _configuration["AppCredentials:AppSecret"];
+
+                if (string.IsNullOrEmpty(request.AppId) ||
+                    string.IsNullOrEmpty(request.AppSecret) ||
+                    request.AppId != appId ||
+                    request.AppSecret != appSecret)
+                {
+                    return Unauthorized(new ResponseModel<AuthModel>
+                    {
+                        Dados = null,
+                        Mensagem = "Credenciais do aplicativo inválidas.",
+                        Status = false
+                    });
+                }
+
+                var appUser = new UsuariosModel
+                {
+                    Id = 5,
+                    Email = "app@ecobin.com",
+                    Nome = "EcoBin Mobile App",
+                    Tipo = TipoUsuario.Aplicativo,
+                    CondominioId = null
+                };
+
+                object token = TokenService.GenerateToken(appUser);
+                string refreshToken = TokenService.GenerateRefreshToken();
+
+                RefreshTokensModel refreshTokenModel = new RefreshTokensModel
+                {
+                    UsuarioId = 5,
+                    Token = refreshToken,
+                    Expiracao = DateTime.UtcNow.AddDays(30),
+                    Usuario = appUser
+                };
+
+                return Ok(new ResponseModel<AuthModel>
+                {
+                    Dados = new AuthModel
+                    {
+                        Token = token,
+                        RefreshToken = refreshToken,
+                        UserId = 0,
+                        Email = appUser.Email,
+                        Nome = appUser.Nome,
+                        Tipo = TipoUsuario.Aplicativo
+                    },
+                    Mensagem = "Autenticação do aplicativo realizada com sucesso!",
+                    Status = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel<AuthModel>
+                {
+                    Dados = null,
+                    Mensagem = ex.Message,
+                    Status = false
+                });
+            }
+        }
+
+        [Authorize("AppOnly")]
         [HttpPost("Login")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> Auth([FromBody] LoginRequest request)
         {
@@ -96,6 +169,7 @@ namespace ApiEcoBin.Controllers
             }
         }
 
+        [Authorize("AppOnly")]
         [HttpPost("RefreshToken")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -190,6 +264,7 @@ namespace ApiEcoBin.Controllers
             }
         }
 
+        [Authorize("AppOnly")]
         [HttpPost("Logout")]
         public async Task<ActionResult<ResponseModel<object>>> Logout([FromBody] RefreshTokenRequest request)
         {
@@ -218,6 +293,63 @@ namespace ApiEcoBin.Controllers
                 Mensagem = "Logout realizado com sucesso!",
                 Status = true
             });
+        }
+
+        [Authorize("AppOnly")]
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ForgotMyPassword(string usuEmail)
+        {
+            ResponseModel<UsuariosModel> response = new();
+            try
+            {
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Email == usuEmail);
+                if (user == null)
+                {
+                    response.Mensagem = "Nenhum usuário localizado!";
+                    response.Status = true;
+                    return response;
+                }
+
+                string randomPassword = GenerateRandomPassword(6);
+                string mensagemEmail = $@"<p>Olá <strong>{user.Nome}</strong>,</p>
+                                          <p>Você solicitou a redefinição de sua senha.</p>
+
+                                          <p><strong>Sua nova senha temporária é:</strong> {randomPassword}</p>
+
+                                          <p>Por favor, faça login e altere sua senha o mais rápido possível.</p>
+
+                                          <p>Atenciosamente,<br>
+                                          Equipe EcoBin</p>";
+
+                SendEmail email = new();
+                email.Send(user.Email!, "Redefinição de Senha", mensagemEmail);
+
+                user.SenhaHash = _passwordHashService.HashPassword(randomPassword);
+                _context.Usuarios.Update(user);
+                await _context.SaveChangesAsync();
+
+                response.Dados = null;
+                response.Mensagem = "Instruções para redefinir a senha foram enviadas para o email cadastrado. Caso o e-mail não apareça, verifique sua caixa de SPAM";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+            return response;
+        }
+
+        private string GenerateRandomPassword(int length = 6)
+        {
+            const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*()?-";
+            Random random = new();
+            char[] chars = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                chars[i] = validChars[random.Next(validChars.Length)];
+            }
+            return new string(chars);
         }
     }
 
