@@ -21,7 +21,7 @@ type TabScreen = 'home' | 'map' | 'profile';
 type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm' | 'qrScanner' | 'sensorWiFiSetup' | 'sensorSuccess' | 'notifications';
 
 interface Condominium {
-    id: string;
+    id: number;
     name: string;
     address: string;
     cep: string;

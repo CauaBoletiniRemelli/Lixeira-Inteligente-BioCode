@@ -1,4 +1,7 @@
+import { ENV } from './env';
+
 export const APP_CREDENTIALS = {
-  appId: 'ecobin-mobile-app-2025',
-  appSecret: 'GrupoBioCodeFacens',
+  appId: ENV.APP_ID,
+  appSecret: ENV.APP_SECRET,
 };
+

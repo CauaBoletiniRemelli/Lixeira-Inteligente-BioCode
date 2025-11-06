@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, UserRole } from '../types';
 import { authService } from '../services';
 import { mapTipoToRole } from '../utils';
+import { STORAGE_KEYS } from '../config/env';
 
 interface AuthContextData {
     user: User | null;
@@ -16,9 +17,9 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-const USER_STORAGE_KEY = '@ecobin:user';
-const TOKEN_STORAGE_KEY = '@ecobin:token';
-const REFRESH_TOKEN_STORAGE_KEY = '@ecobin:refreshToken';
+const USER_STORAGE_KEY = STORAGE_KEYS.USER_DATA;
+const TOKEN_STORAGE_KEY = STORAGE_KEYS.USER_TOKEN;
+const REFRESH_TOKEN_STORAGE_KEY = STORAGE_KEYS.REFRESH_TOKEN;
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -52,6 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         try {
             const loginData = { Email: email, Password: password };
+            
             const response = await authService.login(loginData);
 
             if (!response.status || !response.dados) {
@@ -80,6 +82,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(authenticatedUser);
         } catch (error: any) {
             let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
+            
+            console.error('❌ Erro detalhado no login:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                hasResponse: !!error.response,
+                hasRequest: !!error.request
+            });
             
             if (error.response) {
                 if (error.response.data?.mensagem) {

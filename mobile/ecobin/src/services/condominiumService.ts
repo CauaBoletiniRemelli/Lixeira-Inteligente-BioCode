@@ -1,27 +1,29 @@
 import { api } from './api';
 
 export interface Condominium {
-  id: string;
+  id: number;
   nome: string;
   endereco: string;
   cep: string;
+  ativo?: boolean;
   status?: 'active' | 'inactive';
   criadoEm?: string;
   atualizadoEm?: string;
 }
 
 export interface CreateCondominiumRequest {
-  nome: string;
-  endereco: string;
-  cep: string;
-  status?: 'active' | 'inactive';
+  Nome: string;
+  Endereco: string;
+  CEP: string;
+  Ativo?: boolean;
 }
 
 export interface UpdateCondominiumRequest {
-  nome?: string;
-  endereco?: string;
-  cep?: string;
-  status?: 'active' | 'inactive';
+  Id: number;
+  Nome?: string;
+  Endereco?: string;
+  CEP?: string;
+  Ativo?: boolean;
 }
 
 export interface ResponseModel<T> {
@@ -43,11 +45,11 @@ export const condominiumService = {
     return api.post<ResponseModel<Condominium>>('/Condominios', data);
   },
 
-  update: async (id: string, data: UpdateCondominiumRequest): Promise<ResponseModel<Condominium>> => {
-    return api.put<ResponseModel<Condominium>>(`/Condominios/${id}`, data);
+  update: async (id: number, data: UpdateCondominiumRequest): Promise<ResponseModel<Condominium>> => {
+    return api.put<ResponseModel<Condominium>>('/Condominios', data);
   },
 
-  delete: async (id: string): Promise<ResponseModel<null>> => {
+  delete: async (id: number): Promise<ResponseModel<null>> => {
     return api.delete<ResponseModel<null>>(`/Condominios/${id}`);
   },
 

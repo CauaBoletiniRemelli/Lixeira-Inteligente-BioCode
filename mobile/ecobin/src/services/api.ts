@@ -1,10 +1,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { APP_CREDENTIALS } from '../config/appCredentials';
+import { ENV, STORAGE_KEYS } from '../config/env';
 
-const API_URL = 'https://ecobinapi.runasp.net/api/';
-const APP_TOKEN_KEY = '@ecobin:appToken';
-const USER_TOKEN_KEY = '@ecobin:token';
-const REFRESH_TOKEN_KEY = '@ecobin:refreshToken';
+const API_URL = ENV.API_URL;
+const APP_TOKEN_KEY = STORAGE_KEYS.APP_TOKEN;
+const USER_TOKEN_KEY = STORAGE_KEYS.USER_TOKEN;
+const REFRESH_TOKEN_KEY = STORAGE_KEYS.REFRESH_TOKEN;
 
 let appAuthPromise: Promise<string> | null = null;
 let refreshTokenPromise: Promise<boolean> | null = null;
@@ -23,22 +24,33 @@ async function authenticateApp(forceNew: boolean = false): Promise<string> {
     await AsyncStorage.removeItem(APP_TOKEN_KEY);
   }
 
+  const authUrl = `${API_URL}auth/AppLogin`;
 
-  const response = await axios.post(`${API_URL}auth/AppLogin`, {
-    appId: APP_CREDENTIALS.appId,
-    appSecret: APP_CREDENTIALS.appSecret,
-  });
+  try {
+    const response = await axios.post(authUrl, {
+      appId: APP_CREDENTIALS.appId,
+      appSecret: APP_CREDENTIALS.appSecret,
+    });
 
-  if (response.data?.status && response.data?.dados?.token) {
-    const token = typeof response.data.dados.token === 'string' 
-      ? response.data.dados.token 
-      : response.data.dados.token.token;
-    
-    await AsyncStorage.setItem(APP_TOKEN_KEY, token);
-    return token;
+    if (response.data?.status && response.data?.dados?.token) {
+      const token = typeof response.data.dados.token === 'string' 
+        ? response.data.dados.token 
+        : response.data.dados.token.token;
+      
+      await AsyncStorage.setItem(APP_TOKEN_KEY, token);
+      return token;
+    }
+
+    throw new Error('Falha na autenticação do aplicativo');
+  } catch (error: any) {
+    console.error('❌ Erro ao autenticar app:', error.message);
+    console.error('📍 URL tentada:', authUrl);
+    if (error.response) {
+      console.error('📄 Status:', error.response.status);
+      console.error('📄 Data:', error.response.data);
+    }
+    throw error;
   }
-
-  throw new Error('Falha na autenticação do aplicativo');
 }
 
 async function refreshUserToken(): Promise<boolean> {
@@ -83,7 +95,7 @@ async function refreshUserToken(): Promise<boolean> {
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 30000, 
+  timeout: ENV.API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },

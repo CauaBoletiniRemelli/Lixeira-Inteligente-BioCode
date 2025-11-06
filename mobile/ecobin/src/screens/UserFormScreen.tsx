@@ -18,7 +18,7 @@ interface UserFormScreenProps {
 }
 
 interface CondominiumOption {
-    id: string | null;
+    id: string | number | null;
     name: string;
 }
 
@@ -35,7 +35,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
     const [email, setEmail] = useState(user?.email || '');
     const [password, setPassword] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole>(user?.role || 'coletor');
-    const [selectedCondominium, setSelectedCondominium] = useState<string | null>(null);
+    const [selectedCondominium, setSelectedCondominium] = useState<string | number | null>(null);
     const [condominiums, setCondominiums] = useState<CondominiumOption[]>([]);
     const [loadingCondominiums, setLoadingCondominiums] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -62,10 +62,26 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
         loadCondominiums();
     }, []);
 
+    useEffect(() => {
+        if (user?.condominiumId && condominiums.length > 0) {
+            const userCondominiumId = user.condominiumId;
+            
+            const condominiumExists = condominiums.some(c => c.id === userCondominiumId);
+            
+            if (condominiumExists) {
+                setSelectedCondominium(userCondominiumId);
+            } else {
+                console.log('❌ Condomínio não encontrado na lista');
+            }
+        }
+    }, [user?.condominiumId, condominiums]);
+
     const loadCondominiums = async () => {
         try {
             setLoadingCondominiums(true);
             const response = await condominiumService.getAll();
+
+            console.log('📦 Resposta de condomínios:', response.dados);
 
             if (!response.dados) {
                 setCondominiums([{ id: null, name: 'Nenhum' }]);
@@ -74,10 +90,13 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
 
             const condominiumsWithNone: CondominiumOption[] = [
                 { id: null, name: 'Nenhum' },
-                ...response.dados.map(cond => ({ id: cond.id, name: cond.nome }))
+                ...response.dados.map(cond => {
+                    return { id: cond.id, name: cond.nome };
+                })
             ];
 
             setCondominiums(condominiumsWithNone);
+            console.log('📋 Total de condomínios carregados:', condominiumsWithNone.length);
         } catch (error) {
             console.error('Erro ao carregar condomínios:', error);
             setCondominiums([{ id: null, name: 'Nenhum' }]);
@@ -397,7 +416,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
 
                         <FlatList
                             data={filteredCondominiums}
-                            keyExtractor={(item) => item.id || 'none'}
+                            keyExtractor={(item) => String(item.id || 'none')}
                             style={styles.modalList}
                             renderItem={({ item }) => (
                                 <TouchableOpacity

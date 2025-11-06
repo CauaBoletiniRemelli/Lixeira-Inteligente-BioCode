@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { BackButton } from '../components';
+import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { condominiumService } from '../services';
 
 type CondominiumStatus = 'active' | 'inactive';
 
 interface Condominium {
-    id: string;
+    id: number;
     name: string;
     address: string;
     cep: string;
@@ -22,37 +23,6 @@ interface CondominiumManagementScreenProps {
     onCreateCondominium: () => void;
 }
 
-const mockCondominiums: Condominium[] = [
-    {
-        id: '1',
-        name: 'Edifício Tulipas',
-        address: 'Rua Arnaldo Costa, 118',
-        cep: '99999-999',
-        status: 'active'
-    },
-    {
-        id: '2',
-        name: 'Edifício Camélias',
-        address: 'Rua Arnaldo Costa, 118',
-        cep: '99999-999',
-        status: 'inactive'
-    },
-    {
-        id: '3',
-        name: 'Edifício Sunset',
-        address: 'Rua Arnaldo Costa, 118',
-        cep: '99999-999',
-        status: 'active'
-    },
-    {
-        id: '4',
-        name: 'Edifício Costa',
-        address: 'Rua Arnaldo Costa, 118',
-        cep: '99999-999',
-        status: 'inactive'
-    },
-];
-
 export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenProps> = ({
     onBack,
     onEditCondominium,
@@ -61,6 +31,42 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
     const [selectedFilter, setSelectedFilter] = useState<CondominiumStatus | 'all'>('all');
     const [nameFilter, setNameFilter] = useState('');
     const [cepFilter, setCepFilter] = useState('');
+    const [condominiums, setCondominiums] = useState<Condominium[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadCondominiums();
+    }, []);
+
+    const loadCondominiums = async () => {
+        try {
+            setLoading(true);
+            const data = await getCondominiums();
+            setCondominiums(data);
+        } catch (error) {
+            console.error('Erro ao carregar condomínios:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getCondominiums = async (): Promise<Condominium[]> => {
+        const response = await condominiumService.getAll();
+        console.log('📦 Resposta de condomínios (API):', response);
+
+        if (!response.dados) return [];
+
+        const mappedCondominiums = response.dados.map((cond) => ({
+            id: Number(cond.id),
+            name: cond.nome || 'Sem nome',
+            address: cond.endereco || '',
+            cep: cond.cep || '',
+            status: (cond.ativo === false ? 'inactive' : 'active') as CondominiumStatus,
+        }));
+
+        console.log('🏢 Condomínios mapeados:', mappedCondominiums);
+        return mappedCondominiums;
+    };
 
     const getStatusLabel = (status: CondominiumStatus) => {
         return status === 'active' ? 'Ativo' : 'Inativo';
@@ -70,12 +76,21 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
         return status === 'active' ? COLORS.primary : COLORS.text.secondary;
     };
 
-    const filteredCondominiums = mockCondominiums.filter(cond => {
+    const filteredCondominiums = condominiums.filter(cond => {
         const matchesStatus = selectedFilter === 'all' || cond.status === selectedFilter;
         const matchesName = cond.name.toLowerCase().includes(nameFilter.toLowerCase());
         const matchesCep = cond.cep.includes(cepFilter);
         return matchesStatus && matchesName && matchesCep;
     });
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+                <StatusBar style="dark" />
+                <Loading />
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -211,6 +226,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: SPACING.sm,
         marginBottom: SPACING.md,
+        justifyContent: 'center'
     },
     chip: {
         paddingHorizontal: SPACING.md,

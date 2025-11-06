@@ -5,11 +5,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { BackButton, Input, Button } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { condominiumService } from '../services';
+import { showApiAlert, handleApiError, showConfirmAlert } from '../utils';
+import Alerta from '../components/Alert';
 
 type CondominiumStatus = 'active' | 'inactive';
 
 interface Condominium {
-    id: string;
+    id: number;
     name: string;
     address: string;
     cep: string;
@@ -39,59 +42,130 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
+
     const streetInputRef = useRef<TextInput>(null);
     const numberInputRef = useRef<TextInput>(null);
     const cepInputRef = useRef<TextInput>(null);
+
+    const formatCep = (text: string) => {
+        const cleaned = text.replace(/\D/g, '');
+        const limited = cleaned.slice(0, 8);
+
+        if (limited.length <= 5) {
+            return limited;
+        }
+
+        return `${limited.slice(0, 5)}-${limited.slice(5)}`;
+    };
+
+    const handleCepChange = (text: string) => {
+        const formatted = formatCep(text);
+        setCep(formatted);
+    };
+
+    const handleNumberChange = (text: string) => {
+        const cleaned = text.replace(/\D/g, '');
+        const limited = cleaned.slice(0, 6);
+        setNumber(limited);
+    };
 
     const handleSave = async () => {
         if (saving) return;
 
         if (!name || !street || !number || !cep) {
-            Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
+            showAlert('Preencha todos os campos obrigatórios', 'error');
             return;
         }
 
         try {
             setSaving(true);
-            const action = isEditing ? 'atualizado' : 'cadastrado';
-            Alert.alert('Sucesso', `Condomínio ${action} com sucesso!`);
+
+            const fullAddress = `${street}, ${number}`;
+            // CEP permanece como string formatada
+            const formattedCep = formatCep(cep);
+
+            if (isEditing) {
+                const updateData = {
+                    Id: condominium!.id,
+                    Nome: name,
+                    Endereco: fullAddress,
+                    CEP: formattedCep, // string com formatação
+                    Ativo: status === 'active',
+                };
+
+                console.log('📤 Dados para atualização:', JSON.stringify(updateData, null, 2));
+                const response = await condominiumService.update(condominium!.id, updateData);
+                console.log('📥 Resposta da atualização:', JSON.stringify(response, null, 2));
+                showApiAlert(response);
+            } else {
+                const createData = {
+                    Nome: name,
+                    Endereco: fullAddress,
+                    CEP: formattedCep, // string com formatação
+                    Ativo: status === 'active',
+                };
+                console.log('📤 Dados para criação:', JSON.stringify(createData, null, 2));
+                const response = await condominiumService.create(createData);
+                console.log('📥 Resposta da criação:', JSON.stringify(response, null, 2));
+                showApiAlert(response);
+            }
+
             onBack();
+        } catch (error: any) {
+            console.error('❌ Erro completo:', error);
+            console.error('❌ Erro response:', error.response);
+            console.error('❌ Erro data:', error.response?.data);
+            console.error('❌ Erro status:', error.response?.status);
+            console.error('❌ Erro message:', error.message);
+            handleApiError(error);
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (deleting) return;
 
-        Alert.alert(
+        const confirmed = await showConfirmAlert(
             'Confirmar Exclusão',
             `Tem certeza que deseja remover o condomínio ${condominium?.name}? Esta ação não pode ser desfeita.`,
-            [
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Remover',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            setDeleting(true);
-                            Alert.alert('Sucesso', 'Condomínio removido com sucesso!');
-                            onBack();
-                        } finally {
-                            setDeleting(false);
-                        }
-                    },
-                },
-            ]
+            'Remover',
+            'Cancelar'
         );
+
+        if (!confirmed) return;
+
+        try {
+            setDeleting(true);
+            console.log('🗑️ Deletando condomínio ID:', condominium!.id);
+            const response = await condominiumService.delete(condominium!.id);
+            console.log('📥 Resposta da exclusão:', JSON.stringify(response, null, 2));
+            showApiAlert(response);
+            onBack();
+        } catch (error: any) {
+            console.error('❌ Erro ao deletar:', error);
+            console.error('❌ Erro response:', error.response);
+            console.error('❌ Erro data:', error.response?.data);
+            handleApiError(error);
+        } finally {
+            setDeleting(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
+            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
             <View style={styles.header}>
                 <BackButton onPress={onBack} />
@@ -153,27 +227,28 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                                 <Input
                                     ref={numberInputRef}
                                     value={number}
-                                    onChangeText={setNumber}
+                                    onChangeText={handleNumberChange}
                                     placeholder="118"
                                     keyboardType="numeric"
                                     returnKeyType="next"
                                     onSubmitEditing={() => cepInputRef.current?.focus()}
                                     blurOnSubmit={false}
+                                    maxLength={6}
                                 />
 
                                 <Text style={styles.label}>CEP</Text>
                                 <Input
                                     ref={cepInputRef}
                                     value={cep}
-                                    onChangeText={setCep}
+                                    onChangeText={handleCepChange}
                                     placeholder="00000-000"
                                     keyboardType="numeric"
                                     returnKeyType="done"
+                                    maxLength={9}
                                 />
                             </View>
                         </View>
 
-                        {/* Card de Status */}
                         <View style={styles.card}>
                             <View style={styles.cardHeader}>
                                 <Ionicons name="toggle-outline" size={20} color={COLORS.primary} />
