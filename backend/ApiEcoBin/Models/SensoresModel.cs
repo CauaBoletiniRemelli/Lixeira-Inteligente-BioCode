@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -14,16 +16,21 @@ namespace ApiEcoBin.Models
         [Required]
         [Column("SENDeviceId")]
         [MaxLength(50)]
-        public string? DeviceId { get; set; }
+        public string DeviceId { get; set; } = string.Empty;
 
         [Required]
         [Column("SENDeviceKey")]
         [MaxLength(255)]
-        public string? DeviceKey { get; set; }
+        [JsonIgnore]
+        public string DeviceKey { get; set; } = string.Empty;
 
         [Required]
         [Column("SENStatus")]
         public int Status { get; set; } = 0;
+
+        [Column("SENNome")]
+        [MaxLength(100)]
+        public string? Nome { get; set; }
 
         [Column("SEN_CONId")]
         public int? CondominioId { get; set; }
@@ -38,15 +45,15 @@ namespace ApiEcoBin.Models
         public DateTime? UltimaConexao { get; set; }
 
         [Column("SENCriadoEm")]
-        public DateTime? CriadoEm { get; set; } = DateTime.Now;
+        public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 
-        [ForeignKey("CondominioId")]
+        [ForeignKey(nameof(CondominioId))]
         public virtual CondominiosModel? Condominio { get; set; }
 
         [JsonIgnore]
-        public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = [];
+        public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = new List<ProvisionamentosModel>();
 
         [JsonIgnore]
-        public virtual ICollection<TelemetriasModel> Telemetrias { get; set; } = [];
+        public virtual ICollection<TelemetriasModel> Telemetrias { get; set; } = new List<TelemetriasModel>();
     }
 }

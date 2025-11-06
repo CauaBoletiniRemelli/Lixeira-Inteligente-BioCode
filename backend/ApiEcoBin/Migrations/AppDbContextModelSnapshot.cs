@@ -83,7 +83,6 @@ namespace ApiEcoBin.Migrations
                         .HasColumnName("PRONomeSensor");
 
                     b.Property<string>("SenhaWifiCriptografada")
-                        .IsRequired()
                         .HasMaxLength(1024)
                         .HasColumnType("nvarchar(1024)")
                         .HasColumnName("PROSenhaWifiCriptografada");
@@ -92,8 +91,15 @@ namespace ApiEcoBin.Migrations
                         .HasColumnType("int")
                         .HasColumnName("PRO_SENId");
 
+                    b.Property<DateTime?>("SessionExpires")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PROSessionExpires");
+
+                    b.Property<string>("SessionToken")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PROSessionToken");
+
                     b.Property<string>("SsidCriptografado")
-                        .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)")
                         .HasColumnName("PROSsidCriptografado");
@@ -166,7 +172,7 @@ namespace ApiEcoBin.Migrations
                         .HasColumnType("int")
                         .HasColumnName("SEN_CONId");
 
-                    b.Property<DateTime?>("CriadoEm")
+                    b.Property<DateTime>("CriadoEm")
                         .HasColumnType("datetime2")
                         .HasColumnName("SENCriadoEm");
 
@@ -189,6 +195,11 @@ namespace ApiEcoBin.Migrations
                     b.Property<decimal?>("Longitude")
                         .HasColumnType("decimal(11,8)")
                         .HasColumnName("SENLongitude");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("SENNome");
 
                     b.Property<int>("Status")
                         .HasColumnType("int")

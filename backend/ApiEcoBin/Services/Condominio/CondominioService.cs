@@ -25,7 +25,7 @@ namespace ApiEcoBin.Services.Condominio
                 }
 
                 response.Mensagem = "Nenhum condomínio encontrado.";
-                response.Status = true;
+                response.Status = false;
                 return response;
             }
             catch (Exception ex)
@@ -79,7 +79,7 @@ namespace ApiEcoBin.Services.Condominio
                 if (condominio == null)
                 {
                     response.Mensagem = "Nenhum condomínio localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 
@@ -122,7 +122,7 @@ namespace ApiEcoBin.Services.Condominio
                 if (condominio == null)
                 {
                     response.Mensagem = "Nenhum condomínio localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 

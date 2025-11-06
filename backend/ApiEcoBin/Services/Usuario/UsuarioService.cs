@@ -57,7 +57,7 @@ namespace ApiEcoBin.Services.Usuarios
                 }
 
                 response.Mensagem = "Nenhum usuário encontrado.";
-                response.Status = true;
+                response.Status = false;
 
                 return response;
             }
@@ -123,7 +123,7 @@ namespace ApiEcoBin.Services.Usuarios
                 if (user == null)
                 {
                     response.Mensagem = "Nenhum usuário localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 
@@ -177,14 +177,14 @@ namespace ApiEcoBin.Services.Usuarios
                 if (user == null)
                 {
                     response.Mensagem = "Nenhum usuário localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
                 bool isOldPasswordValid = _passwordHashService.VerifyPassword(changePasswordDTO.OldPassword!, user.SenhaHash!);
                 if (!isOldPasswordValid)
                 {
                     response.Mensagem = "Senha antiga incorreta!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
                 user.SenhaHash = _passwordHashService.HashPassword(changePasswordDTO.NewPassword!);
@@ -211,7 +211,7 @@ namespace ApiEcoBin.Services.Usuarios
                 if (user == null)
                 {
                     response.Mensagem = "Nenhum usuário localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
                 bool isOldPasswordValid = changeEmailDTO.OldEmail == user.Email;
@@ -219,7 +219,7 @@ namespace ApiEcoBin.Services.Usuarios
                 if (!isOldPasswordValid)
                 {
                     response.Mensagem = "E-mail antigo incorreto!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 
@@ -250,7 +250,7 @@ namespace ApiEcoBin.Services.Usuarios
                 if (user == null)
                 {
                     response.Mensagem = "Nenhum usuário localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 

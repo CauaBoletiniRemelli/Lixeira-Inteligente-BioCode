@@ -2,12 +2,11 @@
 {
     public class SensorCreateDTO
     {
-        public string? DeviceId { get; set; }
-
-        public string? DeviceKey { get; set; }
-
-        public int Status { get; set; } = 0;
-
+        public string DeviceId { get; set; } = string.Empty;
+        public string DeviceKey { get; set; } = string.Empty;
         public int? CondominioId { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public string? Nome { get; set; }
     }
 }

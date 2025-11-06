@@ -1,9 +1,7 @@
 ﻿using ApiEcoBin.Dto.Sensores;
 using ApiEcoBin.Models;
-using ApiEcoBin.Services.Condominio;
 using ApiEcoBin.Services.Sensores;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiEcoBin.Controllers
@@ -12,60 +10,43 @@ namespace ApiEcoBin.Controllers
     [ApiController]
     public class SensoresController : ControllerBase
     {
-        #region Propriedades
-        private readonly ISensoresInterface _sensoresInterface;
-        #endregion
+        private readonly ISensoresInterface _sensores;
 
-        #region Construtores
-        public SensoresController(ISensoresInterface sensoresInterface)
+        public SensoresController(ISensoresInterface sensores)
         {
-            _sensoresInterface = sensoresInterface;
+            _sensores = sensores;
         }
-        #endregion
 
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
-        public async Task<ActionResult<List<SensoresModel>>> GetSensores()
+        public async Task<IActionResult> GetSensores()
         {
-            ResponseModel<List<SensoresModel>> response = await _sensoresInterface.GetSensores();
-            if (response.Status)
-                return Ok(response);
-            return BadRequest(response);
+            var response = await _sensores.GetSensoresAsync();
+            return response.Status ? Ok(response) : BadRequest(response);
         }
 
-        [Authorize(Policy="AdminOnly")]
-        [HttpPost]
-        public async Task<ActionResult<SensoresModel>> PostSensores(SensorCreateDTO sensorCreateDTO)
+        [Authorize]
+        [HttpGet("{idCondominio}")]
+        public async Task<IActionResult> GetSensoresByCondominio(int idCondominio)
         {
-            ResponseModel<SensoresModel> response = await _sensoresInterface.CreateSensor(sensorCreateDTO);
-
-            if (response.Status)
-                return Ok(response);
-
-            return BadRequest(response);
+            var response = await _sensores.GetSensoresByCondominioAsync(idCondominio);
+            return response.Status ? Ok(response) : BadRequest(response);
         }
-
 
         [Authorize(Policy = "AdminOnly")]
         [HttpPut]
-        public async Task<ActionResult<SensoresModel>> UpdateSensores(SensorEditDTO sensorEditDTO)
+        public async Task<IActionResult> UpdateSensor([FromBody] SensorEditDTO dto)
         {
-            ResponseModel<SensoresModel> response = await _sensoresInterface.UpdateSensor(sensorEditDTO);
-            if (response.Status)
-                return Ok(response);
-            return BadRequest(response);
+            var response = await _sensores.UpdateSensorAsync(dto);
+            return response.Status ? Ok(response) : BadRequest(response);
         }
 
-        [Authorize(Policy="AdminOnly")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{idSensor}")]
-        public async Task<ActionResult<List<SensoresModel>>> DeleteSensores(int idSensor)
+        public async Task<IActionResult> DeleteSensor(int idSensor)
         {
-            ResponseModel<List<SensoresModel>> response = await _sensoresInterface.DeleteSensor(idSensor);
-            if (response.Status)
-                return Ok(response);
-            return BadRequest(response);
+            var response = await _sensores.DeleteSensorAsync(idSensor);
+            return response.Status ? Ok(response) : BadRequest(response);
         }
-
-
     }
 }

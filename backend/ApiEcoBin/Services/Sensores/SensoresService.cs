@@ -5,143 +5,128 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApiEcoBin.Services.Sensores
 {
-    public class SensoresService(AppDbContext appDbContext) : ISensoresInterface
+    public class SensoresService : ISensoresInterface
     {
-        private readonly AppDbContext _context = appDbContext;
+        private readonly AppDbContext _context;
 
-        public async Task<ResponseModel<SensoresModel>> CreateSensor(SensorCreateDTO sensorCreateDTO)
+        public SensoresService(AppDbContext context)
         {
-            ResponseModel<SensoresModel> response = new();
+            _context = context;
+        }
+
+        public async Task<ResponseModel<SensoresModel>> CreateSensorAsync(SensorCreateDTO dto)
+        {
+            var response = new ResponseModel<SensoresModel>();
 
             try
             {
-                SensoresModel sensor = new SensoresModel()
+                var sensor = new SensoresModel
                 {
-                    DeviceId = sensorCreateDTO.DeviceId,
-                    DeviceKey = sensorCreateDTO.DeviceKey,
-                    CriadoEm = DateTime.Now,
-                    CondominioId = sensorCreateDTO.CondominioId,
-                    Status = sensorCreateDTO.Status,
+                    DeviceId = dto.DeviceId,
+                    DeviceKey = dto.DeviceKey ?? Guid.NewGuid().ToString("N"),
+                    CondominioId = dto.CondominioId,
+                    Nome = dto.Nome,
+                    Latitude = dto.Latitude,
+                    Longitude = dto.Longitude,
+                    Status = 0,
+                    CriadoEm = DateTime.UtcNow
                 };
 
                 _context.Sensores.Add(sensor);
                 await _context.SaveChangesAsync();
 
-                response.Dados = sensor;
+                response.Status = true;
                 response.Mensagem = "Sensor criado com sucesso.";
-                response.Status = true;
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Mensagem = ex.Message;
-                response.Status = false;
-                return response;
-            }
-        }
-
-        public async Task<ResponseModel<List<SensoresModel>>> DeleteSensor(int idSensor)
-        {
-            ResponseModel<List<SensoresModel>> response = new();
-
-            try
-            {
-                SensoresModel? sensor = await _context.Sensores.FirstOrDefaultAsync(s => s.Id == idSensor);
-
-                if (sensor == null)
-                {
-                    response.Mensagem = "Sensor não encontrado.";
-                    response.Status = false;
-                    return response;
-                }
-
-                _context.Sensores.Remove(sensor);
-                await _context.SaveChangesAsync();
-
-                response.Mensagem = "Sensor deletado com sucesso.";
-                response.Status = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Mensagem = ex.Message;
-                response.Status = false;
-                return response;
-            }
-        }
-
-        public async Task<ResponseModel<List<SensoresModel>>> GetSensores()
-        {
-            ResponseModel<List<SensoresModel>> response = new();
-
-            try
-            {
-                List<SensoresModel> sensores = await _context.Sensores.ToListAsync();
-
-                if (sensores == null || sensores.Count == 0)
-                {
-                    response.Mensagem = "Nenhum sensor encontrado.";
-                    response.Status = false;
-                    return response;
-                }
-
-                response.Dados = sensores;
-                response.Mensagem = "Sensores recuperados com sucesso.";
-                response.Status = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Mensagem = ex.Message;
-                response.Status = false;
-                return response;
-            }
-        }
-
-        public async Task<ResponseModel<SensoresModel>> UpdateSensor(SensorEditDTO sensorEditDTO)
-        {
-            ResponseModel<SensoresModel> response = new();
-
-            try
-            {
-                SensoresModel? sensor = await _context.Sensores.FirstOrDefaultAsync(s => s.Id == sensorEditDTO.Id);
-
-                if (sensor == null)
-                {
-                    response.Mensagem = "Sensor não encontrado.";
-                    response.Status = true;
-                    return response;
-                }
-
-                if (sensorEditDTO.DeviceId != null || sensor.DeviceId != sensorEditDTO.DeviceId)
-                    sensor.DeviceId = sensorEditDTO.DeviceId;
-
-                if (sensorEditDTO.DeviceKey != null || sensor.DeviceKey != sensorEditDTO.DeviceKey)
-                    sensor.DeviceKey = sensorEditDTO.DeviceKey;
-
-                if (sensorEditDTO.Status.HasValue && sensor.Status != sensorEditDTO.Status.Value)
-                    sensor.Status = sensorEditDTO.Status.Value;
-
-                if (sensorEditDTO.CondominioId != null || sensor.CondominioId != sensorEditDTO.CondominioId)
-                    sensor.CondominioId = sensorEditDTO.CondominioId;
-
-                _context.Sensores.Update(sensor);
-                await _context.SaveChangesAsync();
-
                 response.Dados = sensor;
-                response.Mensagem = "Sensor atualizado com sucesso.";
-                response.Status = true;
-
-                return response;
             }
             catch (Exception ex)
             {
-                response.Mensagem = ex.Message;
                 response.Status = false;
-
-                return response;
+                response.Mensagem = ex.Message;
             }
+
+            return response;
+        }
+
+        public async Task<ResponseModel<SensoresModel>> UpdateSensorAsync(SensorEditDTO dto)
+        {
+            var sensor = await _context.Sensores.FindAsync(dto.Id);
+
+            if (sensor == null)
+                return new ResponseModel<SensoresModel> { Status = false, Mensagem = "Sensor não encontrado." };
+
+            if (!string.IsNullOrWhiteSpace(dto.Nome)) sensor.Nome = dto.Nome;
+            if (dto.Status.HasValue) sensor.Status = dto.Status.Value;
+            if (dto.CondominioId.HasValue) sensor.CondominioId = dto.CondominioId.Value;
+            if (dto.Latitude.HasValue) sensor.Latitude = dto.Latitude.Value;
+            if (dto.Longitude.HasValue) sensor.Longitude = dto.Longitude.Value;
+
+            await _context.SaveChangesAsync();
+
+            return new ResponseModel<SensoresModel>
+            {
+                Status = true,
+                Mensagem = "Sensor atualizado com sucesso.",
+                Dados = sensor
+            };
+        }
+
+        public async Task<ResponseModel<List<SensoresModel>>> DeleteSensorAsync(int idSensor)
+        {
+            var sensor = await _context.Sensores.FindAsync(idSensor);
+
+            if (sensor == null)
+                return new ResponseModel<List<SensoresModel>> { Status = false, Mensagem = "Sensor não encontrado." };
+
+            _context.Sensores.Remove(sensor);
+            await _context.SaveChangesAsync();
+
+            return new ResponseModel<List<SensoresModel>>
+            {
+                Status = true,
+                Mensagem = "Sensor removido."
+            };
+        }
+
+        public async Task<ResponseModel<List<SensoresModel>>> GetSensoresAsync()
+        {
+            var sensores = await _context.Sensores.ToListAsync();
+
+            return new ResponseModel<List<SensoresModel>>
+            {
+                Status = true,
+                Dados = sensores,
+                Mensagem = "Lista de sensores retornada."
+            };
+        }
+
+        public async Task<ResponseModel<List<SensoresModel>>> GetSensoresByCondominioAsync(int condominioId)
+        {
+            var sensores = await _context.Sensores
+                .Where(s => s.CondominioId == condominioId)
+                .ToListAsync();
+
+            return new ResponseModel<List<SensoresModel>>
+            {
+                Status = true,
+                Dados = sensores,
+                Mensagem = "Sensores do condomínio retornados."
+            };
+        }
+
+        public async Task<ResponseModel<SensoresModel>> GetSensorByDeviceIdAsync(string deviceId)
+        {
+            var sensor = await _context.Sensores
+                .FirstOrDefaultAsync(s => s.DeviceId == deviceId);
+
+            if (sensor == null)
+                return new ResponseModel<SensoresModel> { Status = false, Mensagem = "Sensor não encontrado." };
+
+            return new ResponseModel<SensoresModel>
+            {
+                Status = true,
+                Dados = sensor
+            };
         }
     }
 }
