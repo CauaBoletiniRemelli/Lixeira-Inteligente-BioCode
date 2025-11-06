@@ -14,10 +14,37 @@ namespace ApiEcoBin.Controllers
         private readonly IProvisionamentosInteraface _provService = provService;
 
         [Authorize(Policy = "AdminOnly")]
+        [HttpGet]
+        public async Task<IActionResult> GetProvisionamentos()
+        {
+            var res = await _provService.GetProvisionamentosAsync();
+            if (!res.Status) return BadRequest(res);
+            return Ok(res);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProvisionamentoById(int id)
+        {
+            var res = await _provService.GetProvisionamentoByIdAsync(id);
+            if (!res.Status) return NotFound(res);
+            return Ok(res);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost("criar")]
         public async Task<IActionResult> CriarProvisionamento([FromBody] ProvisionCreateRequestDTO dto)
         {
             var res = await _provService.CreateProvisionamentoAsync(dto);
+            if (!res.Status) return BadRequest(res);
+            return Ok(res);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost("criar-com-sensor")]
+        public async Task<IActionResult> CriarProvisionamentoComSensor([FromBody] ProvisionCreateWithSensorDTO dto)
+        {
+            var res = await _provService.CreateProvisionamentoComSensorAsync(dto);
             if (!res.Status) return BadRequest(res);
             return Ok(res);
         }

@@ -55,6 +55,93 @@ namespace ApiEcoBin.Services.Provisionamentos
             }
         }
 
+        public async Task<ResponseModel<ProvisionamentosModel>> CreateProvisionamentoComSensorAsync(ProvisionCreateWithSensorDTO dto)
+        {
+            var response = new ResponseModel<ProvisionamentosModel>();
+            
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var sensor = new SensoresModel
+                {
+                    DeviceId = Guid.NewGuid().ToString("N"), 
+                    DeviceKey = Guid.NewGuid().ToString("N"),
+                    Nome = dto.NomeSensor,
+                    CondominioId = dto.CondominioId,
+                    Status = 0, 
+                    CriadoEm = DateTime.UtcNow
+                };
+
+                _context.Sensores.Add(sensor);
+                await _context.SaveChangesAsync();
+
+                var provision = new ProvisionamentosModel
+                {
+                    SensorId = sensor.Id,
+                    UsuarioId = dto.UsuarioId,
+                    Expiracao = DateTime.UtcNow.AddDays(dto.ExpiracaoDias),
+                    Usado = false,
+                    CriadoEm = DateTime.UtcNow
+                };
+
+                _context.Provisionamentos.Add(provision);
+                await _context.SaveChangesAsync();
+
+                await tx.CommitAsync();
+
+                response.Status = true;
+                response.Mensagem = "Sensor placeholder e provisionamento criados com sucesso.";
+                response.Dados = provision;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                return new ResponseModel<ProvisionamentosModel> { Status = false, Mensagem = ex.Message };
+            }
+        }
+
+        public async Task<ResponseModel<List<ProvisionamentosModel>>> GetProvisionamentosAsync()
+        {
+            var response = new ResponseModel<List<ProvisionamentosModel>>();
+            try
+            {
+                var provisionamentos = await _context.Provisionamentos
+                    .OrderByDescending(p => p.CriadoEm)
+                    .ToListAsync();
+
+                response.Status = true;
+                response.Dados = provisionamentos;
+                response.Mensagem = "Lista de provisionamentos retornada.";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return new ResponseModel<List<ProvisionamentosModel>> { Status = false, Mensagem = ex.Message };
+            }
+        }
+
+        public async Task<ResponseModel<ProvisionamentosModel>> GetProvisionamentoByIdAsync(int id)
+        {
+            var response = new ResponseModel<ProvisionamentosModel>();
+            try
+            {
+                var prov = await _context.Provisionamentos.FirstOrDefaultAsync(p => p.Id == id);
+                
+                if (prov == null)
+                    return new ResponseModel<ProvisionamentosModel> { Status = false, Mensagem = "Provisionamento não encontrado." };
+
+                response.Status = true;
+                response.Dados = prov;
+                response.Mensagem = "Provisionamento encontrado.";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return new ResponseModel<ProvisionamentosModel> { Status = false, Mensagem = ex.Message };
+            }
+        }
+
         private string GerarTokenDeProvisionamento(ProvisionamentosModel provision)
         {
             var sensor = _context.Sensores.FirstOrDefault(s => s.Id == provision.SensorId);
@@ -159,7 +246,8 @@ namespace ApiEcoBin.Services.Provisionamentos
                 if (prov.Usado) return new ResponseModel<ProvisionActivateResponseDTO> { Status = false, Mensagem = "Provisionamento já usado." };
                 if (prov.Expiracao < DateTime.UtcNow) return new ResponseModel<ProvisionActivateResponseDTO> { Status = false, Mensagem = "Provisionamento expirado." };
 
-                var sensor = await _context.Sensores.FirstOrDefaultAsync(s => s.DeviceId == dto.DeviceId);
+                var sensor = await _context.Sensores.FirstOrDefaultAsync(s => s.Id == prov.SensorId);
+                
                 if (sensor == null)
                 {
                     sensor = new SensoresModel
@@ -178,6 +266,7 @@ namespace ApiEcoBin.Services.Provisionamentos
                 }
                 else
                 {
+                    sensor.DeviceId = dto.DeviceId;
                     sensor.Nome = dto.NomeSensor ?? sensor.Nome;
                     sensor.CondominioId = dto.CondominioId;
                     sensor.Latitude = dto.Latitude ?? sensor.Latitude;

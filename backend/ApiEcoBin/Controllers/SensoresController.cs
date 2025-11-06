@@ -25,6 +25,14 @@ namespace ApiEcoBin.Controllers
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> CreateSensor([FromBody] SensorCreateDTO dto)
+        {
+            var response = await _sensores.CreateSensorAsync(dto);
+            return response.Status ? Ok(response) : BadRequest(response);
+        }
+
         [Authorize]
         [HttpGet("{idCondominio}")]
         public async Task<IActionResult> GetSensoresByCondominio(int idCondominio)

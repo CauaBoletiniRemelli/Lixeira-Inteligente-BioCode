@@ -8,6 +8,9 @@ namespace ApiEcoBin.Services.Provisionamentos
     public interface IProvisionamentosInteraface
     {
         Task<ResponseModel<ProvisionamentosModel>> CreateProvisionamentoAsync(ProvisionCreateRequestDTO dto);
+        Task<ResponseModel<ProvisionamentosModel>> CreateProvisionamentoComSensorAsync(ProvisionCreateWithSensorDTO dto);
+        Task<ResponseModel<List<ProvisionamentosModel>>> GetProvisionamentosAsync();
+        Task<ResponseModel<ProvisionamentosModel>> GetProvisionamentoByIdAsync(int id);
         Task<ResponseModel<ProvisionQrResponseDTO>> CreateQrCodeProvisionamentoAsync(int provisionId);
         Task<ResponseModel<ProvisionActivateResponseDTO>> ActivateProvisionAsync(ProvisionActivateRequestDTO dto, int? userIdFromClaim = null);
         Task<ResponseModel<bool>> ConfirmDeviceConfigAsync(string deviceId, Dto.Devices.ConfirmConfigDTO dto);
