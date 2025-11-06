@@ -42,7 +42,6 @@ export const ProfileScreen: React.FC = () => {
 
     const passwordsMatch = !confirmNewPassword || newPassword === confirmNewPassword;
 
-    // Buscar dados atualizados do usuário
     const loadUserData = async () => {
         if (!user?.id) return;
 

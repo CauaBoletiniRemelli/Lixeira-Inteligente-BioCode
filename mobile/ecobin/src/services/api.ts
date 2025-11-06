@@ -59,19 +59,24 @@ async function refreshUserToken(): Promise<boolean> {
   try {
     const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
     const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
-    
+        
     if (!userToken || !refreshToken) {
       return false;
     }
 
-    if (!appAuthPromise) {
-      appAuthPromise = authenticateApp();
-    }
-    await appAuthPromise;
+    await AsyncStorage.removeItem(APP_TOKEN_KEY);
+    appAuthPromise = null;
+    appAuthPromise = authenticateApp(true);
+    const appToken = await appAuthPromise;
 
     const response = await axios.post(`${API_URL}auth/RefreshToken`, {
-      AccessToken: userToken,
-      RefreshToken: refreshToken,
+      accessToken: userToken,
+      refreshToken: refreshToken,
+    }, {
+      headers: {
+        'Authorization': `Bearer ${appToken}`,
+        'Content-Type': 'application/json'
+      }
     });
 
     if (response.data?.status && response.data?.dados) {
@@ -85,8 +90,8 @@ async function refreshUserToken(): Promise<boolean> {
     }
 
     return false;
-  } catch (error) {
-    console.error('❌ Erro ao renovar token do usuário:', error);
+  } catch (error: any) {
+
     await AsyncStorage.removeItem(USER_TOKEN_KEY);
     await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
     return false;
@@ -127,6 +132,9 @@ axiosInstance.interceptors.request.use(
         const appToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
         if (appToken) {
           config.headers.Authorization = `Bearer ${appToken}`;
+          if (config.url && !config.url.includes('auth/')) {
+            console.warn('⚠️ Acessando endpoint protegido sem token de usuário:', config.url);
+          }
         }
       }
     } catch (error) {

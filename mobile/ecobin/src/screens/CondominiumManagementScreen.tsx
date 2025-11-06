@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { condominiumService } from '../services';
+import { STORAGE_KEYS } from '../config/env';
 
 type CondominiumStatus = 'active' | 'inactive';
 
@@ -41,6 +42,15 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
     const loadCondominiums = async () => {
         try {
             setLoading(true);
+            const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+            const userToken = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+            
+            if (!userToken) {
+                console.warn('⚠️ Tentativa de acessar condomínios sem estar logado');
+                setLoading(false);
+                return;
+            }
+            
             const data = await getCondominiums();
             setCondominiums(data);
         } catch (error) {
@@ -219,6 +229,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: COLORS.text.primary,
         marginBottom: SPACING.sm,
+        textAlign: 'center',
     },
     filterChips: {
         flexDirection: 'row',
