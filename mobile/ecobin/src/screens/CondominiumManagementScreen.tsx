@@ -52,7 +52,6 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
 
     const getCondominiums = async (): Promise<Condominium[]> => {
         const response = await condominiumService.getAll();
-        console.log('📦 Resposta de condomínios (API):', response);
 
         if (!response.dados) return [];
 
@@ -64,7 +63,6 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
             status: (cond.ativo === false ? 'inactive' : 'active') as CondominiumStatus,
         }));
 
-        console.log('🏢 Condomínios mapeados:', mappedCondominiums);
         return mappedCondominiums;
     };
 

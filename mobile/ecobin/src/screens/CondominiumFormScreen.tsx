@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { condominiumService } from '../services';
 import { showApiAlert, handleApiError, showConfirmAlert } from '../utils';
 import Alerta from '../components/Alert';
+import axios from 'axios';
 
 type CondominiumStatus = 'active' | 'inactive';
 
@@ -32,7 +33,7 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
 
     const [name, setName] = useState(condominium?.name || '');
     const [street, setStreet] = useState(
-        condominium?.address ? condominium.address.split(',')[0] : ''
+        condominium?.address ? condominium.address.split(',')[0]?.trim() : ''
     );
     const [number, setNumber] = useState(
         condominium?.address ? condominium.address.split(',')[1]?.trim() : ''
@@ -41,6 +42,8 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     const [status, setStatus] = useState<CondominiumStatus>(condominium?.status || 'active');
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [loadingCep, setLoadingCep] = useState(false);
+    const [cepValidated, setCepValidated] = useState(false);
 
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -53,7 +56,7 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
         setTimeout(() => setAlertVisible(false), 3000);
     };
 
-    const streetInputRef = useRef<TextInput>(null);
+    const nameInputRef = useRef<TextInput>(null);
     const numberInputRef = useRef<TextInput>(null);
     const cepInputRef = useRef<TextInput>(null);
 
@@ -71,6 +74,46 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     const handleCepChange = (text: string) => {
         const formatted = formatCep(text);
         setCep(formatted);
+        setCepValidated(false);
+        setStreet('');
+    };
+
+    // Buscar CEP no ViaCEP
+    const handleCepBlur = async () => {
+        const cleanCep = cep.replace(/\D/g, '');
+        
+        if (cleanCep.length !== 8) {
+            if (cleanCep.length > 0) {
+                showAlert('CEP deve ter 8 dígitos', 'error');
+            }
+            return;
+        }
+
+        try {
+            setLoadingCep(true);
+            const response = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            
+            if (response.data.erro) {
+                showAlert('CEP não encontrado', 'error');
+                setCep('');
+                setStreet('');
+                setCepValidated(false);
+                return;
+            }
+
+            setStreet(response.data.logradouro);
+            setCepValidated(true);
+            showAlert('CEP validado com sucesso!', 'success');
+            
+            // Focar no campo de nome após validar CEP
+            setTimeout(() => nameInputRef.current?.focus(), 100);
+        } catch (error) {
+            console.error('Erro ao buscar CEP:', error);
+            showAlert('Erro ao buscar CEP. Tente novamente.', 'error');
+            setCepValidated(false);
+        } finally {
+            setLoadingCep(false);
+        }
     };
 
     const handleNumberChange = (text: string) => {
@@ -82,8 +125,13 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     const handleSave = async () => {
         if (saving) return;
 
-        if (!name || !street || !number || !cep) {
+        if (!name || !cep || !number) {
             showAlert('Preencha todos os campos obrigatórios', 'error');
+            return;
+        }
+
+        if (!cepValidated) {
+            showAlert('Valide o CEP antes de salvar', 'error');
             return;
         }
 
@@ -91,32 +139,26 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
             setSaving(true);
 
             const fullAddress = `${street}, ${number}`;
-            // CEP permanece como string formatada
-            const formattedCep = formatCep(cep);
 
             if (isEditing) {
                 const updateData = {
                     Id: condominium!.id,
                     Nome: name,
                     Endereco: fullAddress,
-                    CEP: formattedCep, // string com formatação
+                    CEP: cep,
                     Ativo: status === 'active',
                 };
 
-                console.log('📤 Dados para atualização:', JSON.stringify(updateData, null, 2));
                 const response = await condominiumService.update(condominium!.id, updateData);
-                console.log('📥 Resposta da atualização:', JSON.stringify(response, null, 2));
                 showApiAlert(response);
             } else {
                 const createData = {
                     Nome: name,
                     Endereco: fullAddress,
-                    CEP: formattedCep, // string com formatação
+                    CEP: cep, 
                     Ativo: status === 'active',
                 };
-                console.log('📤 Dados para criação:', JSON.stringify(createData, null, 2));
                 const response = await condominiumService.create(createData);
-                console.log('📥 Resposta da criação:', JSON.stringify(response, null, 2));
                 showApiAlert(response);
             }
 
@@ -147,15 +189,10 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
 
         try {
             setDeleting(true);
-            console.log('🗑️ Deletando condomínio ID:', condominium!.id);
             const response = await condominiumService.delete(condominium!.id);
-            console.log('📥 Resposta da exclusão:', JSON.stringify(response, null, 2));
             showApiAlert(response);
             onBack();
         } catch (error: any) {
-            console.error('❌ Erro ao deletar:', error);
-            console.error('❌ Erro response:', error.response);
-            console.error('❌ Erro data:', error.response?.data);
             handleApiError(error);
         } finally {
             setDeleting(false);
@@ -202,25 +239,54 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                             </View>
 
                             <View style={styles.cardContent}>
-                                <Text style={styles.label}>Nome</Text>
+                                <Text style={styles.label}>CEP</Text>
+                                <View style={styles.inputWrapper}>
+                                    <Input
+                                        ref={cepInputRef}
+                                        value={cep}
+                                        onChangeText={handleCepChange}
+                                        onBlur={handleCepBlur}
+                                        placeholder="00000-000"
+                                        keyboardType="numeric"
+                                        returnKeyType="done"
+                                        maxLength={9}
+                                        editable={!loadingCep}
+                                    />
+                                    {loadingCep && (
+                                        <ActivityIndicator 
+                                            size="small" 
+                                            color={COLORS.primary} 
+                                            style={styles.cepIcon}
+                                        />
+                                    )}
+                                    {cepValidated && !loadingCep && (
+                                        <Ionicons 
+                                            name="checkmark-circle" 
+                                            size={24} 
+                                            color={COLORS.success} 
+                                            style={styles.cepIcon}
+                                        />
+                                    )}
+                                </View>
+
+                                <Text style={styles.label}>Rua</Text>
                                 <Input
+                                    value={street}
+                                    placeholder="Aguardando CEP..."
+                                    editable={false}
+                                    style={styles.disabledInput}
+                                />
+
+                                <Text style={styles.label}>Nome do Condomínio</Text>
+                                <Input
+                                    ref={nameInputRef}
                                     value={name}
                                     onChangeText={setName}
                                     placeholder="Edifício Tulipas"
                                     returnKeyType="next"
-                                    onSubmitEditing={() => streetInputRef.current?.focus()}
-                                    blurOnSubmit={false}
-                                />
-
-                                <Text style={styles.label}>Rua</Text>
-                                <Input
-                                    ref={streetInputRef}
-                                    value={street}
-                                    onChangeText={setStreet}
-                                    placeholder="Rua Arnaldo Costa"
-                                    returnKeyType="next"
                                     onSubmitEditing={() => numberInputRef.current?.focus()}
                                     blurOnSubmit={false}
+                                    editable={cepValidated}
                                 />
 
                                 <Text style={styles.label}>Número</Text>
@@ -230,21 +296,9 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                                     onChangeText={handleNumberChange}
                                     placeholder="118"
                                     keyboardType="numeric"
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => cepInputRef.current?.focus()}
-                                    blurOnSubmit={false}
-                                    maxLength={6}
-                                />
-
-                                <Text style={styles.label}>CEP</Text>
-                                <Input
-                                    ref={cepInputRef}
-                                    value={cep}
-                                    onChangeText={handleCepChange}
-                                    placeholder="00000-000"
-                                    keyboardType="numeric"
                                     returnKeyType="done"
-                                    maxLength={9}
+                                    maxLength={6}
+                                    editable={cepValidated}
                                 />
                             </View>
                         </View>
@@ -465,5 +519,31 @@ const styles = StyleSheet.create({
     },
     deleteButtonTextDisabled: {
         color: COLORS.text.secondary,
+    },
+    inputWrapper: {
+        position: 'relative',
+    },
+    cepIcon: {
+        position: 'absolute',
+        right: SPACING.md,
+        top: '50%',
+        transform: [{ translateY: -12 }],
+    },
+    cepContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    cepLoader: {
+        position: 'absolute',
+        right: SPACING.md,
+    },
+    cepCheck: {
+        position: 'absolute',
+        right: SPACING.md,
+    },
+    disabledInput: {
+        backgroundColor: COLORS.background,
+        opacity: 0.7,
     },
 });

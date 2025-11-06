@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, UserRole } from '../types';
 import { authService } from '../services';
-import { mapTipoToRole } from '../utils';
+import { mapTipoToRole, showConfirmAlert } from '../utils';
 import { STORAGE_KEYS } from '../config/env';
 
 interface AuthContextData {
@@ -10,8 +10,8 @@ interface AuthContextData {
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
-    loading: boolean; 
-    initialLoading: boolean; 
+    loading: boolean;
+    initialLoading: boolean;
     hasPermission: (requiredRoles: UserRole[]) => boolean;
 }
 
@@ -27,8 +27,8 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(false); 
-    const [initialLoading, setInitialLoading] = useState(true); 
+    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {
         loadStoredUser();
@@ -50,17 +50,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const login = async (email: string, password: string) => {
         setLoading(true);
-        
+
         try {
             const loginData = { Email: email, Password: password };
-            
+
             const response = await authService.login(loginData);
 
             if (!response.status || !response.dados) {
                 throw new Error(response.mensagem || 'Erro ao fazer login');
             }
 
-            const { token: tokenObj, refreshToken, userId, email: userEmail, nome, tipo, condominiumId, condominiumName } = response.dados;
+            const { token: tokenObj, refreshToken, userId, email: userEmail, nome, tipo, condominioId, nomeCondominio } = response.dados;
 
             const token = typeof tokenObj === 'string' ? tokenObj : tokenObj.token;
 
@@ -71,8 +71,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 name: nome,
                 email: userEmail,
                 role: role,
-                condominiumId: condominiumId,
-                condominiumName: condominiumName,
+                condominiumId: condominioId,
+                condominiumName: nomeCondominio,
             };
 
             await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authenticatedUser));
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(authenticatedUser);
         } catch (error: any) {
             let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
-            
+
             console.error('❌ Erro detalhado no login:', {
                 message: error.message,
                 status: error.response?.status,
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 hasResponse: !!error.response,
                 hasRequest: !!error.request
             });
-            
+
             if (error.response) {
                 if (error.response.data?.mensagem) {
                     errorMessage = error.response.data.mensagem;
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } else if (error.request) {
                 errorMessage = 'Erro de conexão. Verifique sua internet.';
             }
-            
+
             throw new Error(errorMessage);
         } finally {
             setLoading(false);
@@ -113,23 +113,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const logout = async () => {
         try {
+            const confirmed = await showConfirmAlert(
+                'Realizar Logout',
+                `Tem certeza que deseja realizar logout?`,
+                'Sim',
+                'Não'
+            );
+
+            if (!confirmed) return;
+
             const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
-            
+
             if (refreshToken) {
                 try {
                     await authService.logout(refreshToken);
                 } catch (error) {
-                    console.error('Erro ao fazer logout na API:', error);
+                    console.log('Erro ao fazer logout na API:', error);
                 }
             }
 
             await AsyncStorage.removeItem(USER_STORAGE_KEY);
             await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
             await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
-            
+
             setUser(null);
         } catch (error) {
-            console.error('Erro ao fazer logout:', error);
+            console.log('Erro ao fazer logout:', error);
         }
     };
 

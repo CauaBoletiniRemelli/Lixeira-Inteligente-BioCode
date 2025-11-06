@@ -14,8 +14,8 @@ export interface AuthModel {
   email: string;
   nome: string;
   tipo?: number;
-  condominiumId?: number;
-  condominiumName?: string;
+  condominioId?: number;
+  nomeCondominio?: string;
 }
 
 export interface ResponseModel<T> {

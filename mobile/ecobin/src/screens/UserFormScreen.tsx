@@ -81,8 +81,6 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             setLoadingCondominiums(true);
             const response = await condominiumService.getAll();
 
-            console.log('📦 Resposta de condomínios:', response.dados);
-
             if (!response.dados) {
                 setCondominiums([{ id: null, name: 'Nenhum' }]);
                 return;
@@ -96,7 +94,6 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             ];
 
             setCondominiums(condominiumsWithNone);
-            console.log('📋 Total de condomínios carregados:', condominiumsWithNone.length);
         } catch (error) {
             console.error('Erro ao carregar condomínios:', error);
             setCondominiums([{ id: null, name: 'Nenhum' }]);
