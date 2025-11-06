@@ -75,7 +75,6 @@ async function refreshUserToken(): Promise<boolean> {
     return false;
   } catch (error) {
     console.error('❌ Erro ao renovar token do usuário:', error);
-    // Se falhar a renovação, limpa os tokens
     await AsyncStorage.removeItem(USER_TOKEN_KEY);
     await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
     return false;
@@ -164,7 +163,6 @@ axiosInstance.interceptors.response.use(
             }
           }
           
-          // Tenta renovar o token do usuário se estiver expirado
           if (!error.config.url?.includes('AppLogin') && 
               !error.config.url?.includes('auth/login') && 
               !error.config.url?.includes('auth/RefreshToken') &&
@@ -173,7 +171,6 @@ axiosInstance.interceptors.response.use(
               const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
               const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
               
-              // Se tem token de usuário, tenta renovar
               if (userToken) {
                 originalRequest._retry = true;
                 

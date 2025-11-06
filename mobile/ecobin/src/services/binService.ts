@@ -50,62 +50,35 @@ export interface SensorReading {
   timestamp: string;
 }
 
-/**
- * Serviço para gerenciar sensores/lixeiras
- */
 export const sensorService = {
-  /**
-   * Busca todos os sensores
-   */
   getAll: async (): Promise<Sensor[]> => {
     return api.get<Sensor[]>('/sensors');
   },
 
-  /**
-   * Busca um sensor por ID
-   */
   getById: async (id: string): Promise<Sensor> => {
     return api.get<Sensor>(`/sensors/${id}`);
   },
 
-  /**
-   * Busca sensores por condomínio
-   */
   getByCondominium: async (condominiumId: string): Promise<Sensor[]> => {
     return api.get<Sensor[]>(`/sensors/condominium/${condominiumId}`);
   },
 
-  /**
-   * Busca sensores por status
-   */
   getByStatus: async (status: SensorStatus): Promise<Sensor[]> => {
     return api.get<Sensor[]>(`/sensors/status/${status}`);
   },
 
-  /**
-   * Cadastra um novo sensor
-   */
   create: async (data: CreateSensorRequest): Promise<Sensor> => {
     return api.post<Sensor>('/sensors', data);
   },
 
-  /**
-   * Atualiza um sensor
-   */
   update: async (id: string, data: UpdateSensorRequest): Promise<Sensor> => {
     return api.put<Sensor>(`/sensors/${id}`, data);
   },
 
-  /**
-   * Deleta um sensor
-   */
   delete: async (id: string): Promise<void> => {
     return api.delete(`/sensors/${id}`);
   },
 
-  /**
-   * Busca o histórico de leituras de um sensor
-   */
   getReadings: async (sensorId: string, startDate?: string, endDate?: string): Promise<SensorReading[]> => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
@@ -115,13 +88,9 @@ export const sensorService = {
     return api.get<SensorReading[]>(`/sensors/${sensorId}/readings${queryString}`);
   },
 
-  /**
-   * Envia alerta sobre um sensor
-   */
   sendAlert: async (sensorId: string, message?: string): Promise<{ message: string }> => {
     return api.post(`/sensors/${sensorId}/alert`, { message });
   },
 };
 
-// Exportar também como binService para compatibilidade
 export const binService = sensorService;

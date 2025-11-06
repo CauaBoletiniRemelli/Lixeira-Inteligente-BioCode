@@ -98,23 +98,17 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const filteredSensors = useMemo(() => {
         let sensors = MOCK_SENSORS;
 
-        // Filtrar por condomínio baseado no tipo de usuário
         if (isAdmin) {
-            // Admins veem todos os sensores ou podem filtrar por condomínio
             if (selectedCondominium !== 'Todos') {
                 const selectedCondoId = CONDOMINIUMS.find(c => c.name === selectedCondominium)?.id;
                 if (selectedCondoId) {
                     sensors = sensors.filter(s => s.condominiumId === selectedCondoId);
                 }
             }
-            // Se selectedCondominium === 'Todos', mostra todos os sensores
         } else {
-            // Síndicos e coletores veem apenas sensores do seu condomínio
-            // Para demo, vamos usar o condomínio '1' (Edifício Tulipas)
             sensors = sensors.filter(s => s.condominiumId === '1');
         }
 
-        // Filtrar por status
         if (selectedFilter !== 'all') {
             sensors = sensors.filter(s => s.status === selectedFilter);
         }
@@ -123,7 +117,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     }, [selectedFilter, selectedCondominium, isAdmin]);
 
     const handleSensorPress = React.useCallback((sensor: Sensor) => {
-        // Centralizar o sensor no mapa
         mapRef.current?.animateToRegion({
             latitude: sensor.coordinate.latitude,
             longitude: sensor.coordinate.longitude,
@@ -131,7 +124,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             longitudeDelta: 0.002,
         }, 500);
 
-        // Todos os usuários podem ver detalhes do sensor
         setSelectedSensor(sensor);
         setShowSensorModal(true);
     }, []);
@@ -606,7 +598,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: COLORS.error,
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -704,7 +695,6 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         marginBottom: SPACING.xs,
     },
-    // Condominium filter styles
     condominiumFilterContainer: {
         paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.md,

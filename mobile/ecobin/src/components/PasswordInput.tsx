@@ -79,6 +79,7 @@ const styles = StyleSheet.create({
     inputWrapper: {
         position: 'relative',
         justifyContent: 'center',
+        overflow: 'visible',
     },
     input: {
         backgroundColor: COLORS.surface,
@@ -113,8 +114,9 @@ const styles = StyleSheet.create({
         bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
-
-        zIndex: 10,
+        paddingHorizontal: 4,
+        zIndex: 999,
+        elevation: 999,
     },
     errorText: {
         fontSize: 12,

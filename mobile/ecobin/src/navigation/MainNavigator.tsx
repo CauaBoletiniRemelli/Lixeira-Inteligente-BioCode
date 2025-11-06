@@ -15,16 +15,10 @@ import {
     NotificationsScreen
 } from '../screens';
 import { COLORS, SPACING } from '../constants';
+import { User } from '../types';
 
 type TabScreen = 'home' | 'map' | 'profile';
 type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm' | 'qrScanner' | 'sensorWiFiSetup' | 'sensorSuccess' | 'notifications';
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: 'coletor' | 'sindico' | 'admin';
-}
 
 interface Condominium {
     id: string;
@@ -211,7 +205,6 @@ export const MainNavigator: React.FC = () => {
         }
     };
 
-    // Se estiver em uma tela de gerenciamento, mostra ela sem as tabs
     if (managementScreen) {
         return <View style={styles.container}>{renderManagementScreen()}</View>;
     }

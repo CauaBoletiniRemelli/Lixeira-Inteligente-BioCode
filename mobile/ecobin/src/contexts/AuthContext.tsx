@@ -26,8 +26,8 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(false); // Loading de ações (login/logout)
-    const [initialLoading, setInitialLoading] = useState(true); // Loading inicial
+    const [loading, setLoading] = useState(false); 
+    const [initialLoading, setInitialLoading] = useState(true); 
 
     useEffect(() => {
         loadStoredUser();

@@ -229,16 +229,18 @@ const styles = StyleSheet.create({
     },
     filterChips: {
         flexDirection: 'row',
-        gap: SPACING.sm,
+        gap: SPACING.xs,
         marginBottom: SPACING.md,
+        justifyContent: 'center',
+        flexWrap: 'wrap',
     },
     chip: {
-        paddingHorizontal: SPACING.md,
+        paddingHorizontal: SPACING.sm,
         paddingVertical: SPACING.xs,
         borderRadius: BORDER_RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.border,
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.surface
     },
     chipActive: {
         backgroundColor: COLORS.primary,

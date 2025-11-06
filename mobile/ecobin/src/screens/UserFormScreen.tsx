@@ -8,15 +8,9 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { showApiAlert, handleApiError, showConfirmAlert } from '../utils';
 import { userService, condominiumService } from '../services';
 import Alerta from '../components/Alert';
+import { User } from '../types';
 
 type UserRole = 'coletor' | 'sindico' | 'admin';
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-}
 
 interface UserFormScreenProps {
     onBack: () => void;
@@ -44,6 +38,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
     const [selectedCondominium, setSelectedCondominium] = useState<string | null>(null);
     const [condominiums, setCondominiums] = useState<CondominiumOption[]>([]);
     const [loadingCondominiums, setLoadingCondominiums] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -110,7 +105,11 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             return;
         }
 
+        if (saving) return;
+
         try {
+            setSaving(true);
+            
             if (isEditing) {
                 const updateData: any = {
                     Id: Number(user!.id),
@@ -124,7 +123,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                     updateData.SenhaHash = password;
                 }
 
-                const response = await userService.update(user!.id, updateData);
+                const response = await userService.update(String(user!.id), updateData);
                 showApiAlert(response);
             } else {
                 const createData = {
@@ -142,6 +141,8 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             onBack();
         } catch (error) {
             handleApiError(error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -156,7 +157,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
         if (!confirmed) return;
 
         try {
-            const response = await userService.delete(user!.id);
+            const response = await userService.delete(String(user!.id));
             showApiAlert(response);
             onBack();
         } catch (error) {
@@ -282,6 +283,8 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                                 title={isEditing ? "Atualizar Usuário" : "Cadastrar Usuário"}
                                 onPress={handleSave}
                                 style={styles.saveButton}
+                                loading={saving}
+                                disabled={saving}
                             />
 
                             {isEditing && (
@@ -563,7 +566,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: COLORS.error,
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -598,7 +600,6 @@ const styles = StyleSheet.create({
     modalList: {
         maxHeight: 400,
     },
-    // Role selection styles
     roleOption: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -623,7 +624,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: COLORS.primary,
     },
-    // Condominium selection styles
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',

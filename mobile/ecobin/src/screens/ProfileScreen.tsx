@@ -31,6 +31,9 @@ export const ProfileScreen: React.FC = () => {
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+    
+    const [updatingEmail, setUpdatingEmail] = useState(false);
+    const [updatingPassword, setUpdatingPassword] = useState(false);
 
     const newPasswordRef = React.useRef<any>(null);
     const confirmNewPasswordRef = React.useRef<any>(null);
@@ -44,7 +47,9 @@ export const ProfileScreen: React.FC = () => {
         setTimeout(() => setAlertVisible(false), 3000);
     };
 
-    const handleChangeEmail = () => {
+    const handleChangeEmail = async () => {
+        if (updatingEmail) return;
+
         if (!currentEmail || !newEmail || !confirmNewEmail) {
             showAlert('Preencha todos os campos', 'error');
             return;
@@ -71,15 +76,22 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
-        setEmail(newEmail);
-        setShowEmailModal(false);
-        setCurrentEmail('');
-        setNewEmail('');
-        setConfirmNewEmail('');
-        showAlert('E-mail alterado com sucesso!', 'success');
+        try {
+            setUpdatingEmail(true);
+            setEmail(newEmail);
+            setShowEmailModal(false);
+            setCurrentEmail('');
+            setNewEmail('');
+            setConfirmNewEmail('');
+            showAlert('E-mail alterado com sucesso!', 'success');
+        } finally {
+            setUpdatingEmail(false);
+        }
     };
 
     const handleChangePassword = async () => {
+        if (updatingPassword) return;
+
         if (!user?.id) {
             showAlert('Usuário não identificado', 'error');
             return;
@@ -92,6 +104,7 @@ export const ProfileScreen: React.FC = () => {
         }
 
         try {
+            setUpdatingPassword(true);
             const response = await userService.updatePassword(dto);
             
             if (response.status) {
@@ -106,6 +119,8 @@ export const ProfileScreen: React.FC = () => {
         } catch (error: any) {
             const errorMsg = error.response?.data?.mensagem || 'Erro ao alterar senha';
             showAlert(errorMsg, 'error');
+        } finally {
+            setUpdatingPassword(false);
         }
     };
 
@@ -281,15 +296,19 @@ export const ProfileScreen: React.FC = () => {
                                                 setNewEmail('');
                                                 setConfirmNewEmail('');
                                             }}
+                                            disabled={updatingEmail}
                                         >
                                             <Text style={styles.modalCancelButtonText}>Cancelar</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
-                                            style={styles.modalConfirmButton}
+                                            style={[styles.modalConfirmButton, updatingEmail && { opacity: 0.5 }]}
                                             onPress={handleChangeEmail}
+                                            disabled={updatingEmail}
                                         >
-                                            <Text style={styles.modalConfirmButtonText}>Confirmar</Text>
+                                            <Text style={styles.modalConfirmButtonText}>
+                                                {updatingEmail ? 'Salvando...' : 'Confirmar'}
+                                            </Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -365,15 +384,19 @@ export const ProfileScreen: React.FC = () => {
                                                 setNewPassword('');
                                                 setConfirmNewPassword('');
                                             }}
+                                            disabled={updatingPassword}
                                         >
                                             <Text style={styles.modalCancelButtonText}>Cancelar</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
-                                            style={styles.modalConfirmButton}
+                                            style={[styles.modalConfirmButton, (updatingPassword || !passwordsMatch) && { opacity: 0.5 }]}
                                             onPress={handleChangePassword}
+                                            disabled={updatingPassword || !passwordsMatch}
                                         >
-                                            <Text style={styles.modalConfirmButtonText}>Confirmar</Text>
+                                            <Text style={styles.modalConfirmButtonText}>
+                                                {updatingPassword ? 'Salvando...' : 'Confirmar'}
+                                            </Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -557,7 +580,6 @@ const styles = StyleSheet.create({
         top: '50%',
         marginTop: -10,
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

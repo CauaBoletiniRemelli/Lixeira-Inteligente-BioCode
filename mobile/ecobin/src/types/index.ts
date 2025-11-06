@@ -1,5 +1,3 @@
-// Tipos globais da aplicação
-
 export type UserRole = 'coletor' | 'sindico' | 'admin';
 
 export interface Bin {

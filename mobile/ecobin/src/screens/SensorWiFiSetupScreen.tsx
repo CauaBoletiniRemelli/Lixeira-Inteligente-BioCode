@@ -35,6 +35,7 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
     const [ssid, setSsid] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [connecting, setConnecting] = useState(false);
     const [selectedCondominium, setSelectedCondominium] = useState('Edifício Tulipas');
     const [showCondominiumModal, setShowCondominiumModal] = useState(false);
     const [condominiumSearch, setCondominiumSearch] = useState('');
@@ -47,6 +48,8 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
     }, [condominiumSearch]);
 
     const handleConnect = async () => {
+        if (connecting) return;
+
         if (!ssid.trim()) {
             alert('Por favor, digite o nome da rede Wi-Fi');
             return;
@@ -62,13 +65,17 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
             return;
         }
 
-        setLoading(true);
-        
-        // Simular conexão
-        setTimeout(() => {
-            setLoading(false);
-            onSuccess();
-        }, 2000);
+        try {
+            setConnecting(true);
+            setLoading(true);
+            
+            setTimeout(() => {
+                setLoading(false);
+                onSuccess();
+            }, 2000);
+        } finally {
+            setConnecting(false);
+        }
     };
 
     return (
@@ -136,9 +143,10 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
                         />
 
                         <Button
-                            title={loading ? "Conectando..." : "Conectar e Salvar"}
+                            title={connecting ? "Conectando..." : "Conectar e Salvar"}
                             onPress={handleConnect}
-                            disabled={loading}
+                            loading={connecting}
+                            disabled={connecting}
                             style={styles.connectButton}
                         />
                     </View>
@@ -304,7 +312,6 @@ const styles = StyleSheet.create({
     connectButton: {
         marginTop: SPACING.lg,
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

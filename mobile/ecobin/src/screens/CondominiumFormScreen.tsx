@@ -36,24 +36,34 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     );
     const [cep, setCep] = useState(condominium?.cep || '');
     const [status, setStatus] = useState<CondominiumStatus>(condominium?.status || 'active');
+    const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
-    // Referencias para os inputs
     const streetInputRef = useRef<TextInput>(null);
     const numberInputRef = useRef<TextInput>(null);
     const cepInputRef = useRef<TextInput>(null);
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (saving) return;
+
         if (!name || !street || !number || !cep) {
             Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
             return;
         }
 
-        const action = isEditing ? 'atualizado' : 'cadastrado';
-        Alert.alert('Sucesso', `Condomínio ${action} com sucesso!`);
-        onBack();
+        try {
+            setSaving(true);
+            const action = isEditing ? 'atualizado' : 'cadastrado';
+            Alert.alert('Sucesso', `Condomínio ${action} com sucesso!`);
+            onBack();
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleDelete = () => {
+        if (deleting) return;
+
         Alert.alert(
             'Confirmar Exclusão',
             `Tem certeza que deseja remover o condomínio ${condominium?.name}? Esta ação não pode ser desfeita.`,
@@ -65,9 +75,14 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                 {
                     text: 'Remover',
                     style: 'destructive',
-                    onPress: () => {
-                        Alert.alert('Sucesso', 'Condomínio removido com sucesso!');
-                        onBack();
+                    onPress: async () => {
+                        try {
+                            setDeleting(true);
+                            Alert.alert('Sucesso', 'Condomínio removido com sucesso!');
+                            onBack();
+                        } finally {
+                            setDeleting(false);
+                        }
                     },
                 },
             ]
@@ -212,18 +227,23 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
 
                         <View style={styles.buttonContainer}>
                             <Button
-                                title={isEditing ? "Salvar Alterações" : "Cadastrar Condomínio"}
+                                title={saving ? "Salvando..." : isEditing ? "Salvar Alterações" : "Cadastrar Condomínio"}
                                 onPress={handleSave}
+                                loading={saving}
+                                disabled={saving || deleting}
                                 style={styles.saveButton}
                             />
 
                             {isEditing && (
                                 <TouchableOpacity
-                                    style={styles.deleteButton}
+                                    style={[styles.deleteButton, deleting && styles.deleteButtonDisabled]}
                                     onPress={handleDelete}
+                                    disabled={deleting || saving}
                                 >
-                                    <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-                                    <Text style={styles.deleteButtonText}>Remover Condomínio</Text>
+                                    <Ionicons name="trash-outline" size={20} color={deleting || saving ? COLORS.text.secondary : COLORS.error} />
+                                    <Text style={[styles.deleteButtonText, (deleting || saving) && styles.deleteButtonTextDisabled]}>
+                                        {deleting ? "Removendo..." : "Remover Condomínio"}
+                                    </Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -364,5 +384,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: COLORS.error,
+    },
+    deleteButtonDisabled: {
+        opacity: 0.5,
+    },
+    deleteButtonTextDisabled: {
+        color: COLORS.text.secondary,
     },
 });

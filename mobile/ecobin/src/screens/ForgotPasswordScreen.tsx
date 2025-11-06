@@ -16,6 +16,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [recovering, setRecovering] = useState(false);
 
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -29,6 +30,8 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     };
 
     const handleRecoverPassword = async () => {
+        if (recovering) return;
+
         setEmailError('');
 
         if (!email) {
@@ -40,6 +43,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
         }
 
         try {
+            setRecovering(true);
             setLoading(true);
             await authService.forgotPassword({ usuEmail: email });
             showAlert('Caso o e-mail esteja cadastrado, você receberá instruções para recuperar sua senha.', 'success');
@@ -47,6 +51,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
             showAlert('Falha ao enviar email de recuperação. Tente novamente.', 'error');
         } finally {
             setLoading(false);
+            setRecovering(false);
         }
     };
 
@@ -91,9 +96,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
                         </View>
 
                         <Button
-                            title="Solicitar Recuperação"
+                            title={recovering ? "Enviando..." : "Solicitar Recuperação"}
                             onPress={handleRecoverPassword}
-                            loading={loading}
+                            loading={recovering}
+                            disabled={recovering}
                             style={styles.recoverButton}
                         />
                     </View>

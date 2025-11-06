@@ -54,7 +54,6 @@ export const userService = {
   },
 
   update: async (id: string, data: UpdateUserRequest): Promise<ResponseModel<User>> => {
-    // A API espera o ID dentro do body, não na URL
     const updateData = { ...data, Id: Number(id) };
     return api.put<ResponseModel<User>>('/Usuarios', updateData);
   },
