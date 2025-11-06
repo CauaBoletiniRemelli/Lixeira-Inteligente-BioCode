@@ -1,4 +1,4 @@
-using ApiEcoBin.Data;
+﻿using ApiEcoBin.Data;
 using ApiEcoBin.Enums;
 using ApiEcoBin.Services;
 using ApiEcoBin.Services.Condominio;
@@ -67,7 +67,7 @@ namespace ApiEcoBin
                     ((int)TipoUsuario.Administrador).ToString(),
                     ((int)TipoUsuario.Aplicativo).ToString()));
 
-            Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key n�o configurada");
+            Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key não configurada");
 
             byte[] key = Encoding.ASCII.GetBytes(Key.Secret);
 
@@ -100,14 +100,47 @@ namespace ApiEcoBin
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var logger = services.GetRequiredService<ILogger<Program>>();
+
+                try
+                {
+                    var dbContext = services.GetRequiredService<AppDbContext>();
+
+                    logger.LogInformation("Verificando migrations pendentes...");
+                    var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+
+                    if (pendingMigrations.Any())
+                    {
+                        logger.LogWarning("Aplicando {Count} migrations: {Migrations}",
+                            pendingMigrations.Count,
+                            string.Join(", ", pendingMigrations));
+
+                        dbContext.Database.Migrate();
+
+                        logger.LogInformation("✅ Migrations aplicadas com sucesso!");
+                    }
+                    else
+                    {
+                        logger.LogInformation("✅ Nenhuma migration pendente. Banco de dados está atualizado.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "❌ Erro ao aplicar migrations: {Message}", ex.Message);
+
+                    // ⚠️ Descomente a linha abaixo se quiser impedir a API de subir caso migrations falhem
+                    // throw;
+                }
+            }
+
+            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-
-                using var serviceScope = app.Services.CreateScope();
-                using var dbContext = serviceScope.ServiceProvider.GetService<AppDbContext>();
-                dbContext?.Database.Migrate();
             }
 
             app.UseHttpsRedirection();
