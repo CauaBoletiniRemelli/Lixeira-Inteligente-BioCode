@@ -201,6 +201,41 @@ namespace ApiEcoBin.Services.Usuarios
             }
             return response;
         }
+        public async Task<ResponseModel<UsuariosModel>> ChangeEmail(ChangeEmailDTO changeEmailDTO)
+        {
+            ResponseModel<UsuariosModel> response = new();
+            try
+            {
+                UsuariosModel? user = await _context.Usuarios.FirstOrDefaultAsync(user => user.Id == changeEmailDTO.ID);
+                if (user == null)
+                {
+                    response.Mensagem = "Nenhum usuário localizado!";
+                    response.Status = true;
+                    return response;
+                }
+                bool isOldPasswordValid = changeEmailDTO.OldEmail == user.Email;
+
+                if (!isOldPasswordValid)
+                {
+                    response.Mensagem = "E-mail antigo incorreto!";
+                    response.Status = true;
+                    return response;
+                }
+
+                _context.Usuarios.Update(user);
+                await _context.SaveChangesAsync();
+                response.Dados = user;
+                response.Mensagem = "E-mail alterado com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+            return response;
+        }
+
 
         public async Task<ResponseModel<List<UsuariosModel>>> DeleteUser(int idUser)
         {

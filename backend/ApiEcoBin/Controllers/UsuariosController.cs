@@ -99,5 +99,17 @@ namespace ApiEcoBin.Controllers
             }
             return BadRequest(response);
         }
+
+        [Authorize]
+        [HttpPost("change-email")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ChangeEmail([FromBody] ChangeEmailDTO changeEmailDTO)
+        {
+            ResponseModel<UsuariosModel> response = await _usuarioInterface.ChangeEmail(changeEmailDTO);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
     }
 }

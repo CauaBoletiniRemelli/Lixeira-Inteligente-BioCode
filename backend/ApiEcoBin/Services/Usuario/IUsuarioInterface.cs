@@ -10,6 +10,7 @@ namespace ApiEcoBin.Services.Usuario
         Task<ResponseModel<UsuariosModel>> CreateUser(UserCreateDTO userCreateDTO);
         Task<ResponseModel<UsuariosModel>> UpdateUser(UserEditDTO userCreateDTO);
         Task<ResponseModel<UsuariosModel>> ChangePassword(ChangePasswordDTO changePasswordDTO);
+        Task<ResponseModel<UsuariosModel>> ChangeEmail(ChangeEmailDTO changeEmailDTO);
         Task<ResponseModel<List<UsuariosModel>>> DeleteUser(int idUser);
     }
 }

@@ -89,7 +89,7 @@ namespace ApiEcoBin.Services.Condominio
                 if (!string.IsNullOrWhiteSpace(condominioEditDTO.Endereco) || condominio.Endereco != condominioEditDTO.Endereco)
                     condominio.Endereco = condominioEditDTO.Endereco;
 
-                if (!string.IsNullOrWhiteSpace(condominioEditDTO.CEP.ToString()) || condominio.Cep != condominioEditDTO.CEP.ToString())
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.CEP!.ToString()) || condominio.Cep != condominioEditDTO.CEP.ToString())
                     condominio.Cep = condominioEditDTO.CEP.ToString();
 
                 if (condominio.Ativo != condominioEditDTO.Ativo)
@@ -130,7 +130,7 @@ namespace ApiEcoBin.Services.Condominio
                 await _context.SaveChangesAsync();
 
                 response.Dados = await _context.Condominios.ToListAsync();
-                response.Mensagem = "Usuário removido com sucesso!";
+                response.Mensagem = "Condomínio removido com sucesso!";
                 response.Status = true;
             }
             catch (Exception ex)
