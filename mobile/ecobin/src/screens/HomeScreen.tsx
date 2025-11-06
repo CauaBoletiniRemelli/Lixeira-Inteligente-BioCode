@@ -28,11 +28,19 @@ interface HomeScreenProps {
     onNavigateToUserManagement?: () => void;
     onNavigateToCondominiumManagement?: () => void;
     onNavigateToSensorSetup?: () => void;
+    onNavigateToQRCodeManagement?: () => void;
     onNavigateToMap?: () => void;
     onNavigateToNotifications?: () => void;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManagement, onNavigateToCondominiumManagement, onNavigateToSensorSetup, onNavigateToMap, onNavigateToNotifications }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ 
+    onNavigateToUserManagement, 
+    onNavigateToCondominiumManagement, 
+    onNavigateToSensorSetup, 
+    onNavigateToQRCodeManagement,
+    onNavigateToMap, 
+    onNavigateToNotifications 
+}) => {
     const { user, logout, hasPermission } = useAuth();
 
     return (
@@ -125,6 +133,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToUserManageme
                             subtitle="Cadastrar ou editar condomínios"
                             iconComponent={<MaterialCommunityIcons name="home-city" size={60} color={COLORS.primary} />}
                             onPress={() => onNavigateToCondominiumManagement?.()}
+                        />
+
+                        <MenuCard
+                            title="QR Codes de Provisionamento"
+                            subtitle="Criar e gerenciar QR codes"
+                            iconComponent={<MaterialCommunityIcons name="qrcode" size={60} color={COLORS.primary} />}
+                            onPress={() => onNavigateToQRCodeManagement?.()}
                         />
                     </>
                 )}

@@ -9,7 +9,13 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 
 interface QRCodeScannerScreenProps {
     onBack: () => void;
-    onScanSuccess: (sensorId: string) => void;
+    onScanSuccess: (qrData: QRCodeData) => void;
+}
+
+export interface QRCodeData {
+    provisionId: string;
+    deviceId: string;
+    token: string;
 }
 
 export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack, onScanSuccess }) => {
@@ -23,18 +29,55 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
         })();
     }, []);
 
+    const parseQRCode = (data: string): QRCodeData | null => {
+        try {
+            // Formato esperado: provisionId|deviceId|jwt
+            const parts = data.split('|');
+            
+            if (parts.length !== 3) {
+                console.error('QR Code inválido: formato incorreto');
+                return null;
+            }
+
+            return {
+                provisionId: parts[0].trim(),
+                deviceId: parts[1].trim(),
+                token: parts[2].trim(),
+            };
+        } catch (error) {
+            console.error('Erro ao parsear QR Code:', error);
+            return null;
+        }
+    };
+
     const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
         if (scanned) return;
         
         setScanned(true);
         
+        const qrData = parseQRCode(data);
+        
+        if (!qrData) {
+            Alert.alert(
+                'QR Code Inválido',
+                'O QR Code escaneado não está no formato correto. Por favor, tente novamente.',
+                [
+                    {
+                        text: 'Tentar Novamente',
+                        onPress: () => setScanned(false)
+                    }
+                ]
+            );
+            return;
+        }
+
         Alert.alert(
-            'QR Code Escaneado',
-            `Dados: ${data}`,
+            'QR Code Escaneado com Sucesso',
+            `Sensor encontrado!\n\nDevice ID: ${qrData.deviceId}`,
             [
                 {
-                    text: 'OK',
-                    onPress: () => onScanSuccess(data)
+                    text: 'Continuar',
+                    onPress: () => onScanSuccess(qrData)
                 }
             ]
         );

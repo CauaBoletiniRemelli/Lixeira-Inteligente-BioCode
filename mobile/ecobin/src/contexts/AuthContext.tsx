@@ -38,14 +38,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
             setInitialLoading(true);
             const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
+            const userToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+            const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+            
+            if (storedUser && userToken && refreshToken) {
+                // Valida se o token está expirado
+                try {
+                    const tokenData = JSON.parse(atob(userToken.split('.')[1]));
+                    const expirationTime = tokenData.exp * 1000; // Converte para milissegundos
+                    const isExpired = Date.now() >= expirationTime;
+                    
+                    if (isExpired) {
+                        console.log('🔄 Token expirado ao carregar app, renovando...');
+                        // Importa o refreshUserToken do api.ts
+                        const { refreshUserToken } = await import('../services/api');
+                        const success = await refreshUserToken();
+                        
+                        if (success) {
+                            console.log('✅ Token renovado com sucesso ao carregar app');
+                            setUser(JSON.parse(storedUser));
+                        } else {
+                            console.log('❌ Falha ao renovar token, usuário precisa fazer login');
+                            await clearStoredData();
+                        }
+                    } else {
+                        console.log('✅ Token válido ao carregar app');
+                        setUser(JSON.parse(storedUser));
+                    }
+                } catch (tokenError) {
+                    console.error('❌ Erro ao validar token:', tokenError);
+                    // Se houver erro ao decodificar, tenta usar o usuário armazenado
+                    setUser(JSON.parse(storedUser));
+                }
             }
         } catch (error) {
             console.error('Erro ao carregar usuário:', error);
         } finally {
             setInitialLoading(false);
         }
+    };
+    
+    const clearStoredData = async () => {
+        await AsyncStorage.removeItem(USER_STORAGE_KEY);
+        await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+        await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+        setUser(null);
     };
 
     const login = async (email: string, password: string) => {

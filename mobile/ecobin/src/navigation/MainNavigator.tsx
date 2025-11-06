@@ -9,16 +9,32 @@ import {
     UserFormScreen, 
     CondominiumManagementScreen, 
     CondominiumFormScreen,
+    SensorFormScreen,
     QRCodeScannerScreen,
+    QRCodeManagementScreen,
+    SensorWiFiConfigScreen,
     SensorWiFiSetupScreen,
     SensorSetupSuccessScreen,
     NotificationsScreen
 } from '../screens';
 import { COLORS, SPACING } from '../constants';
 import { User } from '../types';
+import type { SensorFormData } from '../screens/SensorFormScreen';
+import type { QRCodeData } from '../screens/QRCodeScannerScreen';
 
 type TabScreen = 'home' | 'map' | 'profile';
-type ManagementScreen = 'userManagement' | 'userForm' | 'condominiumManagement' | 'condominiumForm' | 'qrScanner' | 'sensorWiFiSetup' | 'sensorSuccess' | 'notifications';
+type ManagementScreen = 
+    | 'userManagement' 
+    | 'userForm' 
+    | 'condominiumManagement' 
+    | 'condominiumForm' 
+    | 'qrCodeManagement'
+    | 'sensorForm'
+    | 'qrScanner' 
+    | 'sensorWiFiConfig'
+    | 'sensorWiFiSetup' 
+    | 'sensorSuccess' 
+    | 'notifications';
 
 interface Condominium {
     id: number;
@@ -33,6 +49,10 @@ export const MainNavigator: React.FC = () => {
     const [managementScreen, setManagementScreen] = React.useState<ManagementScreen | null>(null);
     const [editingUser, setEditingUser] = React.useState<User | undefined>(undefined);
     const [editingCondominium, setEditingCondominium] = React.useState<Condominium | undefined>(undefined);
+    
+    // Estados para o fluxo de provisionamento de sensor
+    const [sensorFormData, setSensorFormData] = React.useState<SensorFormData | null>(null);
+    const [qrCodeData, setQRCodeData] = React.useState<QRCodeData | null>(null);
     const [scannedSensorId, setScannedSensorId] = React.useState<string>('');
 
     const handleNavigateToUserManagement = () => {
@@ -54,19 +74,40 @@ export const MainNavigator: React.FC = () => {
     };
 
     const handleNavigateToSensorSetup = () => {
-        setManagementScreen('qrScanner');
+        // Iniciar pelo formulário do sensor
+        setManagementScreen('sensorForm');
     };
 
     const handleNavigateToNotifications = () => {
         setManagementScreen('notifications');
     };
 
-    const handleQRScanSuccess = (sensorId: string) => {
+    const handleNavigateToQRCodeManagement = () => {
+        setManagementScreen('qrCodeManagement');
+    };
+
+    // Novo fluxo de sensor
+    const handleSensorFormNext = (data: SensorFormData) => {
+        setSensorFormData(data);
+        setManagementScreen('qrScanner');
+    };
+
+    const handleQRScanSuccess = (data: QRCodeData) => {
+        setQRCodeData(data);
+        setManagementScreen('sensorWiFiConfig');
+    };
+
+    const handleSensorWiFiSuccess = () => {
+        setManagementScreen('sensorSuccess');
+    };
+
+    // Compatibilidade com fluxo antigo (caso ainda exista)
+    const handleOldQRScanSuccess = (sensorId: string) => {
         setScannedSensorId(sensorId);
         setManagementScreen('sensorWiFiSetup');
     };
 
-    const handleSensorWiFiSuccess = () => {
+    const handleOldSensorWiFiSuccess = () => {
         setManagementScreen('sensorSuccess');
     };
 
@@ -74,6 +115,8 @@ export const MainNavigator: React.FC = () => {
         setManagementScreen(null);
         setEditingUser(undefined);
         setEditingCondominium(undefined);
+        setSensorFormData(null);
+        setQRCodeData(null);
         setScannedSensorId('');
     };
 
@@ -126,20 +169,49 @@ export const MainNavigator: React.FC = () => {
             );
         }
 
+        // Novo fluxo de provisionamento de sensor
+        if (managementScreen === 'sensorForm') {
+            return (
+                <SensorFormScreen
+                    onBack={handleBackToHome}
+                    onNext={handleSensorFormNext}
+                />
+            );
+        }
+
         if (managementScreen === 'qrScanner') {
             return (
                 <QRCodeScannerScreen
-                    onBack={handleBackToHome}
+                    onBack={() => {
+                        // Se tem dados do sensor, volta para o form. Senão, volta para home
+                        if (sensorFormData) {
+                            setManagementScreen('sensorForm');
+                        } else {
+                            handleBackToHome();
+                        }
+                    }}
                     onScanSuccess={handleQRScanSuccess}
                 />
             );
         }
 
+        if (managementScreen === 'sensorWiFiConfig' && sensorFormData && qrCodeData) {
+            return (
+                <SensorWiFiConfigScreen
+                    onBack={() => setManagementScreen('qrScanner')}
+                    sensorData={sensorFormData}
+                    qrData={qrCodeData}
+                    onSuccess={handleSensorWiFiSuccess}
+                />
+            );
+        }
+
+        // Fluxo antigo (compatibilidade)
         if (managementScreen === 'sensorWiFiSetup') {
             return (
                 <SensorWiFiSetupScreen
                     onBack={() => setManagementScreen('qrScanner')}
-                    onSuccess={handleSensorWiFiSuccess}
+                    onSuccess={handleOldSensorWiFiSuccess}
                     sensorId={scannedSensorId}
                 />
             );
@@ -157,6 +229,14 @@ export const MainNavigator: React.FC = () => {
             return (
                 <NotificationsScreen
                     onBack={handleBackToHome}
+                />
+            );
+        }
+
+        if (managementScreen === 'qrCodeManagement') {
+            return (
+                <QRCodeManagementScreen
+                    onNavigateBack={handleBackToHome}
                 />
             );
         }
@@ -180,6 +260,7 @@ export const MainNavigator: React.FC = () => {
                         onNavigateToUserManagement={handleNavigateToUserManagement}
                         onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
                         onNavigateToSensorSetup={handleNavigateToSensorSetup}
+                        onNavigateToQRCodeManagement={handleNavigateToQRCodeManagement}
                         onNavigateToMap={handleNavigateToMap}
                         onNavigateToNotifications={handleNavigateToNotifications}
                     />

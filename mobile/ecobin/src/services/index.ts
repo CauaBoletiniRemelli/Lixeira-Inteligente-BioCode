@@ -1,6 +1,8 @@
 export * from './api';
-export * from './authService';
-export * from './userService';
-export * from './condominiumService';
-export * from './binService';
-export * from './notificationService';
+export { authService } from './authService';
+export { userService } from './userService';
+export { condominiumService } from './condominiumService';
+export { binService } from './binService';
+export { notificationService } from './notificationService';
+export { provisionamentoService } from './provisionamentoService';
+export { deviceService } from './deviceService';

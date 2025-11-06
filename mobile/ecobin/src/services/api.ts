@@ -127,7 +127,37 @@ axiosInstance.interceptors.request.use(
       
       const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
       if (userToken) {
-        config.headers.Authorization = `Bearer ${userToken}`;
+        // Valida se o token do usuário está expirado ANTES de fazer a requisição
+        try {
+          const tokenData = JSON.parse(atob(userToken.split('.')[1]));
+          const expirationTime = tokenData.exp * 1000;
+          const isExpired = Date.now() >= expirationTime - 60000; // Renova 1 minuto antes de expirar
+          
+          if (isExpired && !config.url?.includes('auth/RefreshToken')) {
+            console.log('🔄 Token expirado detectado, renovando antes da requisição...');
+            
+            if (!refreshTokenPromise) {
+              refreshTokenPromise = refreshUserToken();
+            }
+            
+            const success = await refreshTokenPromise;
+            refreshTokenPromise = null;
+            
+            if (success) {
+              const newUserToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
+              config.headers.Authorization = `Bearer ${newUserToken}`;
+              console.log('✅ Token renovado com sucesso antes da requisição');
+            } else {
+              console.log('❌ Falha ao renovar token antes da requisição');
+              // Continua com o token expirado, o interceptor de resposta vai lidar
+            }
+          } else {
+            config.headers.Authorization = `Bearer ${userToken}`;
+          }
+        } catch (tokenError) {
+          // Se houver erro ao decodificar, usa o token mesmo assim
+          config.headers.Authorization = `Bearer ${userToken}`;
+        }
       } else {
         const appToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
         if (appToken) {
@@ -290,6 +320,6 @@ export const api = {
   },
 };
 
-export { axiosInstance };
+export { axiosInstance, refreshUserToken };
 
 export default api;
