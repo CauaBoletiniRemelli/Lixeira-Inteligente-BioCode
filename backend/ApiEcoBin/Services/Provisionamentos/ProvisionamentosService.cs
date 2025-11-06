@@ -64,7 +64,7 @@ namespace ApiEcoBin.Services.Provisionamentos
             {
                 var sensor = new SensoresModel
                 {
-                    DeviceId = Guid.NewGuid().ToString("N"), 
+                    DeviceId = Guid.NewGuid().ToString("N"), // DeviceId temporário
                     DeviceKey = Guid.NewGuid().ToString("N"),
                     Nome = dto.NomeSensor,
                     CondominioId = dto.CondominioId,
@@ -246,10 +246,12 @@ namespace ApiEcoBin.Services.Provisionamentos
                 if (prov.Usado) return new ResponseModel<ProvisionActivateResponseDTO> { Status = false, Mensagem = "Provisionamento já usado." };
                 if (prov.Expiracao < DateTime.UtcNow) return new ResponseModel<ProvisionActivateResponseDTO> { Status = false, Mensagem = "Provisionamento expirado." };
 
+                // Buscar sensor pelo ID do provisionamento (pode ser placeholder)
                 var sensor = await _context.Sensores.FirstOrDefaultAsync(s => s.Id == prov.SensorId);
                 
                 if (sensor == null)
                 {
+                    // Criar novo sensor se não existir
                     sensor = new SensoresModel
                     {
                         DeviceId = dto.DeviceId,
@@ -266,7 +268,8 @@ namespace ApiEcoBin.Services.Provisionamentos
                 }
                 else
                 {
-                    sensor.DeviceId = dto.DeviceId;
+                    // Atualizar sensor placeholder com DeviceId real e outros dados
+                    sensor.DeviceId = dto.DeviceId; // IMPORTANTE: Atualiza o DeviceId temporário com o real
                     sensor.Nome = dto.NomeSensor ?? sensor.Nome;
                     sensor.CondominioId = dto.CondominioId;
                     sensor.Latitude = dto.Latitude ?? sensor.Latitude;
