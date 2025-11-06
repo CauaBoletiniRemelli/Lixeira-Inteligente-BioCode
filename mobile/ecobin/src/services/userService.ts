@@ -69,10 +69,7 @@ export const userService = {
   },
 
   updateEmail: async (data: ChangeEmail): Promise<ResponseModel<null>> => {
-    console.log('🔵 userService.updateEmail - Dados recebidos:', data);
-    console.log('🔵 userService.updateEmail - Endpoint:', '/Usuarios/change-email');
     const response = await api.post<ResponseModel<null>>(`/Usuarios/change-email`, data);
-    console.log('🔵 userService.updateEmail - Resposta recebida:', response);
     return response;
   },
 

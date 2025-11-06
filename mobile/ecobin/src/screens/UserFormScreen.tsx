@@ -372,7 +372,6 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                 </TouchableOpacity>
             </Modal>
 
-            {/* Modal de Seleção de Condomínio */}
             <Modal
                 visible={showCondominiumModal}
                 transparent

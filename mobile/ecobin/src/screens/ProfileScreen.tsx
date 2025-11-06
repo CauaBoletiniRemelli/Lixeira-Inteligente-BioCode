@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { Input, PasswordInput, Button } from '../components';
+import { Input, PasswordInput, Button, Loading } from '../components';
 import Alerta from '../components/Alert';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { authService, userService } from '../services';
 import { handleApiError, showApiAlert } from '../utils';
+import { mapTipoToRole } from '../utils/roleMapper';
 
 export const ProfileScreen: React.FC = () => {
     const { user } = useAuth();
@@ -17,6 +18,7 @@ export const ProfileScreen: React.FC = () => {
     const [email, setEmail] = useState(user?.email || '');
     const [userType, setUserType] = useState(user?.role === 'admin' ? 'Administrador' : user?.role === 'sindico' ? 'Síndico' : 'Coletor');
     const [condominium, setCondominium] = useState(user?.condominiumName || 'Nenhum condomínio associado');
+    const [loading, setLoading] = useState(false);
 
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [currentEmail, setCurrentEmail] = useState('');
@@ -39,6 +41,36 @@ export const ProfileScreen: React.FC = () => {
     const confirmNewPasswordRef = React.useRef<any>(null);
 
     const passwordsMatch = !confirmNewPassword || newPassword === confirmNewPassword;
+
+    // Buscar dados atualizados do usuário
+    const loadUserData = async () => {
+        if (!user?.id) return;
+
+        try {
+            setLoading(true);
+            const response = await userService.getById(String(user.id));
+
+            if (response.status && response.dados) {
+                const userData = response.dados;
+                setName(userData.nome || '');
+                setEmail(userData.email || '');
+
+                const role = mapTipoToRole(userData.tipo);
+                const roleLabel = role === 'admin' ? 'Administrador' : role === 'sindico' ? 'Síndico' : 'Coletor';
+                setUserType(roleLabel);
+
+                setCondominium(userData.condominio || 'Nenhum condomínio associado');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao carregar dados do usuário:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadUserData();
+    }, []);
 
     const showAlert = (message: string, type: 'success' | 'error') => {
         setAlertMessage(message);
@@ -87,22 +119,19 @@ export const ProfileScreen: React.FC = () => {
             newEmail: newEmail,
         }
 
-        console.log('DTO para alteração de e-mail:', dto);
-        
         try {
             setUpdatingEmail(true);
-            console.log('🔄 Iniciando requisição de alteração de e-mail...');
             const response = await userService.updateEmail(dto);
-            console.log('📥 Resposta da alteração de e-mail:', response);
-            console.log('📊 Status da resposta:', response?.status);
-            console.log('📊 Mensagem da resposta:', response?.mensagem);
-            
+
             if (response.status) {
                 showAlert(response.mensagem, 'success');
-                setShowEmailModal(false);
-                setCurrentEmail('');
-                setNewEmail('');
-                setConfirmNewEmail('');
+                setTimeout(() => {
+                    setShowEmailModal(false);
+                    setCurrentEmail('');
+                    setNewEmail('');
+                    setConfirmNewEmail('');
+                    loadUserData();
+                }, 2000);
             } else {
                 showAlert(response.mensagem, 'error');
             }
@@ -114,12 +143,21 @@ export const ProfileScreen: React.FC = () => {
             showAlert(errorMsg, 'error');
         } finally {
             setUpdatingEmail(false);
-            console.log('✅ Finalizou processo de alteração de e-mail');
         }
     };
 
     const handleChangePassword = async () => {
         if (updatingPassword) return;
+
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            showAlert('Preencha todos os campos', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            showAlert('As senhas não coincidem', 'error');
+            return;
+        }
 
         if (!user?.id) {
             showAlert('Usuário não identificado', 'error');
@@ -137,13 +175,20 @@ export const ProfileScreen: React.FC = () => {
             const response = await userService.updatePassword(dto);
 
             if (response.status) {
-                showAlert(response.mensagem, 'success');
-                setShowPasswordModal(false);
-                setCurrentPassword('');
-                setNewPassword('');
-                setConfirmNewPassword('');
+                if (response.mensagem == "Senha antiga incorreta!") {
+                    showAlert(response.mensagem, 'error');
+                    return;
+                } else {
+                    showAlert(response.mensagem || 'Senha alterada com sucesso!', 'success');
+                }
+                setTimeout(() => {
+                    setShowPasswordModal(false);
+                    setCurrentPassword('');
+                    setNewPassword('');
+                    setConfirmNewPassword('');
+                }, 2000);
             } else {
-                showAlert(response.mensagem, 'error');
+                showAlert(response.mensagem || 'Erro ao alterar senha', 'error');
             }
         } catch (error: any) {
             const errorMsg = error.response?.data?.mensagem || 'Erro ao alterar senha';
@@ -153,10 +198,18 @@ export const ProfileScreen: React.FC = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+                <StatusBar style="dark" />
+                <Loading />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
-            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -267,6 +320,7 @@ export const ProfileScreen: React.FC = () => {
                 animationType="fade"
                 onRequestClose={() => setShowEmailModal(false)}
             >
+                <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
@@ -353,6 +407,7 @@ export const ProfileScreen: React.FC = () => {
                 animationType="fade"
                 onRequestClose={() => setShowPasswordModal(false)}
             >
+                <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
