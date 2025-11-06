@@ -34,6 +34,12 @@ export interface ChangePassword {
   newPassword: string;
 }
 
+export interface ChangeEmail {
+  id: number;
+  oldEmail: string;
+  newEmail: string;
+}
+
 export interface ResponseModel<T> {
   dados: T | null;
   mensagem: string;
@@ -60,6 +66,14 @@ export const userService = {
 
   updatePassword: async (data: ChangePassword): Promise<ResponseModel<null>> => {
     return api.post<ResponseModel<null>>(`/Usuarios/change-password`, data);
+  },
+
+  updateEmail: async (data: ChangeEmail): Promise<ResponseModel<null>> => {
+    console.log('🔵 userService.updateEmail - Dados recebidos:', data);
+    console.log('🔵 userService.updateEmail - Endpoint:', '/Usuarios/change-email');
+    const response = await api.post<ResponseModel<null>>(`/Usuarios/change-email`, data);
+    console.log('🔵 userService.updateEmail - Resposta recebida:', response);
+    return response;
   },
 
   delete: async (id: string): Promise<ResponseModel<null>> => {

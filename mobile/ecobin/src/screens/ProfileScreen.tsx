@@ -31,7 +31,7 @@ export const ProfileScreen: React.FC = () => {
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
-    
+
     const [updatingEmail, setUpdatingEmail] = useState(false);
     const [updatingPassword, setUpdatingPassword] = useState(false);
 
@@ -70,22 +70,51 @@ export const ProfileScreen: React.FC = () => {
             return;
         }
 
+        if (!user?.id) {
+            showAlert('Usuário não identificado', 'error');
+            return;
+        }
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newEmail)) {
             showAlert('Digite um e-mail válido', 'error');
             return;
         }
 
+        const dto = {
+            id: user.id,
+            oldEmail: currentEmail,
+            newEmail: newEmail,
+        }
+
+        console.log('DTO para alteração de e-mail:', dto);
+        
         try {
             setUpdatingEmail(true);
-            setEmail(newEmail);
-            setShowEmailModal(false);
-            setCurrentEmail('');
-            setNewEmail('');
-            setConfirmNewEmail('');
-            showAlert('E-mail alterado com sucesso!', 'success');
+            console.log('🔄 Iniciando requisição de alteração de e-mail...');
+            const response = await userService.updateEmail(dto);
+            console.log('📥 Resposta da alteração de e-mail:', response);
+            console.log('📊 Status da resposta:', response?.status);
+            console.log('📊 Mensagem da resposta:', response?.mensagem);
+            
+            if (response.status) {
+                showAlert(response.mensagem, 'success');
+                setShowEmailModal(false);
+                setCurrentEmail('');
+                setNewEmail('');
+                setConfirmNewEmail('');
+            } else {
+                showAlert(response.mensagem, 'error');
+            }
+        } catch (error: any) {
+            console.error('❌ Erro completo:', error);
+            console.error('❌ Erro response:', error.response);
+            console.error('❌ Erro data:', error.response?.data);
+            const errorMsg = error.response?.data?.mensagem || 'Erro ao alterar e-mail';
+            showAlert(errorMsg, 'error');
         } finally {
             setUpdatingEmail(false);
+            console.log('✅ Finalizou processo de alteração de e-mail');
         }
     };
 
@@ -106,7 +135,7 @@ export const ProfileScreen: React.FC = () => {
         try {
             setUpdatingPassword(true);
             const response = await userService.updatePassword(dto);
-            
+
             if (response.status) {
                 showAlert(response.mensagem, 'success');
                 setShowPasswordModal(false);
