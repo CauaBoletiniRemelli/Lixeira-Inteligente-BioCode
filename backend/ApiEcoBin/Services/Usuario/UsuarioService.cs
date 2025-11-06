@@ -201,6 +201,7 @@ namespace ApiEcoBin.Services.Usuarios
             }
             return response;
         }
+
         public async Task<ResponseModel<UsuariosModel>> ChangeEmail(ChangeEmailDTO changeEmailDTO)
         {
             ResponseModel<UsuariosModel> response = new();
@@ -222,8 +223,10 @@ namespace ApiEcoBin.Services.Usuarios
                     return response;
                 }
 
+                user.Email = changeEmailDTO.NewEmail!;
                 _context.Usuarios.Update(user);
                 await _context.SaveChangesAsync();
+
                 response.Dados = user;
                 response.Mensagem = "E-mail alterado com sucesso!";
                 response.Status = true;
@@ -235,7 +238,6 @@ namespace ApiEcoBin.Services.Usuarios
             }
             return response;
         }
-
 
         public async Task<ResponseModel<List<UsuariosModel>>> DeleteUser(int idUser)
         {

@@ -307,8 +307,7 @@ namespace ApiEcoBin.Controllers
                                           <p>Você solicitou a redefinição de sua senha.</p>
 
                                           <p><strong>Sua nova senha temporária é:</strong> {randomPassword}</p>
-
-                                          <p>Por favor, faça login e altere sua senha o mais rápido possível.</p>
+                                          <p>Ao acessar sua conta, navegue até a seção de configurações e desça para alterar sua senha.</p>
 
                                           <p>Atenciosamente,<br>
                                           Equipe EcoBin</p>";
