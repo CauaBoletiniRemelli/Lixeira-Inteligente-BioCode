@@ -2,29 +2,30 @@ import { api } from './api';
 
 export interface User {
   id: string;
-  name: string;
+  nome: string;
   email: string;
   tipo: number; 
-  condominiumId?: string;
-  condominiumName?: string;
-  createdAt: string;
-  updatedAt: string;
+  condominioId?: string;
+  condominio?: string;
+  criadoEm?: string;
+  senhaHash?: string;
 }
 
 export interface CreateUserRequest {
-  name: string;
-  email: string;
-  password: string;
-  tipo: number; 
-  condominiumId?: string;
+  Nome: string;
+  Email: string;
+  SenhaHash: string;
+  Tipo: number; 
+  CondominioId?: number;
 }
 
 export interface UpdateUserRequest {
-  name?: string;
-  email?: string;
-  password?: string;
-  tipo?: number; 
-  condominiumId?: string;
+  Id: number;
+  Nome?: string;
+  Email?: string;
+  SenhaHash?: string;
+  Tipo?: number; 
+  CondominioId?: number;
 }
 
 export interface ChangePassword {
@@ -33,36 +34,44 @@ export interface ChangePassword {
   newPassword: string;
 }
 
+export interface ResponseModel<T> {
+  dados: T | null;
+  mensagem: string;
+  status: boolean;
+}
+
 export const userService = {
-  getAll: async (): Promise<User[]> => {
-    return api.get<User[]>('/users');
+  getAll: async (): Promise<ResponseModel<User[]>> => {
+    return api.get<ResponseModel<User[]>>('/Usuarios');
   },
 
-  getById: async (id: string): Promise<User> => {
-    return api.get<User>(`/users/${id}`);
+  getById: async (id: string): Promise<ResponseModel<User>> => {
+    return api.get<ResponseModel<User>>(`/Usuarios/${id}`);
   },
 
-  create: async (data: CreateUserRequest): Promise<User> => {
-    return api.post<User>('/users', data);
+  create: async (data: CreateUserRequest): Promise<ResponseModel<User>> => {
+    return api.post<ResponseModel<User>>('/Usuarios', data);
   },
 
-  update: async (id: string, data: UpdateUserRequest): Promise<User> => {
-    return api.put<User>(`/users/${id}`, data);
+  update: async (id: string, data: UpdateUserRequest): Promise<ResponseModel<User>> => {
+    // A API espera o ID dentro do body, não na URL
+    const updateData = { ...data, Id: Number(id) };
+    return api.put<ResponseModel<User>>('/Usuarios', updateData);
   },
 
-  updatePassword: async (data: ChangePassword): Promise<string> => {
-    return api.post<string>(`/Usuarios/change-password`, data);
+  updatePassword: async (data: ChangePassword): Promise<ResponseModel<null>> => {
+    return api.post<ResponseModel<null>>(`/Usuarios/change-password`, data);
   },
 
-  delete: async (id: string): Promise<void> => {
-    return api.delete(`/users/${id}`);
+  delete: async (id: string): Promise<ResponseModel<null>> => {
+    return api.delete<ResponseModel<null>>(`/Usuarios/${id}`);
   },
 
-  getByCondominium: async (condominiumId: string): Promise<User[]> => {
-    return api.get<User[]>(`/users/condominium/${condominiumId}`);
+  getByCondominium: async (condominiumId: string): Promise<ResponseModel<User[]>> => {
+    return api.get<ResponseModel<User[]>>(`/Usuarios/condominium/${condominiumId}`);
   },
 
-  getByTipo: async (tipo: number): Promise<User[]> => {
-    return api.get<User[]>(`/users/tipo/${tipo}`);
+  getByTipo: async (tipo: number): Promise<ResponseModel<User[]>> => {
+    return api.get<ResponseModel<User[]>>(`/Usuarios/tipo/${tipo}`);
   },
 };

@@ -1,10 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { BackButton, Input, Button, PasswordInput } from '../components';
+import { BackButton, Input, Button, PasswordInput, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { showApiAlert, handleApiError, showConfirmAlert } from '../utils';
+import { userService, condominiumService } from '../services';
+import Alerta from '../components/Alert';
 
 type UserRole = 'coletor' | 'sindico' | 'admin';
 
@@ -20,16 +23,10 @@ interface UserFormScreenProps {
     user?: User;
 }
 
-const CONDOMINIUMS = [
-    { id: '1', name: 'Edifício Tulipas' },
-    { id: '2', name: 'Residencial Girassol' },
-    { id: '3', name: 'Condomínio Primavera' },
-    { id: '4', name: 'Edifício Alameda' },
-    { id: '5', name: 'Residencial Jardins' },
-    { id: '6', name: 'Condomínio Vila Verde' },
-    { id: '7', name: 'Edifício Horizonte' },
-    { id: '8', name: 'Residencial Solar' },
-];
+interface CondominiumOption {
+    id: string | null;
+    name: string;
+}
 
 const ROLES = [
     { value: 'coletor' as UserRole, label: 'Coletor', icon: 'trash-outline' },
@@ -44,18 +41,57 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
     const [email, setEmail] = useState(user?.email || '');
     const [password, setPassword] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole>(user?.role || 'coletor');
-    const [selectedCondominium, setSelectedCondominium] = useState('Edifício Tulipas');
+    const [selectedCondominium, setSelectedCondominium] = useState<string | null>(null);
+    const [condominiums, setCondominiums] = useState<CondominiumOption[]>([]);
+    const [loadingCondominiums, setLoadingCondominiums] = useState(false);
 
-    // Referencias para os inputs
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
+
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
 
-    // Estados dos modais
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showCondominiumModal, setShowCondominiumModal] = useState(false);
     const [condominiumSearch, setCondominiumSearch] = useState('');
 
-    const filteredCondominiums = CONDOMINIUMS.filter(cond =>
+    useEffect(() => {
+        loadCondominiums();
+    }, []);
+
+    const loadCondominiums = async () => {
+        try {
+            setLoadingCondominiums(true);
+            const response = await condominiumService.getAll();
+
+            if (!response.dados) {
+                setCondominiums([{ id: null, name: 'Nenhum' }]);
+                return;
+            }
+
+            const condominiumsWithNone: CondominiumOption[] = [
+                { id: null, name: 'Nenhum' },
+                ...response.dados.map(cond => ({ id: cond.id, name: cond.nome }))
+            ];
+
+            setCondominiums(condominiumsWithNone);
+        } catch (error) {
+            console.error('Erro ao carregar condomínios:', error);
+            setCondominiums([{ id: null, name: 'Nenhum' }]);
+        } finally {
+            setLoadingCondominiums(false);
+        }
+    };
+
+    const filteredCondominiums = condominiums.filter((cond: CondominiumOption) =>
         cond.name.toLowerCase().includes(condominiumSearch.toLowerCase())
     );
 
@@ -63,41 +99,75 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
         return ROLES.find(r => r.value === role)?.label || 'Coletor';
     };
 
-    const handleSave = () => {
+    const getSelectedCondominiumName = () => {
+        const cond = condominiums.find(c => c.id === selectedCondominium);
+        return cond?.name || 'Selecione um condomínio';
+    };
+
+    const handleSave = async () => {
         if (!name || !email || (!isEditing && !password)) {
-            Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
+            showAlert('Preencha todos os campos obrigatórios', 'error');
             return;
         }
 
-        const action = isEditing ? 'atualizado' : 'cadastrado';
-        Alert.alert('Sucesso', `Usuário ${action} com sucesso!`);
-        onBack();
+        try {
+            if (isEditing) {
+                const updateData: any = {
+                    Id: Number(user!.id),
+                    Nome: name,
+                    Email: email,
+                    Tipo: selectedRole === 'admin' ? 1 : selectedRole === 'sindico' ? 2 : 3,
+                    CondominioId: selectedCondominium ? Number(selectedCondominium) : undefined,
+                };
+
+                if (password) {
+                    updateData.SenhaHash = password;
+                }
+
+                const response = await userService.update(user!.id, updateData);
+                showApiAlert(response);
+            } else {
+                const createData = {
+                    Nome: name,
+                    Email: email,
+                    SenhaHash: password,
+                    Tipo: selectedRole === 'admin' ? 1 : selectedRole === 'sindico' ? 2 : 3,
+                    CondominioId: selectedCondominium ? Number(selectedCondominium) : undefined,
+                };
+                
+                const response = await userService.create(createData);
+                showApiAlert(response);
+            }
+
+            onBack();
+        } catch (error) {
+            handleApiError(error);
+        }
     };
 
-    const handleDelete = () => {
-        Alert.alert(
+    const handleDelete = async () => {
+        const confirmed = await showConfirmAlert(
             'Confirmar Exclusão',
             `Tem certeza que deseja remover o usuário ${user?.name}? Esta ação não pode ser desfeita.`,
-            [
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Remover',
-                    style: 'destructive',
-                    onPress: () => {
-                        Alert.alert('Sucesso', 'Usuário removido com sucesso!');
-                        onBack();
-                    },
-                },
-            ]
+            'Remover',
+            'Cancelar'
         );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await userService.delete(user!.id);
+            showApiAlert(response);
+            onBack();
+        } catch (error) {
+            handleApiError(error);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
+            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
             <View style={styles.header}>
                 <BackButton onPress={onBack} />
@@ -195,8 +265,12 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                                     onPress={() => setShowCondominiumModal(true)}
                                 >
                                     <View style={styles.selectContent}>
-                                        <Ionicons name="home-outline" size={20} color={COLORS.primary} />
-                                        <Text style={styles.selectText}>{selectedCondominium}</Text>
+                                        <Ionicons
+                                            name={selectedCondominium === null ? "close-circle-outline" : "home-outline"}
+                                            size={20}
+                                            color={COLORS.primary}
+                                        />
+                                        <Text style={styles.selectText}>{getSelectedCondominiumName()}</Text>
                                     </View>
                                     <Ionicons name="chevron-down" size={20} color={COLORS.text.secondary} />
                                 </TouchableOpacity>
@@ -320,34 +394,34 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
 
                         <FlatList
                             data={filteredCondominiums}
-                            keyExtractor={(item) => item.id}
+                            keyExtractor={(item) => item.id || 'none'}
                             style={styles.modalList}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
                                     style={[
                                         styles.condominiumOption,
-                                        selectedCondominium === item.name && styles.condominiumOptionSelected,
+                                        selectedCondominium === item.id && styles.condominiumOptionSelected,
                                     ]}
                                     onPress={() => {
-                                        setSelectedCondominium(item.name);
+                                        setSelectedCondominium(item.id);
                                         setShowCondominiumModal(false);
                                         setCondominiumSearch('');
                                     }}
                                 >
                                     <View style={styles.condominiumInfo}>
                                         <Ionicons
-                                            name="home"
+                                            name={item.id === null ? "close-circle-outline" : "home"}
                                             size={22}
-                                            color={selectedCondominium === item.name ? COLORS.primary : COLORS.text.secondary}
+                                            color={selectedCondominium === item.id ? COLORS.primary : COLORS.text.secondary}
                                         />
                                         <Text style={[
                                             styles.condominiumLabel,
-                                            selectedCondominium === item.name && styles.condominiumLabelSelected,
+                                            selectedCondominium === item.id && styles.condominiumLabelSelected,
                                         ]}>
                                             {item.name}
                                         </Text>
                                     </View>
-                                    {selectedCondominium === item.name && (
+                                    {selectedCondominium === item.id && (
                                         <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
                                     )}
                                 </TouchableOpacity>

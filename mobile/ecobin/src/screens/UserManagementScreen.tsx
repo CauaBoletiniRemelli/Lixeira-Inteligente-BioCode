@@ -1,32 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { BackButton } from '../components';
+import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { userService } from '../services';
+import { User } from '../types';
+import { mapTipoToRole } from '../utils';
 
 type UserRole = 'coletor' | 'sindico' | 'admin';
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-}
 
 interface UserManagementScreenProps {
     onBack: () => void;
     onEditUser: (user: User) => void;
     onCreateUser: () => void;
 }
-
-const mockUsers: User[] = [
-    { id: '1', name: 'João Silva', email: 'joaodasilva@gmail.com', role: 'coletor' },
-    { id: '2', name: 'Maria Clara', email: 'mariamcmc@gmail.com', role: 'sindico' },
-    { id: '3', name: 'Lucas Costa Mendes', email: 'mendesluucas@gmail.com', role: 'admin' },
-    { id: '4', name: 'Márcio Mariano', email: 'joaodasilva@gmail.com', role: 'coletor' },
-];
 
 export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
     onBack,
@@ -36,6 +25,38 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
     const [selectedFilter, setSelectedFilter] = useState<UserRole | 'all'>('all');
     const [emailFilter, setEmailFilter] = useState('');
     const [nameFilter, setNameFilter] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadUsers();
+    }, []);
+
+    const loadUsers = async () => {
+        try {
+            setLoading(true);
+            const data = await getUsers();
+            setUsers(data);
+        } catch (error) {
+            console.error('Erro ao carregar usuários:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getUsers = async (): Promise<User[]> => {
+        const response = await userService.getAll();
+        if (!response.dados) return [];
+        
+        return response.dados.map((user) => ({
+            id: Number(user.id),
+            name: user.nome || 'Sem nome',
+            email: user.email || '',
+            role: mapTipoToRole(user.tipo),
+            condominiumId: user.condominioId ? Number(user.condominioId) : undefined,
+            condominiumName: user.condominio,
+        }));
+    }
 
     const getRoleLabel = (role: UserRole) => {
         switch (role) {
@@ -53,12 +74,21 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
         }
     };
 
-    const filteredUsers = mockUsers.filter(user => {
+    const filteredUsers = users.filter((user: User) => {
         const matchesRole = selectedFilter === 'all' || user.role === selectedFilter;
-        const matchesEmail = user.email.toLowerCase().includes(emailFilter.toLowerCase());
-        const matchesName = user.name.toLowerCase().includes(nameFilter.toLowerCase());
+        const matchesEmail = user.email?.toLowerCase().includes(emailFilter.toLowerCase()) ?? true;
+        const matchesName = user.name?.toLowerCase().includes(nameFilter.toLowerCase()) ?? true;
         return matchesRole && matchesEmail && matchesName;
     });
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+                <StatusBar style="dark" />
+                <Loading />
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>

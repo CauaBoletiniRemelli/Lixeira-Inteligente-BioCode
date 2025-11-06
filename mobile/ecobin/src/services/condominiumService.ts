@@ -2,56 +2,56 @@ import { api } from './api';
 
 export interface Condominium {
   id: string;
-  name: string;
-  address: string;
+  nome: string;
+  endereco: string;
   cep: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
+  status?: 'active' | 'inactive';
+  criadoEm?: string;
+  atualizadoEm?: string;
 }
 
 export interface CreateCondominiumRequest {
-  name: string;
-  address: string;
+  nome: string;
+  endereco: string;
   cep: string;
   status?: 'active' | 'inactive';
 }
 
 export interface UpdateCondominiumRequest {
-  name?: string;
-  address?: string;
+  nome?: string;
+  endereco?: string;
   cep?: string;
   status?: 'active' | 'inactive';
 }
 
+export interface ResponseModel<T> {
+  dados: T | null;
+  mensagem: string;
+  status: boolean;
+}
+
 export const condominiumService = {
-  // Listar todos os condomínios
-  getAll: async (): Promise<Condominium[]> => {
-    return api.get<Condominium[]>('/condominiums');
+  getAll: async (): Promise<ResponseModel<Condominium[]>> => {
+    return api.get<ResponseModel<Condominium[]>>('/Condominios');
   },
 
-  // Obter condomínio por ID
-  getById: async (id: string): Promise<Condominium> => {
-    return api.get<Condominium>(`/condominiums/${id}`);
+  getById: async (id: string): Promise<ResponseModel<Condominium>> => {
+    return api.get<ResponseModel<Condominium>>(`/Condominios/${id}`);
   },
 
-  // Criar condomínio
-  create: async (data: CreateCondominiumRequest): Promise<Condominium> => {
-    return api.post<Condominium>('/condominiums', data);
+  create: async (data: CreateCondominiumRequest): Promise<ResponseModel<Condominium>> => {
+    return api.post<ResponseModel<Condominium>>('/Condominios', data);
   },
 
-  // Atualizar condomínio
-  update: async (id: string, data: UpdateCondominiumRequest): Promise<Condominium> => {
-    return api.put<Condominium>(`/condominiums/${id}`, data);
+  update: async (id: string, data: UpdateCondominiumRequest): Promise<ResponseModel<Condominium>> => {
+    return api.put<ResponseModel<Condominium>>(`/Condominios/${id}`, data);
   },
 
-  // Deletar condomínio
-  delete: async (id: string): Promise<void> => {
-    return api.delete(`/condominiums/${id}`);
+  delete: async (id: string): Promise<ResponseModel<null>> => {
+    return api.delete<ResponseModel<null>>(`/Condominios/${id}`);
   },
 
-  // Listar condomínios ativos
-  getActive: async (): Promise<Condominium[]> => {
-    return api.get<Condominium[]>('/condominiums/active');
+  getActive: async (): Promise<ResponseModel<Condominium[]>> => {
+    return api.get<ResponseModel<Condominium[]>>('/Condominios/active');
   },
 };

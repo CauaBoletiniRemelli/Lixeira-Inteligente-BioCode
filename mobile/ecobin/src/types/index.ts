@@ -16,7 +16,8 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  condominium?: string;
+  condominiumName?: string;
+  condominiumId?: number;
 }
 
 export interface Collection {

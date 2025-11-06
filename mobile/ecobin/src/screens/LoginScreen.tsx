@@ -6,6 +6,8 @@ import { Button, Input, PasswordInput } from '../components';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS, SPACING } from '../constants';
 import { isValidEmail } from '../utils';
+import { handleApiError, showApiAlert } from '../utils';
+import Alerta from '../components/Alert';
 
 interface LoginScreenProps {
     onNavigateToSignUp?: () => void;
@@ -20,6 +22,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
     const [passwordError, setPasswordError] = useState('');
     const passwordInputRef = useRef<TextInput>(null);
 
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
+
     const handleLogin = async () => {
         setEmailError('');
         setPasswordError('');
@@ -27,7 +40,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         let hasError = false;
 
         if (!email) {
-            setEmailError('Email é obrigatório');
+            setEmailError('E-mail é obrigatório');
             hasError = true;
         } else if (!isValidEmail(email)) {
             setEmailError('Email inválido');
@@ -37,27 +50,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         if (!password) {
             setPasswordError('Senha é obrigatória');
             hasError = true;
-        } else if (password.length < 6) {
-            setPasswordError('Senha deve ter no mínimo 6 caracteres');
-            hasError = true;
-        }
+        } 
 
         if (hasError) return;
 
         try {
             await login(email, password);
         } catch (error: any) {
-            console.error('Erro no login:', error);
-            Alert.alert(
-                'Erro ao fazer login', 
-                error.message || 'Falha ao fazer login. Verifique suas credenciais e tente novamente.'
-            );
+            console.log('Erro no login:', error);
+            showAlert(error.message || 'Falha ao fazer login. Verifique suas credenciais e tente novamente.', 'error');
         }
     };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
+            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -107,12 +115,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
                                 onChangeText={setPassword}
                                 error={passwordError}
                                 returnKeyType="done"
-                                onSubmitEditing={handleLogin}
                             />
 
                             <TouchableOpacity
                                 style={styles.forgotPasswordContainer}
-                                onPress={onNavigateToForgotPassword || (() => Alert.alert('Recuperar Senha', 'Funcionalidade em desenvolvimento'))}
+                                onPress={onNavigateToForgotPassword}
                             >
                                 <Text style={styles.forgotPasswordText}>
                                     Esqueceu sua senha?

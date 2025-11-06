@@ -51,13 +51,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(true);
         
         try {
-            const response = await authService.login({ email, password });
+            const loginData = { Email: email, Password: password };
+            const response = await authService.login(loginData);
 
             if (!response.status || !response.dados) {
                 throw new Error(response.mensagem || 'Erro ao fazer login');
             }
 
-            const { token: tokenObj, refreshToken, userId, email: userEmail, nome, tipo } = response.dados;
+            const { token: tokenObj, refreshToken, userId, email: userEmail, nome, tipo, condominiumId, condominiumName } = response.dados;
 
             const token = typeof tokenObj === 'string' ? tokenObj : tokenObj.token;
 
@@ -68,6 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 name: nome,
                 email: userEmail,
                 role: role,
+                condominiumId: condominiumId,
+                condominiumName: condominiumName,
             };
 
             await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authenticatedUser));
@@ -76,8 +79,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             setUser(authenticatedUser);
         } catch (error: any) {
-            console.error('Erro ao fazer login:', error);
-            
             let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
             
             if (error.response) {

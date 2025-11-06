@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { Input, PasswordInput, Button } from '../components';
+import Alerta from '../components/Alert';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { authService, userService } from '../services';
+import { handleApiError, showApiAlert } from '../utils';
 
 export const ProfileScreen: React.FC = () => {
     const { user } = useAuth();
@@ -14,7 +16,7 @@ export const ProfileScreen: React.FC = () => {
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
     const [userType, setUserType] = useState(user?.role === 'admin' ? 'Administrador' : user?.role === 'sindico' ? 'Síndico' : 'Coletor');
-    const [condominium, setCondominium] = useState(user?.condominium || 'Nenhum condomínio associado');
+    const [condominium, setCondominium] = useState(user?.condominiumName || 'Nenhum condomínio associado');
 
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [currentEmail, setCurrentEmail] = useState('');
@@ -26,35 +28,46 @@ export const ProfileScreen: React.FC = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+
     const newPasswordRef = React.useRef<any>(null);
     const confirmNewPasswordRef = React.useRef<any>(null);
 
     const passwordsMatch = !confirmNewPassword || newPassword === confirmNewPassword;
 
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
+
     const handleChangeEmail = () => {
         if (!currentEmail || !newEmail || !confirmNewEmail) {
-            Alert.alert('Erro', 'Preencha todos os campos');
+            showAlert('Preencha todos os campos', 'error');
             return;
         }
 
         if (currentEmail !== email) {
-            Alert.alert('Erro', 'E-mail atual incorreto');
+            showAlert('E-mail atual incorreto', 'error');
             return;
         }
 
         if (newEmail !== confirmNewEmail) {
-            Alert.alert('Erro', 'Os novos e-mails não coincidem');
+            showAlert('Os novos e-mails não coincidem', 'error');
             return;
         }
 
         if (newEmail === currentEmail) {
-            Alert.alert('Erro', 'O novo e-mail deve ser diferente do atual');
+            showAlert('O novo e-mail deve ser diferente do atual', 'error');
             return;
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newEmail)) {
-            Alert.alert('Erro', 'Digite um e-mail válido');
+            showAlert('Digite um e-mail válido', 'error');
             return;
         }
 
@@ -63,22 +76,12 @@ export const ProfileScreen: React.FC = () => {
         setCurrentEmail('');
         setNewEmail('');
         setConfirmNewEmail('');
-        Alert.alert('Sucesso', 'E-mail alterado com sucesso!');
+        showAlert('E-mail alterado com sucesso!', 'success');
     };
 
-    const handleChangePassword = () => {
-        if (!currentPassword || !newPassword || !confirmNewPassword) {
-            Alert.alert('Erro', 'Preencha todos os campos');
-            return;
-        }
-
-        if (newPassword === currentPassword) {
-            Alert.alert('Erro', 'A nova senha deve ser diferente da atual');
-            return;
-        }
-
+    const handleChangePassword = async () => {
         if (!user?.id) {
-            Alert.alert('Erro', 'Usuário não identificado');
+            showAlert('Usuário não identificado', 'error');
             return;
         }
 
@@ -88,14 +91,28 @@ export const ProfileScreen: React.FC = () => {
             newPassword: newPassword,
         }
 
-        userService.updatePassword(dto)
-        Alert.alert('Sucesso', 'Senha alterada com sucesso!');
+        try {
+            const response = await userService.updatePassword(dto);
+            
+            if (response.status) {
+                showAlert(response.mensagem, 'success');
+                setShowPasswordModal(false);
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmNewPassword('');
+            } else {
+                showAlert(response.mensagem, 'error');
+            }
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.mensagem || 'Erro ao alterar senha';
+            showAlert(errorMsg, 'error');
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
-
+            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}

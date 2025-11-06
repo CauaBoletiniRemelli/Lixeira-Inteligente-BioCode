@@ -1,8 +1,8 @@
 import { api } from './api';
 
 export interface LoginRequest {
-  email: string;
-  password: string;
+  Email: string;
+  Password: string;
 }
 
 export interface AuthModel {
@@ -44,25 +44,19 @@ export interface RegisterRequest {
 }
 
 export interface ForgotPasswordRequest {
-  email: string;
+  usuEmail: string;
 }
 
-export interface ResetPasswordRequest {
-  token: string;
-  newPassword: string;
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export interface UpdateProfileRequest {
-  name?: string;
-  email?: string;
+export interface AppLoginRequest {
+  appId: string;
+  appSecret: string;
 }
 
 export const authService = {
+  appLogin: async (data: AppLoginRequest): Promise<LoginResponse> => {
+    return api.post<LoginResponse>('auth/AppLogin', data);
+  },
+
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     return api.post<LoginResponse>('auth/login', data);
   },
@@ -72,7 +66,7 @@ export const authService = {
   },
 
   forgotPassword: async (data: ForgotPasswordRequest): Promise<{ message: string }> => {
-    return api.post('/auth/forgot-password', data);
+    return api.post(`/auth/forgot-password?usuEmail=${encodeURIComponent(data.usuEmail)}`);
   },
 
   logout: async (refreshToken: string): Promise<ResponseModel<null>> => {

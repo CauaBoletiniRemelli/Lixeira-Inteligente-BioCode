@@ -5,6 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Button, HeaderWithLogo, Input } from '../components';
 import { COLORS, SPACING } from '../constants';
 import { isValidEmail } from '../utils';
+import Alerta from '../components/Alert';
+import { authService } from '../services';
 
 interface ForgotPasswordScreenProps {
     onBackToLogin?: () => void;
@@ -14,6 +16,17 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
 
     const handleRecoverPassword = async () => {
         setEmailError('');
@@ -28,20 +41,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
 
         try {
             setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            Alert.alert(
-                'Email Enviado!',
-                'Caso o e-mail esteja cadastrado, você receberá instruções para recuperar sua senha.',
-                [
-                    {
-                        text: 'OK',
-                        onPress: onBackToLogin,
-                    },
-                ]
-            );
+            await authService.forgotPassword({ usuEmail: email });
+            showAlert('Caso o e-mail esteja cadastrado, você receberá instruções para recuperar sua senha.', 'success');
         } catch (error) {
-            Alert.alert('Erro', 'Falha ao enviar email de recuperação. Tente novamente.');
+            showAlert('Falha ao enviar email de recuperação. Tente novamente.', 'error');
         } finally {
             setLoading(false);
         }
@@ -50,6 +53,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar style="dark" />
+            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <HeaderWithLogo onBackPress={onBackToLogin} />
             <KeyboardAvoidingView
                 style={styles.container}
