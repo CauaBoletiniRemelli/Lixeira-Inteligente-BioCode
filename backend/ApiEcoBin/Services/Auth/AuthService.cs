@@ -142,56 +142,95 @@ namespace ApiEcoBin.Services.Auth
         {
             ResponseModel<AuthModel> response = new();
 
-            if (string.IsNullOrEmpty(request.AccessToken) || string.IsNullOrEmpty(request.RefreshToken))
+            if (string.IsNullOrEmpty(request.RefreshToken))
             {
                 response.Dados = null;
-                response.Mensagem = "Token inválido.";
+                response.Mensagem = "Refresh token é obrigatório.";
                 response.Status = false;
                 return response;
             }
 
             try
             {
-                ClaimsPrincipal? principal = TokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-                if (principal == null)
-                {
-                    response.Dados = null;
-                    response.Mensagem = "Token inválido.";
-                    response.Status = false;
-                    return response;
-                }
-
-                string? userIdClaim = principal.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    response.Dados = null;
-                    response.Mensagem = "Token inválido.";
-                    response.Status = false;
-                    return response;
-                }
-
-                int userId = int.Parse(userIdClaim);
-
                 RefreshTokensModel? storedRefreshToken = await _context.RefreshTokens
                     .Include(rt => rt.Usuario)
-                    .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken && rt.UsuarioId == userId);
+                    .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
 
-                if (storedRefreshToken == null || storedRefreshToken.Revogado || storedRefreshToken.Expiracao < DateTime.UtcNow)
+                if (storedRefreshToken == null)
                 {
                     response.Dados = null;
-                    response.Mensagem = "Refresh token inválido ou expirado.";
+                    response.Mensagem = "Refresh token não encontrado.";
                     response.Status = false;
                     return response;
                 }
 
+                if (storedRefreshToken.Revogado)
+                {
+                    response.Dados = null;
+                    response.Mensagem = "Refresh token já foi utilizado ou revogado. Faça login novamente.";
+                    response.Status = false;
+                    return response;
+                }
+
+                if (storedRefreshToken.Expiracao < DateTime.UtcNow)
+                {
+                    response.Dados = null;
+                    response.Mensagem = "Refresh token expirado. Faça login novamente.";
+                    response.Status = false;
+                    return response;
+                }
+
+                var ultimoRefreshToken = await _context.RefreshTokens
+                    .Where(rt => rt.UsuarioId == storedRefreshToken.UsuarioId && !rt.Revogado)
+                    .OrderByDescending(rt => rt.CriadoEm)
+                    .FirstOrDefaultAsync();
+
+                if (ultimoRefreshToken != null && ultimoRefreshToken.Id != storedRefreshToken.Id)
+                {
+                    response.Dados = null;
+                    response.Mensagem = "Token não é o mais recente. Utilize o último refresh token recebido.";
+                    response.Status = false;
+                    return response;
+                }
+
+                // Validar o AccessToken apenas se fornecido (opcional agora)
+                if (!string.IsNullOrEmpty(request.AccessToken))
+                {
+                    try
+                    {
+                        ClaimsPrincipal? principal = TokenService.GetPrincipalFromExpiredToken(request.AccessToken);
+                        if (principal != null)
+                        {
+                            string? userIdClaim = principal.FindFirst("userId")?.Value;
+                            if (!string.IsNullOrEmpty(userIdClaim))
+                            {
+                                int tokenUserId = int.Parse(userIdClaim);
+                                if (tokenUserId != storedRefreshToken.UsuarioId)
+                                {
+                                    response.Dados = null;
+                                    response.Mensagem = "Token não corresponde ao usuário.";
+                                    response.Status = false;
+                                    return response;
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                // Gerar novos tokens
                 object newAccessToken = TokenService.GenerateToken(storedRefreshToken.Usuario);
                 string newRefreshToken = TokenService.GenerateRefreshToken();
 
+                // Revogar o token antigo
                 storedRefreshToken.Revogado = true;
 
+                // Criar novo refresh token
                 RefreshTokensModel newRefreshTokenModel = new RefreshTokensModel
                 {
-                    UsuarioId = userId,
+                    UsuarioId = storedRefreshToken.UsuarioId,
                     Token = newRefreshToken,
                     Expiracao = DateTime.UtcNow.AddDays(7),
                     Usuario = storedRefreshToken.Usuario
@@ -200,7 +239,8 @@ namespace ApiEcoBin.Services.Auth
                 _context.RefreshTokens.Add(newRefreshTokenModel);
                 await _context.SaveChangesAsync();
 
-                CondominiosModel? condominio = await _context.Condominios.FirstOrDefaultAsync(c => c.Id == storedRefreshToken.Usuario.CondominioId);
+                CondominiosModel? condominio = await _context.Condominios
+                    .FirstOrDefaultAsync(c => c.Id == storedRefreshToken.Usuario.CondominioId);
 
                 response.Dados = new AuthModel
                 {
@@ -216,10 +256,10 @@ namespace ApiEcoBin.Services.Auth
                 response.Mensagem = "Token renovado com sucesso!";
                 response.Status = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 response.Dados = null;
-                response.Mensagem = "Token inválido.";
+                response.Mensagem = $"Erro ao renovar token: {ex.Message}";
                 response.Status = false;
             }
             return response;
