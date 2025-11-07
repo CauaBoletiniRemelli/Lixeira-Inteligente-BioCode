@@ -1,6 +1,7 @@
 ﻿using ApiEcoBin.Data;
 using ApiEcoBin.Enums;
 using ApiEcoBin.Services;
+using ApiEcoBin.Services.Auth;
 using ApiEcoBin.Services.Condominio;
 using ApiEcoBin.Services.PasswordHash;
 using ApiEcoBin.Services.Provisionamentos;
@@ -59,6 +60,7 @@ namespace ApiEcoBin
             builder.Services.AddScoped<ICondominioInterface, CondominioService>();
             builder.Services.AddScoped<ISensoresInterface, SensoresService>();
             builder.Services.AddScoped<IProvisionamentosInteraface, ProvisionamentosService>();
+            builder.Services.AddScoped<IAuthInterface, AuthService>();
             builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
             builder.Services.AddSingleton<TokenService>();
             builder.Services.AddAuthorizationBuilder()
