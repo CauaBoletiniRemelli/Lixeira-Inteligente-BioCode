@@ -61,13 +61,17 @@ async function refreshUserToken(): Promise<boolean> {
     const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
 
     if (!userToken || !refreshToken) {
+      console.log('⚠️ Tokens ausentes, não é possível renovar');
       return false;
     }
 
+    // Garante que temos um token de app válido antes de tentar refresh
     await AsyncStorage.removeItem(APP_TOKEN_KEY);
     appAuthPromise = null;
     appAuthPromise = authenticateApp(true);
     const appToken = await appAuthPromise;
+
+    console.log('🔄 Tentando renovar token de usuário...');
 
     const response = await axios.post(`${API_URL}auth/RefreshToken`, {
       AccessToken: userToken,
@@ -86,9 +90,11 @@ async function refreshUserToken(): Promise<boolean> {
       await AsyncStorage.setItem(USER_TOKEN_KEY, newToken);
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
 
+      console.log('✅ Token renovado com sucesso');
       return true;
     }
 
+    console.log('❌ Resposta inválida ao renovar token');
     return false;
   } catch (error: any) {
     console.error('❌ Erro ao renovar token:', {
@@ -97,6 +103,7 @@ async function refreshUserToken(): Promise<boolean> {
       data: error.response?.data
     });
 
+    // Limpa os tokens inválidos
     await AsyncStorage.removeItem(USER_TOKEN_KEY);
     await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
     return false;
@@ -116,6 +123,7 @@ axiosInstance.interceptors.request.use(
     try {
       const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
 
+      // Sempre garante token do app para endpoints não-AppLogin
       if (!config.url?.includes('AppLogin')) {
         if (!appAuthPromise) {
           appAuthPromise = authenticateApp();
@@ -130,14 +138,18 @@ axiosInstance.interceptors.request.use(
         }
       }
 
+      // Verifica se há token de usuário e se está válido
       const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
       if (userToken) {
         try {
           const tokenData = JSON.parse(atob(userToken.split('.')[1]));
           const expirationTime = tokenData.exp * 1000;
-          const isExpired = Date.now() >= expirationTime - 60000;
+          const currentTime = Date.now();
+          const isExpired = currentTime >= expirationTime - 60000; // 60 segundos antes de expirar
 
-          if (isExpired && !config.url?.includes('auth/RefreshToken')) {
+          // Se o token está expirando e não é uma requisição de refresh
+          if (isExpired && !config.url?.includes('auth/RefreshToken') && !config.url?.includes('AppLogin')) {
+            console.log('⚠️ Token expirando em breve, renovando...');
 
             if (!refreshTokenPromise) {
               refreshTokenPromise = refreshUserToken();
@@ -149,14 +161,22 @@ axiosInstance.interceptors.request.use(
             if (success) {
               const newUserToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
               config.headers.Authorization = `Bearer ${newUserToken}`;
+              console.log('✅ Token renovado no interceptor');
+            } else {
+              console.log('❌ Falha ao renovar token, usando token de app');
+              const appToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
+              config.headers.Authorization = `Bearer ${appToken}`;
             }
           } else {
+            // Token ainda válido, usa ele
             config.headers.Authorization = `Bearer ${userToken}`;
           }
         } catch (tokenError) {
+          console.error('❌ Erro ao processar token:', tokenError);
           config.headers.Authorization = `Bearer ${userToken}`;
         }
       } else {
+        // Sem token de usuário, usa token de app
         const appToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
         if (appToken) {
           config.headers.Authorization = `Bearer ${appToken}`;
@@ -189,9 +209,12 @@ axiosInstance.interceptors.response.use(
       switch (error.response.status) {
         case 401:
         case 403:
+          console.log(`⚠️ Erro ${error.response.status} em ${error.config.url}`);
+          
           const isTokenExpired = error.response.headers?.['www-authenticate']?.includes('expired') ||
             error.response.headers?.['www-authenticate']?.includes('invalid_token');
 
+          // Se erro 401/403 no login, tenta renovar token do app
           if (error.config.url?.includes('auth/login') && isTokenExpired && !originalRequest._retry) {
             try {
               originalRequest._retry = true;
@@ -211,6 +234,7 @@ axiosInstance.interceptors.response.use(
             }
           }
 
+          // Para outros endpoints protegidos, tenta renovar o token de usuário
           if (!error.config.url?.includes('AppLogin') &&
             !error.config.url?.includes('auth/login') &&
             !error.config.url?.includes('auth/RefreshToken') &&
@@ -222,6 +246,8 @@ axiosInstance.interceptors.response.use(
               if (userToken) {
                 originalRequest._retry = true;
 
+                console.log('🔄 Tentando renovar token após erro 401/403...');
+
                 if (!refreshTokenPromise) {
                   refreshTokenPromise = refreshUserToken();
                 }
@@ -232,10 +258,16 @@ axiosInstance.interceptors.response.use(
                 if (success) {
                   const newUserToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
                   error.config.headers.Authorization = `Bearer ${newUserToken}`;
+                  console.log('✅ Retentando requisição com novo token');
                   return axiosInstance.request(error.config);
+                } else {
+                  console.log('❌ Falha ao renovar token de usuário');
                 }
               } else {
+                // Sem token de usuário, tenta renovar token do app
                 originalRequest._retry = true;
+
+                console.log('🔄 Sem token de usuário, renovando token do app...');
 
                 await AsyncStorage.removeItem(APP_TOKEN_KEY);
                 appAuthPromise = null;
@@ -254,7 +286,7 @@ axiosInstance.interceptors.response.use(
           break;
         case 404:
           if (!originalRequest._retry) {
-            console.log('❌ Recurso não encontrado');
+            console.log('❌ Recurso não encontrado:', error.config.url);
           }
           break;
       }

@@ -63,6 +63,11 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
     useEffect(() => {
         const initializeScreen = async () => {
+            if (!user) {
+                console.log('⚠️ Usuário não autenticado, não é possível carregar condomínios');
+                return;
+            }
+
             const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
             const { STORAGE_KEYS } = await import('../config/env');
             const userToken = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
@@ -70,7 +75,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             if (isAdmin) {
                 if (!userToken) {
                     console.warn('⚠️ Admin sem token válido - aguardando renovação...');
-                    setTimeout(() => loadCondominiums(), 1500);
+                    setTimeout(() => loadCondominiums(), 2000);
                 } else {
                     loadCondominiums();
                 }
@@ -81,7 +86,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
         };
 
         initializeScreen();
-    }, []);
+    }, [user]);
 
     const showAlert = (message: string, type: 'success' | 'error') => {
         setAlertMessage(message);
@@ -93,6 +98,22 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const loadCondominiums = async (retryCount = 0) => {
         try {
             setLoadingCondominiums(true);
+            
+            // Verifica se há token de usuário antes de fazer a requisição
+            const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+            const { STORAGE_KEYS } = await import('../config/env');
+            const userToken = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+            
+            if (!userToken) {
+                console.log('⚠️ Não há token de usuário disponível');
+                if (retryCount < 3) {
+                    console.log(`🔄 Aguardando autenticação... (tentativa ${retryCount + 1}/3)`);
+                    setTimeout(() => loadCondominiums(retryCount + 1), 2000);
+                } else {
+                    showAlert('Você precisa estar logado para cadastrar sensores', 'error');
+                }
+                return;
+            }
             
             const response = await condominiumService.getAll();
 
@@ -107,18 +128,20 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             }));
 
             setCondominiums(condominiumsList);
+            console.log(`✅ ${condominiumsList.length} condomínios carregados`);
         } catch (error: any) {
             console.error('❌ Erro ao carregar condomínios:', error);
             
-            if ((error.response?.status === 401 || error.response?.status === 403) && retryCount < 3) {
-                setTimeout(() => loadCondominiums(retryCount + 1), 1500);
+            if ((error.response?.status === 401 || error.response?.status === 403) && retryCount < 2) {
+                console.log(`🔄 Erro de autenticação, tentando novamente... (${retryCount + 1}/2)`);
+                setTimeout(() => loadCondominiums(retryCount + 1), 2000);
                 return;
             }
             
             if (error.response?.status !== 401 && error.response?.status !== 403) {
                 showAlert('Erro ao carregar condomínios. Tente novamente.', 'error');
-            } else if (retryCount >= 3) {
-                showAlert('Não foi possível autenticar. Por favor, faça login novamente.', 'error');
+            } else if (retryCount >= 2) {
+                showAlert('Erro de autenticação. Faça logout e login novamente.', 'error');
             }
             setCondominiums([]);
         } finally {
@@ -196,6 +219,11 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const handleNext = () => {
         if (!nomeSensor.trim()) {
             showAlert('Digite o nome do sensor', 'error');
+            return;
+        }
+
+        if (!latitude || !longitude) {
+            showAlert('Selecione a localização no mapa', 'error');
             return;
         }
 
@@ -301,6 +329,8 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                                 returnKeyType="next"
                                                 onSubmitEditing={() => longitudeInputRef.current?.focus()}
                                                 blurOnSubmit={false}
+                                                editable={false}
+                                                style={styles.disabledInput}
                                             />
                                         </View>
 
@@ -313,13 +343,24 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                                 placeholder="-46.6333"
                                                 keyboardType="numeric"
                                                 returnKeyType="done"
+                                                editable={false}
+                                                style={styles.disabledInput}
                                             />
                                         </View>
                                     </View>
 
                                     <Text style={styles.infoText}>
-                                        💡 Clique no botão acima para selecionar a localização no mapa ou digite as coordenadas manualmente
+                                        Use o botão "Selecionar no Mapa" acima para definir as coordenadas
                                     </Text>
+                                    
+                                    {!latitude && !longitude && (
+                                        <View style={styles.warningBox}>
+                                            <Ionicons name="alert-circle" size={16} color={COLORS.warning} />
+                                            <Text style={styles.warningText}>
+                                                É obrigatório selecionar a localização no mapa
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             </View>
                         </View>
@@ -365,7 +406,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                         </View>
 
                         <Button
-                            title="Próximo: Escanear QR Code"
+                            title="Próximo: Conectar ao Wi-Fi"
                             onPress={handleNext}
                             style={styles.nextButton}
                         />
@@ -854,5 +895,27 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         minHeight: 50,
+    },
+    disabledInput: {
+        backgroundColor: `${COLORS.text.secondary}10`,
+        color: COLORS.text.secondary,
+    },
+    warningBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+        backgroundColor: `${COLORS.warning}15`,
+        borderLeftWidth: 3,
+        borderLeftColor: COLORS.warning,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        borderRadius: BORDER_RADIUS.sm,
+        marginTop: SPACING.xs,
+    },
+    warningText: {
+        flex: 1,
+        fontSize: 12,
+        color: COLORS.warning,
+        fontWeight: '500',
     },
 });

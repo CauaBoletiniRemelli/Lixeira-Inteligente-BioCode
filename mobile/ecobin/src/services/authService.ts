@@ -31,8 +31,8 @@ export interface LoginResponse {
 }
 
 export interface RefreshTokenRequest {
-  accessToken: string;
-  refreshToken: string;
+  AccessToken: string;
+  RefreshToken: string;
 }
 
 export interface RegisterRequest {
@@ -70,6 +70,6 @@ export const authService = {
   },
 
   logout: async (refreshToken: string): Promise<ResponseModel<null>> => {
-    return api.post('auth/logout', { refreshToken });
+    return api.post('auth/logout', { RefreshToken: refreshToken });
   },
 };

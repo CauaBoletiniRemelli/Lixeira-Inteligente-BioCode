@@ -48,28 +48,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     const isExpired = Date.now() >= expirationTime;
                     
                     if (isExpired) {
-                        console.log('Token expirado ao carregar app, renovando...');
+                        console.log('🔄 Token expirado ao carregar app, renovando...');
                         const { refreshUserToken } = await import('../services/api');
                         const success = await refreshUserToken();
                         
                         if (success) {
-                            console.log('Token renovado com sucesso ao carregar app');
-                            setUser(JSON.parse(storedUser));
+                            console.log('✅ Token renovado com sucesso ao carregar app');
+                            const updatedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+                            setUser(updatedUser ? JSON.parse(updatedUser) : JSON.parse(storedUser));
                         } else {
-                            console.log('Falha ao renovar token, usuário precisa fazer login');
+                            console.log('❌ Falha ao renovar token, usuário precisa fazer login');
                             await clearStoredData();
                         }
                     } else {
-                        console.log('Token válido ao carregar app');
+                        console.log('✅ Token válido ao carregar app');
                         setUser(JSON.parse(storedUser));
                     }
                 } catch (tokenError) {
-                    console.error('Erro ao validar token:', tokenError);
-                    setUser(JSON.parse(storedUser));
+                    console.error('❌ Erro ao validar token:', tokenError);
+                    // Se houver erro ao validar o token, limpa os dados e força novo login
+                    await clearStoredData();
                 }
             }
         } catch (error) {
-            console.error('Erro ao carregar usuário:', error);
+            console.error('❌ Erro ao carregar usuário:', error);
+            await clearStoredData();
         } finally {
             setInitialLoading(false);
         }

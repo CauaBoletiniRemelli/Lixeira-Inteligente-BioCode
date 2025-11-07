@@ -497,10 +497,6 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
                 <Text style={styles.modalButtonTextCancel}>Compartilhar</Text>
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.qrModalHint}>
-              💡 Dica: Faça um screenshot desta tela para salvar ou compartilhar o QR Code
-            </Text>
           </View>
         </View>
       </Modal>
