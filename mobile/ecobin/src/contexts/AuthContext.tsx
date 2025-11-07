@@ -1,9 +1,9 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, UserRole } from '../types';
 import { authService } from '../services';
 import { mapTipoToRole, showConfirmAlert } from '../utils';
-import { STORAGE_KEYS } from '../config/env';
+import { storage } from '../utils/storage';
+import { migrateTokensToSecureStore, checkIfMigrationNeeded } from '../utils/tokenMigration';
 
 interface AuthContextData {
     user: User | null;
@@ -16,10 +16,6 @@ interface AuthContextData {
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
-
-const USER_STORAGE_KEY = STORAGE_KEYS.USER_DATA;
-const TOKEN_STORAGE_KEY = STORAGE_KEYS.USER_TOKEN;
-const REFRESH_TOKEN_STORAGE_KEY = STORAGE_KEYS.REFRESH_TOKEN;
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -37,52 +33,73 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const loadStoredUser = async () => {
         try {
             setInitialLoading(true);
-            const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
-            const userToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-            const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
             
-            if (storedUser && userToken && refreshToken) {
+            const needsMigration = await checkIfMigrationNeeded();
+            if (needsMigration) {
+                const migrated = await migrateTokensToSecureStore();
+                if (migrated) {
+                    console.log('✅ Tokens migrados com sucesso do AsyncStorage para SecureStore');
+                }
+            }
+            
+            const userData = await storage.getUserData();
+            const refreshToken = await storage.getRefreshToken();
+            const accessToken = await storage.getAccessToken();
+
+            if (userData && refreshToken && accessToken) {
                 try {
-                    const tokenData = JSON.parse(atob(userToken.split('.')[1]));
+                    const tokenStr = typeof accessToken === 'string' ? accessToken : accessToken.token;
+                    const tokenData = JSON.parse(atob(tokenStr.split('.')[1]));
                     const expirationTime = tokenData.exp * 1000;
                     const isExpired = Date.now() >= expirationTime;
-                    
-                    if (isExpired) {
-                        console.log('🔄 Token expirado ao carregar app, renovando...');
-                        const { refreshUserToken } = await import('../services/api');
-                        const success = await refreshUserToken();
-                        
-                        if (success) {
-                            console.log('✅ Token renovado com sucesso ao carregar app');
-                            const updatedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
-                            setUser(updatedUser ? JSON.parse(updatedUser) : JSON.parse(storedUser));
-                        } else {
-                            console.log('❌ Falha ao renovar token, usuário precisa fazer login');
-                            await clearStoredData();
+
+                    if (isExpired) {                        
+                        try {
+                            await authService.refreshToken();
+                            const updatedUserData = await storage.getUserData();
+                            
+                            if (updatedUserData) {
+                                const authenticatedUser: User = {
+                                    id: updatedUserData.userId,
+                                    name: updatedUserData.nome,
+                                    email: updatedUserData.email,
+                                    role: mapTipoToRole(updatedUserData.tipo ?? 0),
+                                    condominiumId: updatedUserData.condominioId,
+                                    condominiumName: updatedUserData.nomeCondominio,
+                                };
+                                
+                                setUser(authenticatedUser);
+                            }
+                        } catch (refreshError) {
+                            await storage.clearAll();
+                            setUser(null);
                         }
                     } else {
-                        console.log('✅ Token válido ao carregar app');
-                        setUser(JSON.parse(storedUser));
+                        
+                        const authenticatedUser: User = {
+                            id: userData.userId,
+                            name: userData.nome,
+                            email: userData.email,
+                            role: mapTipoToRole(userData.tipo ?? 0),
+                            condominiumId: userData.condominioId,
+                            condominiumName: userData.nomeCondominio,
+                        };
+                        
+                        setUser(authenticatedUser);
                     }
                 } catch (tokenError) {
                     console.error('❌ Erro ao validar token:', tokenError);
-                    // Se houver erro ao validar o token, limpa os dados e força novo login
-                    await clearStoredData();
+                    await storage.clearAll();
+                    setUser(null);
                 }
             }
         } catch (error) {
             console.error('❌ Erro ao carregar usuário:', error);
-            await clearStoredData();
+            await storage.clearAll();
+            setUser(null);
         } finally {
             setInitialLoading(false);
         }
-    };
-    
-    const clearStoredData = async () => {
-        await AsyncStorage.removeItem(USER_STORAGE_KEY);
-        await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-        await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
-        setUser(null);
     };
 
     const login = async (email: string, password: string) => {
@@ -90,7 +107,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         try {
             const loginData = { Email: email, Password: password };
-
             const response = await authService.login(loginData);
 
             if (!response.status || !response.dados) {
@@ -98,9 +114,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             const { token: tokenObj, refreshToken, userId, email: userEmail, nome, tipo, condominioId, nomeCondominio } = response.dados;
-
-            const token = typeof tokenObj === 'string' ? tokenObj : tokenObj.token;
-
             const role: UserRole = mapTipoToRole(tipo ?? 0);
 
             const authenticatedUser: User = {
@@ -112,10 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 condominiumName: nomeCondominio,
             };
 
-            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authenticatedUser));
-            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-            await AsyncStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
-
             setUser(authenticatedUser);
         } catch (error: any) {
             let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
@@ -124,8 +133,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 message: error.message,
                 status: error.response?.status,
                 data: error.response?.data,
-                hasResponse: !!error.response,
-                hasRequest: !!error.request
             });
 
             if (error.response) {
@@ -159,23 +166,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             if (!confirmed) return;
 
-            const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+            const refreshToken = await storage.getRefreshToken();
 
             if (refreshToken) {
                 try {
                     await authService.logout(refreshToken);
                 } catch (error) {
-                    console.log('Erro ao fazer logout na API:', error);
+                    console.log('❌ Erro ao fazer logout na API:', error);
                 }
             }
 
-            await AsyncStorage.removeItem(USER_STORAGE_KEY);
-            await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-            await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
-
+            await storage.clearAll();
             setUser(null);
         } catch (error) {
-            console.log('Erro ao fazer logout:', error);
+            console.log('❌ Erro ao fazer logout:', error);
         }
     };
 

@@ -174,7 +174,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                         nome: cond.nome,
                     }));
                     setCondominiums(condoList);
-                    console.log('✅ Condomínios carregados:', condoList.length);
                 }
             } catch (error) {
                 console.error('❌ Erro ao carregar condomínios:', error);

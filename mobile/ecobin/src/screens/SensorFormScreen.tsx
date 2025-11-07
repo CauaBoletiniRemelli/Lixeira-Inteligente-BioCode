@@ -9,6 +9,7 @@ import { BackButton, Input, Button, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { condominiumService } from '../services';
 import { useAuth } from '../contexts/AuthContext';
+import { storage } from '../utils/storage';
 import Alerta from '../components/Alert';
 
 interface SensorFormScreenProps {
@@ -68,9 +69,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                 return;
             }
 
-            const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-            const { STORAGE_KEYS } = await import('../config/env');
-            const userToken = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+            const userToken = await storage.getAccessToken();
 
             if (isAdmin) {
                 if (!userToken) {
@@ -99,15 +98,10 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
         try {
             setLoadingCondominiums(true);
             
-            // Verifica se há token de usuário antes de fazer a requisição
-            const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-            const { STORAGE_KEYS } = await import('../config/env');
-            const userToken = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+            const userToken = await storage.getAccessToken();
             
             if (!userToken) {
-                console.log('⚠️ Não há token de usuário disponível');
                 if (retryCount < 3) {
-                    console.log(`🔄 Aguardando autenticação... (tentativa ${retryCount + 1}/3)`);
                     setTimeout(() => loadCondominiums(retryCount + 1), 2000);
                 } else {
                     showAlert('Você precisa estar logado para cadastrar sensores', 'error');
@@ -128,12 +122,10 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             }));
 
             setCondominiums(condominiumsList);
-            console.log(`✅ ${condominiumsList.length} condomínios carregados`);
         } catch (error: any) {
             console.error('❌ Erro ao carregar condomínios:', error);
             
             if ((error.response?.status === 401 || error.response?.status === 403) && retryCount < 2) {
-                console.log(`🔄 Erro de autenticação, tentando novamente... (${retryCount + 1}/2)`);
                 setTimeout(() => loadCondominiums(retryCount + 1), 2000);
                 return;
             }

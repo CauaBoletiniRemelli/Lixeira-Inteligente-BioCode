@@ -48,7 +48,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "EcoBin precisa acessar sua localização para centralizar o mapa na sua posição atual e facilitar o cadastro de sensores."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

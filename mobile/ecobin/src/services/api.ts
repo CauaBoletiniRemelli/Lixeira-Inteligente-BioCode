@@ -1,33 +1,30 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { storage } from '../utils/storage';
+import { ENV } from '../config/env';
 import { APP_CREDENTIALS } from '../config/appCredentials';
-import { ENV, STORAGE_KEYS } from '../config/env';
 
 const API_URL = ENV.API_URL;
-const APP_TOKEN_KEY = STORAGE_KEYS.APP_TOKEN;
-const USER_TOKEN_KEY = STORAGE_KEYS.USER_TOKEN;
-const REFRESH_TOKEN_KEY = STORAGE_KEYS.REFRESH_TOKEN;
 
-let appAuthPromise: Promise<string> | null = null;
-let refreshTokenPromise: Promise<boolean> | null = null;
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
 
-async function authenticateApp(forceNew: boolean = false): Promise<string> {
-  const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+const onRefreshed = (token: string) => {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+};
 
-  if (!forceNew) {
-    const savedToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
-    if (savedToken) {
-      return savedToken;
-    }
-  }
+const addRefreshSubscriber = (callback: (token: string) => void) => {
+  refreshSubscribers.push(callback);
+};
 
-  if (forceNew) {
-    await AsyncStorage.removeItem(APP_TOKEN_KEY);
-  }
-
-  const authUrl = `${API_URL}auth/AppLogin`;
-
+async function authenticateApp(): Promise<string> {
   try {
-    const response = await axios.post(authUrl, {
+    const savedAppToken = await storage.getAppToken();
+    if (savedAppToken && savedAppToken.token) {
+      return savedAppToken.token;
+    }
+
+    const response = await axios.post(`${API_URL}auth/AppLogin`, {
       appId: APP_CREDENTIALS.appId,
       appSecret: APP_CREDENTIALS.appSecret,
     });
@@ -37,76 +34,14 @@ async function authenticateApp(forceNew: boolean = false): Promise<string> {
         ? response.data.dados.token
         : response.data.dados.token.token;
 
-      await AsyncStorage.setItem(APP_TOKEN_KEY, token);
+      await storage.saveAppToken({ token });
       return token;
     }
 
     throw new Error('Falha na autenticação do aplicativo');
   } catch (error: any) {
     console.error('❌ Erro ao autenticar app:', error.message);
-    console.error('📍 URL tentada:', authUrl);
-    if (error.response) {
-      console.error('📄 Status:', error.response.status);
-      console.error('📄 Data:', error.response.data);
-    }
     throw error;
-  }
-}
-
-async function refreshUserToken(): Promise<boolean> {
-  const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-
-  try {
-    const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
-    const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
-
-    if (!userToken || !refreshToken) {
-      console.log('⚠️ Tokens ausentes, não é possível renovar');
-      return false;
-    }
-
-    // Garante que temos um token de app válido antes de tentar refresh
-    await AsyncStorage.removeItem(APP_TOKEN_KEY);
-    appAuthPromise = null;
-    appAuthPromise = authenticateApp(true);
-    const appToken = await appAuthPromise;
-
-    console.log('🔄 Tentando renovar token de usuário...');
-
-    const response = await axios.post(`${API_URL}auth/RefreshToken`, {
-      AccessToken: userToken,
-      RefreshToken: refreshToken,
-    }, {
-      headers: {
-        'Authorization': `Bearer ${appToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.data?.status && response.data?.dados) {
-      const { token: tokenObj, refreshToken: newRefreshToken } = response.data.dados;
-      const newToken = typeof tokenObj === 'string' ? tokenObj : tokenObj.token;
-
-      await AsyncStorage.setItem(USER_TOKEN_KEY, newToken);
-      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-
-      console.log('✅ Token renovado com sucesso');
-      return true;
-    }
-
-    console.log('❌ Resposta inválida ao renovar token');
-    return false;
-  } catch (error: any) {
-    console.error('❌ Erro ao renovar token:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
-
-    // Limpa os tokens inválidos
-    await AsyncStorage.removeItem(USER_TOKEN_KEY);
-    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
-    return false;
   }
 }
 
@@ -119,181 +54,123 @@ const axiosInstance: AxiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use(
-  async (config) => {
+  async (config: InternalAxiosRequestConfig) => {
     try {
-      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const accessToken = await storage.getAccessToken();
 
-      // Sempre garante token do app para endpoints não-AppLogin
-      if (!config.url?.includes('AppLogin')) {
-        if (!appAuthPromise) {
-          appAuthPromise = authenticateApp();
-        }
-
-        try {
-          await appAuthPromise;
-        } catch (error) {
-          console.error('❌ Erro ao autenticar app:', error);
-          appAuthPromise = null;
-          throw error;
-        }
-      }
-
-      // Verifica se há token de usuário e se está válido
-      const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
-      if (userToken) {
-        try {
-          const tokenData = JSON.parse(atob(userToken.split('.')[1]));
-          const expirationTime = tokenData.exp * 1000;
-          const currentTime = Date.now();
-          const isExpired = currentTime >= expirationTime - 60000; // 60 segundos antes de expirar
-
-          // Se o token está expirando e não é uma requisição de refresh
-          if (isExpired && !config.url?.includes('auth/RefreshToken') && !config.url?.includes('AppLogin')) {
-            console.log('⚠️ Token expirando em breve, renovando...');
-
-            if (!refreshTokenPromise) {
-              refreshTokenPromise = refreshUserToken();
-            }
-
-            const success = await refreshTokenPromise;
-            refreshTokenPromise = null;
-
-            if (success) {
-              const newUserToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
-              config.headers.Authorization = `Bearer ${newUserToken}`;
-              console.log('✅ Token renovado no interceptor');
-            } else {
-              console.log('❌ Falha ao renovar token, usando token de app');
-              const appToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
-              config.headers.Authorization = `Bearer ${appToken}`;
-            }
-          } else {
-            // Token ainda válido, usa ele
-            config.headers.Authorization = `Bearer ${userToken}`;
-          }
-        } catch (tokenError) {
-          console.error('❌ Erro ao processar token:', tokenError);
-          config.headers.Authorization = `Bearer ${userToken}`;
-        }
+      if (accessToken && accessToken.token) {
+        config.headers.Authorization = `Bearer ${accessToken.token}`;
       } else {
-        // Sem token de usuário, usa token de app
-        const appToken = await AsyncStorage.getItem(APP_TOKEN_KEY);
-        if (appToken) {
-          config.headers.Authorization = `Bearer ${appToken}`;
-          if (config.url && !config.url.includes('auth/')) {
-            console.warn('⚠️ Acessando endpoint protegido sem token de usuário:', config.url);
-          }
+        const appToken = await storage.getAppToken();
+        
+        if (!appToken || !appToken.token) {
+          const newAppToken = await authenticateApp();
+          config.headers.Authorization = `Bearer ${newAppToken}`;
+        } else {
+          config.headers.Authorization = `Bearer ${appToken.token}`;
         }
       }
     } catch (error) {
-      console.error('[Token Error]', error);
+      console.error('❌ Erro ao adicionar token na requisição:', error);
     }
 
     return config;
   },
   (error) => {
-    console.error('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
 
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes('/RefreshToken') &&
+      !originalRequest.url.includes('/Login') &&
+      !originalRequest.url.includes('/AppLogin')
+    ) {
 
-      switch (error.response.status) {
-        case 401:
-        case 403:
-          console.log(`⚠️ Erro ${error.response.status} em ${error.config.url}`);
-          
-          const isTokenExpired = error.response.headers?.['www-authenticate']?.includes('expired') ||
-            error.response.headers?.['www-authenticate']?.includes('invalid_token');
-
-          // Se erro 401/403 no login, tenta renovar token do app
-          if (error.config.url?.includes('auth/login') && isTokenExpired && !originalRequest._retry) {
-            try {
-              originalRequest._retry = true;
-
-              const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-              await AsyncStorage.removeItem(APP_TOKEN_KEY);
-              appAuthPromise = null;
-
-              appAuthPromise = authenticateApp(true);
-              const newToken = await appAuthPromise;
-
-              error.config.headers.Authorization = `Bearer ${newToken}`;
-
-              return axiosInstance.request(error.config);
-            } catch (e) {
-              console.error('❌ Falha ao renovar token do app:', e);
-            }
-          }
-
-          // Para outros endpoints protegidos, tenta renovar o token de usuário
-          if (!error.config.url?.includes('AppLogin') &&
-            !error.config.url?.includes('auth/login') &&
-            !error.config.url?.includes('auth/RefreshToken') &&
-            !originalRequest._retry) {
-            try {
-              const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-              const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
-
-              if (userToken) {
-                originalRequest._retry = true;
-
-                console.log('🔄 Tentando renovar token após erro 401/403...');
-
-                if (!refreshTokenPromise) {
-                  refreshTokenPromise = refreshUserToken();
-                }
-
-                const success = await refreshTokenPromise;
-                refreshTokenPromise = null;
-
-                if (success) {
-                  const newUserToken = await AsyncStorage.getItem(USER_TOKEN_KEY);
-                  error.config.headers.Authorization = `Bearer ${newUserToken}`;
-                  console.log('✅ Retentando requisição com novo token');
-                  return axiosInstance.request(error.config);
-                } else {
-                  console.log('❌ Falha ao renovar token de usuário');
-                }
-              } else {
-                // Sem token de usuário, tenta renovar token do app
-                originalRequest._retry = true;
-
-                console.log('🔄 Sem token de usuário, renovando token do app...');
-
-                await AsyncStorage.removeItem(APP_TOKEN_KEY);
-                appAuthPromise = null;
-
-                appAuthPromise = authenticateApp(true);
-                const newToken = await appAuthPromise;
-
-                error.config.headers.Authorization = `Bearer ${newToken}`;
-
-                return axiosInstance.request(error.config);
-              }
-            } catch (e) {
-              console.error('❌ Falha ao renovar token:', e);
-            }
-          }
-          break;
-        case 404:
-          if (!originalRequest._retry) {
-            console.log('❌ Recurso não encontrado:', error.config.url);
-          }
-          break;
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(axiosInstance(originalRequest));
+          });
+        });
       }
-    } else if (error.request) {
-      console.error('[API Network Error]', error.message);
-    } else {
-      console.error('[API Error]', error.message);
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshToken = await storage.getRefreshToken();
+        const accessToken = await storage.getAccessToken();
+
+        if (!refreshToken) {
+          throw new Error('Refresh token não encontrado');
+        }
+
+        const appToken = await storage.getAppToken();
+        let appTokenStr = appToken?.token;
+
+        if (!appTokenStr) {
+          appTokenStr = await authenticateApp();
+        }
+
+        const response = await axios.post(
+          `${API_URL}auth/RefreshToken`,
+          {
+            AccessToken: accessToken?.token || null,
+            RefreshToken: refreshToken,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${appTokenStr}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.data.status && response.data.dados) {
+          const { token, refreshToken: newRefreshToken } = response.data.dados;
+
+          await storage.saveTokens(token, newRefreshToken);
+          await storage.saveUserData(response.data.dados);
+
+          const newToken = typeof token === 'string' ? token : token.token;
+
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+          onRefreshed(newToken);
+          isRefreshing = false;
+
+          return axiosInstance(originalRequest);
+        } else {
+          throw new Error('Falha ao renovar token');
+        }
+      } catch (refreshError: any) {
+        console.error('❌ Erro ao renovar token:', refreshError.message);
+        isRefreshing = false;
+        refreshSubscribers = [];
+
+        await storage.clearAll();
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    if (error.response?.status === 403) {
+      console.log('⚠️ Erro 403 em', originalRequest.url);
+      
+      const accessToken = await storage.getAccessToken();
+      
+      if (!accessToken) {
+        console.log('❌ Tentando acessar recurso protegido sem token de usuário');
+      }
     }
 
     return Promise.reject(error);
@@ -325,29 +202,7 @@ export const api = {
     const response: AxiosResponse<T> = await axiosInstance.delete(endpoint, config);
     return response.data;
   },
-
-  clearAppToken: async (): Promise<void> => {
-    try {
-      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-      await AsyncStorage.removeItem(APP_TOKEN_KEY);
-      appAuthPromise = null;
-    } catch (error) {
-      console.error('❌ Erro ao limpar token do app:', error);
-    }
-  },
-
-  renewAppToken: async (): Promise<void> => {
-    try {
-      await api.clearAppToken();
-      appAuthPromise = authenticateApp(true);
-      await appAuthPromise;
-    } catch (error) {
-      console.error('❌ Erro ao renovar token do app:', error);
-      throw error;
-    }
-  },
 };
 
-export { axiosInstance, refreshUserToken };
-
+export { axiosInstance };
 export default api;
