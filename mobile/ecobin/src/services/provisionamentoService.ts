@@ -15,6 +15,13 @@ export interface CreateProvisionamentoRequest {
   expiracaoDias?: number;
 }
 
+export interface CreateProvisionamentoComSensorRequest {
+  nomeSensor: string;
+  condominioId: number;
+  usuarioId: number;
+  expiracaoDias?: number;
+}
+
 export interface AtivarQRRequest {
   provisionId: string;
   deviceId: string;
@@ -45,6 +52,10 @@ export interface ResponseModel<T> {
 export const provisionamentoService = {
   criar: async (data: CreateProvisionamentoRequest): Promise<ResponseModel<Provisionamento>> => {
     return api.post<ResponseModel<Provisionamento>>('/Provisionamentos/criar', data);
+  },
+
+  criarComSensor: async (data: CreateProvisionamentoComSensorRequest): Promise<ResponseModel<Provisionamento>> => {
+    return api.post<ResponseModel<Provisionamento>>('/Provisionamentos/criar-com-sensor', data);
   },
 
   gerarQR: async (provisionId: number): Promise<Blob> => {

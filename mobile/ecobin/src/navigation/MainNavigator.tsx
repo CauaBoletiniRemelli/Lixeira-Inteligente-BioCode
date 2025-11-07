@@ -14,7 +14,6 @@ import {
     QRCodeManagementScreen,
     SensorWiFiConfigScreen,
     SensorWiFiSetupScreen,
-    SensorSetupSuccessScreen,
     NotificationsScreen
 } from '../screens';
 import { COLORS, SPACING } from '../constants';
@@ -33,7 +32,6 @@ type ManagementScreen =
     | 'qrScanner' 
     | 'sensorWiFiConfig'
     | 'sensorWiFiSetup' 
-    | 'sensorSuccess' 
     | 'notifications';
 
 interface Condominium {
@@ -50,7 +48,6 @@ export const MainNavigator: React.FC = () => {
     const [editingUser, setEditingUser] = React.useState<User | undefined>(undefined);
     const [editingCondominium, setEditingCondominium] = React.useState<Condominium | undefined>(undefined);
     
-    // Estados para o fluxo de provisionamento de sensor
     const [sensorFormData, setSensorFormData] = React.useState<SensorFormData | null>(null);
     const [qrCodeData, setQRCodeData] = React.useState<QRCodeData | null>(null);
     const [scannedSensorId, setScannedSensorId] = React.useState<string>('');
@@ -74,8 +71,7 @@ export const MainNavigator: React.FC = () => {
     };
 
     const handleNavigateToSensorSetup = () => {
-        // Iniciar pelo formulário do sensor
-        setManagementScreen('sensorForm');
+        setManagementScreen('qrScanner');
     };
 
     const handleNavigateToNotifications = () => {
@@ -86,29 +82,27 @@ export const MainNavigator: React.FC = () => {
         setManagementScreen('qrCodeManagement');
     };
 
-    // Novo fluxo de sensor
-    const handleSensorFormNext = (data: SensorFormData) => {
-        setSensorFormData(data);
-        setManagementScreen('qrScanner');
-    };
-
     const handleQRScanSuccess = (data: QRCodeData) => {
         setQRCodeData(data);
+        setManagementScreen('sensorForm');
+    };
+
+    const handleSensorFormNext = (data: SensorFormData) => {
+        setSensorFormData(data);
         setManagementScreen('sensorWiFiConfig');
     };
 
     const handleSensorWiFiSuccess = () => {
-        setManagementScreen('sensorSuccess');
+        handleBackToHome();
     };
 
-    // Compatibilidade com fluxo antigo (caso ainda exista)
     const handleOldQRScanSuccess = (sensorId: string) => {
         setScannedSensorId(sensorId);
         setManagementScreen('sensorWiFiSetup');
     };
 
     const handleOldSensorWiFiSuccess = () => {
-        setManagementScreen('sensorSuccess');
+        handleBackToHome();
     };
 
     const handleBackToHome = () => {
@@ -169,28 +163,20 @@ export const MainNavigator: React.FC = () => {
             );
         }
 
-        // Novo fluxo de provisionamento de sensor
-        if (managementScreen === 'sensorForm') {
+        if (managementScreen === 'qrScanner') {
             return (
-                <SensorFormScreen
+                <QRCodeScannerScreen
                     onBack={handleBackToHome}
-                    onNext={handleSensorFormNext}
+                    onScanSuccess={handleQRScanSuccess}
                 />
             );
         }
 
-        if (managementScreen === 'qrScanner') {
+        if (managementScreen === 'sensorForm' && qrCodeData) {
             return (
-                <QRCodeScannerScreen
-                    onBack={() => {
-                        // Se tem dados do sensor, volta para o form. Senão, volta para home
-                        if (sensorFormData) {
-                            setManagementScreen('sensorForm');
-                        } else {
-                            handleBackToHome();
-                        }
-                    }}
-                    onScanSuccess={handleQRScanSuccess}
+                <SensorFormScreen
+                    onBack={() => setManagementScreen('qrScanner')}
+                    onNext={handleSensorFormNext}
                 />
             );
         }
@@ -198,7 +184,7 @@ export const MainNavigator: React.FC = () => {
         if (managementScreen === 'sensorWiFiConfig' && sensorFormData && qrCodeData) {
             return (
                 <SensorWiFiConfigScreen
-                    onBack={() => setManagementScreen('qrScanner')}
+                    onBack={() => setManagementScreen('sensorForm')}
                     sensorData={sensorFormData}
                     qrData={qrCodeData}
                     onSuccess={handleSensorWiFiSuccess}
@@ -206,21 +192,12 @@ export const MainNavigator: React.FC = () => {
             );
         }
 
-        // Fluxo antigo (compatibilidade)
         if (managementScreen === 'sensorWiFiSetup') {
             return (
                 <SensorWiFiSetupScreen
                     onBack={() => setManagementScreen('qrScanner')}
                     onSuccess={handleOldSensorWiFiSuccess}
                     sensorId={scannedSensorId}
-                />
-            );
-        }
-
-        if (managementScreen === 'sensorSuccess') {
-            return (
-                <SensorSetupSuccessScreen
-                    onFinish={handleBackToHome}
                 />
             );
         }
@@ -290,33 +267,37 @@ export const MainNavigator: React.FC = () => {
         return <View style={styles.container}>{renderManagementScreen()}</View>;
     }
 
+    const shouldHideTabBar = activeTab === 'map';
+
     return (
         <View style={styles.container}>
             <View style={styles.content}>{renderScreen()}</View>
 
-            <View style={styles.tabBar}>
-                <TouchableOpacity
-                    style={styles.tab}
-                    onPress={() => setActiveTab('home')}
-                >
-                    <Ionicons
-                        name={activeTab === 'home' ? 'home' : 'home-outline'}
-                        size={28}
-                        color={activeTab === 'home' ? COLORS.primary : COLORS.text.secondary}
-                    />
-                </TouchableOpacity>
+            {!shouldHideTabBar && (
+                <View style={styles.tabBar}>
+                    <TouchableOpacity
+                        style={styles.tab}
+                        onPress={() => setActiveTab('home')}
+                    >
+                        <Ionicons
+                            name={activeTab === 'home' ? 'home' : 'home-outline'}
+                            size={28}
+                            color={activeTab === 'home' ? COLORS.primary : COLORS.text.secondary}
+                        />
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.tab}
-                    onPress={() => setActiveTab('profile')}
-                >
-                    <Ionicons
-                        name={activeTab === 'profile' ? 'person' : 'person-outline'}
-                        size={28}
-                        color={activeTab === 'profile' ? COLORS.primary : COLORS.text.secondary}
-                    />
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={styles.tab}
+                        onPress={() => setActiveTab('profile')}
+                    >
+                        <Ionicons
+                            name={activeTab === 'profile' ? 'person' : 'person-outline'}
+                            size={28}
+                            color={activeTab === 'profile' ? COLORS.primary : COLORS.text.secondary}
+                        />
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 };

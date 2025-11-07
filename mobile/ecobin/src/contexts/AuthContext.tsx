@@ -42,32 +42,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
             
             if (storedUser && userToken && refreshToken) {
-                // Valida se o token está expirado
                 try {
                     const tokenData = JSON.parse(atob(userToken.split('.')[1]));
-                    const expirationTime = tokenData.exp * 1000; // Converte para milissegundos
+                    const expirationTime = tokenData.exp * 1000;
                     const isExpired = Date.now() >= expirationTime;
                     
                     if (isExpired) {
-                        console.log('🔄 Token expirado ao carregar app, renovando...');
-                        // Importa o refreshUserToken do api.ts
+                        console.log('Token expirado ao carregar app, renovando...');
                         const { refreshUserToken } = await import('../services/api');
                         const success = await refreshUserToken();
                         
                         if (success) {
-                            console.log('✅ Token renovado com sucesso ao carregar app');
+                            console.log('Token renovado com sucesso ao carregar app');
                             setUser(JSON.parse(storedUser));
                         } else {
-                            console.log('❌ Falha ao renovar token, usuário precisa fazer login');
+                            console.log('Falha ao renovar token, usuário precisa fazer login');
                             await clearStoredData();
                         }
                     } else {
-                        console.log('✅ Token válido ao carregar app');
+                        console.log('Token válido ao carregar app');
                         setUser(JSON.parse(storedUser));
                     }
                 } catch (tokenError) {
-                    console.error('❌ Erro ao validar token:', tokenError);
-                    // Se houver erro ao decodificar, tenta usar o usuário armazenado
+                    console.error('Erro ao validar token:', tokenError);
                     setUser(JSON.parse(storedUser));
                 }
             }

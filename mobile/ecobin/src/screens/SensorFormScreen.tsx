@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, MapPressEvent, Region } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { BackButton, Input, Button, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { condominiumService } from '../services';
@@ -62,28 +63,18 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
     useEffect(() => {
         const initializeScreen = async () => {
-            // Verificar se o usuário tem token antes de carregar condomínios
             const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
             const { STORAGE_KEYS } = await import('../config/env');
             const userToken = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
-            
-            console.log('🔍 SensorFormScreen - Verificando token...', {
-                hasToken: !!userToken,
-                isAdmin,
-                isSindico,
-                userId: user?.id,
-            });
 
             if (isAdmin) {
                 if (!userToken) {
                     console.warn('⚠️ Admin sem token válido - aguardando renovação...');
-                    // Aguardar um pouco para o token ser renovado
                     setTimeout(() => loadCondominiums(), 1500);
                 } else {
                     loadCondominiums();
                 }
             } else if (isSindico && user?.condominiumId) {
-                // Para síndico, fixar o condomínio dele
                 setSelectedCondominium(user.condominiumId);
                 setCondominiums([{ id: user.condominiumId, name: user.condominiumName || 'Meu Condomínio' }]);
             }
@@ -102,7 +93,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const loadCondominiums = async (retryCount = 0) => {
         try {
             setLoadingCondominiums(true);
-            console.log('📡 Carregando condomínios... (tentativa ' + (retryCount + 1) + ')');
             
             const response = await condominiumService.getAll();
 
@@ -117,22 +107,17 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             }));
 
             setCondominiums(condominiumsList);
-            console.log('✅ Condomínios carregados:', condominiumsList.length);
         } catch (error: any) {
             console.error('❌ Erro ao carregar condomínios:', error);
             
-            // Se for erro 401 ou 403 e ainda não tentou 3 vezes, tenta novamente
             if ((error.response?.status === 401 || error.response?.status === 403) && retryCount < 3) {
-                console.log('🔄 Tentando novamente carregar condomínios... (tentativa ' + (retryCount + 1) + ')');
                 setTimeout(() => loadCondominiums(retryCount + 1), 1500);
                 return;
             }
             
-            // Se falhou após tentativas, mostra erro apenas se não for autenticação
             if (error.response?.status !== 401 && error.response?.status !== 403) {
                 showAlert('Erro ao carregar condomínios. Tente novamente.', 'error');
             } else if (retryCount >= 3) {
-                // Após 3 tentativas, mostra erro de autenticação
                 showAlert('Não foi possível autenticar. Por favor, faça login novamente.', 'error');
             }
             setCondominiums([]);
@@ -164,18 +149,48 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
         }
     };
 
-    const handleOpenMap = () => {
-        // Se já tem coordenadas, usar como posição inicial do marcador
+    const handleOpenMap = async () => {
         const lat = parseFloat(latitude);
         const lng = parseFloat(longitude);
         
         if (!isNaN(lat) && !isNaN(lng)) {
             setTempMarkerPosition({ latitude: lat, longitude: lng });
+            setShowMapModal(true);
         } else {
-            setTempMarkerPosition(null);
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    setShowMapModal(true);
+                    return;
+                }
+
+                const location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+
+                const userLocation = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                };
+
+                setTempMarkerPosition(userLocation);
+                                
+                setShowMapModal(true);
+                
+                setTimeout(() => {
+                    if (mapRef.current) {
+                        mapRef.current.animateToRegion({
+                            ...userLocation,
+                            latitudeDelta: 0.003,
+                            longitudeDelta: 0.003,
+                        }, 1000);
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('❌ Erro ao obter localização:', error);
+                setShowMapModal(true);
+            }
         }
-        
-        setShowMapModal(true);
     };
 
     const handleNext = () => {

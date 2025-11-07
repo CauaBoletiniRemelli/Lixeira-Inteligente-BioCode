@@ -78,7 +78,6 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
         setStreet('');
     };
 
-    // Buscar CEP no ViaCEP
     const handleCepBlur = async () => {
         const cleanCep = cep.replace(/\D/g, '');
         
@@ -105,7 +104,6 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
             setCepValidated(true);
             showAlert('CEP validado com sucesso!', 'success');
             
-            // Focar no campo de nome após validar CEP
             setTimeout(() => nameInputRef.current?.focus(), 100);
         } catch (error) {
             console.error('Erro ao buscar CEP:', error);

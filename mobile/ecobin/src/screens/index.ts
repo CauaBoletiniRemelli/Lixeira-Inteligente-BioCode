@@ -12,5 +12,4 @@ export * from './QRCodeManagementScreen';
 export * from './SensorFormScreen';
 export * from './SensorWiFiConfigScreen';
 export * from './SensorWiFiSetupScreen';
-export * from './SensorSetupSuccessScreen';
 export * from './NotificationsScreen';

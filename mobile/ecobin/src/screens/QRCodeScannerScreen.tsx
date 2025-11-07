@@ -31,7 +31,6 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
 
     const parseQRCode = (data: string): QRCodeData | null => {
         try {
-            // Formato esperado: provisionId|deviceId|jwt
             const parts = data.split('|');
             
             if (parts.length !== 3) {

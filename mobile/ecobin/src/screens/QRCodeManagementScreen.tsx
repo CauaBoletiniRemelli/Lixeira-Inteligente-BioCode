@@ -7,15 +7,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Share,
-  Platform,
+  TextInput,
+  Modal,
+  Linking,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { BackButton, Loading, Button, Card } from '../components';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
+import { BackButton, Loading, Button, Card, Input } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { provisionamentoService, Provisionamento } from '../services/provisionamentoService';
+import { condominiumService, Condominium } from '../services/condominiumService';
 import { useAuth } from '../contexts/AuthContext';
 import { ENV } from '../config/env';
 
@@ -30,10 +35,32 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [provisionamentos, setProvisionamentos] = useState<Provisionamento[]>([]);
   const [generatingQR, setGeneratingQR] = useState<number | null>(null);
+  
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [nomeSensor, setNomeSensor] = useState('');
+  const [condominios, setCondominios] = useState<Condominium[]>([]);
+  const [selectedCondominioId, setSelectedCondominioId] = useState<number | null>(null);
+  const [expiracaoDias, setExpiracaoDias] = useState('7');
+  
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [currentProvisionId, setCurrentProvisionId] = useState<number | null>(null);
 
   useEffect(() => {
     loadProvisionamentos();
+    loadCondominios();
   }, []);
+
+  const loadCondominios = async () => {
+    try {
+      const response = await condominiumService.getAll();
+      if (response.status && response.dados) {
+        setCondominios(response.dados);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar condomínios:', error);
+    }
+  };
 
   const loadProvisionamentos = async () => {
     try {
@@ -41,7 +68,6 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       const response = await provisionamentoService.listar();
 
       if (response.status && response.dados) {
-        // Ordena por data de criação (mais recentes primeiro)
         const sorted = response.dados.sort((a, b) => 
           new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime()
         );
@@ -63,25 +89,35 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       return;
     }
 
+    if (!nomeSensor.trim()) {
+      Alert.alert('Erro', 'Digite o nome do sensor');
+      return;
+    }
+
+    if (!selectedCondominioId) {
+      Alert.alert('Erro', 'Selecione um condomínio');
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // O backend exige um sensorId válido ao criar o provisionamento
-      // Vamos criar um sensor temporário primeiro
       const requestData = {
-        sensorId: 1, // TODO: Criar sensor temporário ou pegar um existente
+        nomeSensor: nomeSensor.trim(),
+        condominioId: selectedCondominioId,
         usuarioId: user.id,
-        expiracaoDias: 30, // QR válido por 30 dias
+        expiracaoDias: parseInt(expiracaoDias) || 7,
       };
       
-      console.log('📤 Enviando request para criar provisionamento:', requestData);
       
-      const response = await provisionamentoService.criar(requestData);
+      const response = await provisionamentoService.criarComSensor(requestData);
       
-      console.log('📥 Resposta da API:', response);
-
       if (response.status && response.dados) {
         Alert.alert('Sucesso', 'QR Code criado com sucesso!');
+        setShowCreateModal(false);
+        setNomeSensor('');
+        setSelectedCondominioId(null);
+        setExpiracaoDias('7');
         loadProvisionamentos();
       } else {
         console.error('❌ Erro na resposta:', response);
@@ -103,30 +139,95 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
   const handleGenerateAndShareQR = async (provisionId: number) => {
     try {
       setGeneratingQR(provisionId);
+      setCurrentProvisionId(provisionId);
 
-      // Por enquanto, mostra um alerta informando que o QR será gerado
-      // A implementação completa com download/compartilhamento requer
-      // configuração adicional no expo-file-system
+      const response = await provisionamentoService.gerarQR(provisionId);
+      
+      const reader = new FileReader();
+      reader.readAsDataURL(response as any);
+      
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        setQrImageUrl(base64data);
+        setShowQRModal(true);
+        setGeneratingQR(null);
+      };
+
+      reader.onerror = (error) => {
+        console.error('Erro ao converter QR:', error);
+        Alert.alert('Erro', 'Erro ao processar a imagem do QR Code');
+        setGeneratingQR(null);
+      };
+    } catch (error: any) {
+      console.error('Erro ao gerar QR code:', error);
+      console.error('Response:', error.response?.data);
+      Alert.alert('Erro', error.response?.data?.mensagem || 'Erro ao gerar o QR Code');
+      setGeneratingQR(null);
+    }
+  };
+
+  const handleShareQR = async () => {
+    if (!qrImageUrl || !currentProvisionId) return;
+
+    try {
+      const shareUrl = `${ENV.API_URL}Provisionamentos/gerar-qr/${currentProvisionId}`;
+      
       Alert.alert(
-        'QR Code',
-        `Para gerar o QR Code de provisionamento #${provisionId}, acesse:\n\n${ENV.API_URL}Provisionamentos/gerar-qr/${provisionId}\n\nVocê pode abrir este link em um navegador para baixar a imagem.`,
+        'Compartilhar QR Code',
+        'Para compartilhar este QR Code, você pode:\n\n1. Fazer screenshot desta tela\n2. Ou copiar o link abaixo para compartilhar',
         [
           {
             text: 'Copiar Link',
             onPress: () => {
-              // TODO: Implementar cópia para clipboard
-              Alert.alert('Link', `${ENV.API_URL}Provisionamentos/gerar-qr/${provisionId}`);
+              Alert.alert('Link copiado', shareUrl);
             }
           },
-          { text: 'OK' }
+          { text: 'Fechar' }
         ]
       );
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+    }
+  };
 
-      setGeneratingQR(null);
+  const handleSaveQR = async () => {
+    if (!qrImageUrl || !currentProvisionId) return;
+
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permissão Negada',
+          'É necessário permitir o acesso à galeria para salvar a imagem.'
+        );
+        return;
+      }
+
+      const filename = `qr_provision_${currentProvisionId}_${Date.now()}.png`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      const base64Code = qrImageUrl.split(',')[1];
+
+      await FileSystem.writeAsStringAsync(fileUri, base64Code, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const asset = await MediaLibrary.createAssetAsync(fileUri);
+      
+      try {
+        await MediaLibrary.createAlbumAsync('EcoBin', asset, false);
+      } catch (e) {
+      }
+
+      Alert.alert(
+        'Sucesso!',
+        'QR Code salvo na galeria com sucesso!',
+        [{ text: 'OK' }]
+      );
     } catch (error: any) {
-      console.error('Erro ao gerar QR code:', error);
-      Alert.alert('Erro', 'Erro ao gerar o QR Code');
-      setGeneratingQR(null);
+      console.error('Erro ao salvar QR code:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a imagem na galeria');
     }
   };
 
@@ -167,7 +268,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
         
         <Button
           title="Criar Novo QR Code"
-          onPress={handleCreateProvisionamento}
+          onPress={() => setShowCreateModal(true)}
           loading={loading}
         />
 
@@ -246,9 +347,9 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
                       <ActivityIndicator size="small" color={COLORS.background} />
                     ) : (
                       <>
-                        <Ionicons name="share-outline" size={20} color={COLORS.background} />
+                        <Ionicons name="qr-code-outline" size={20} color={COLORS.background} />
                         <Text style={styles.generateButtonText}>
-                          Gerar e Compartilhar QR
+                          Visualizar QR Code
                         </Text>
                       </>
                     )}
@@ -259,6 +360,150 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
           })
         )}
       </ScrollView>
+
+      {/* Modal de Criação */}
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Criar Novo QR Code</Text>
+              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              <Text style={styles.inputLabel}>Nome do Sensor *</Text>
+              <TextInput
+                style={styles.input}
+                value={nomeSensor}
+                onChangeText={setNomeSensor}
+                placeholder="Ex: Lixeira 01"
+                placeholderTextColor={COLORS.text.secondary}
+              />
+
+              <Text style={styles.inputLabel}>Condomínio *</Text>
+              <ScrollView style={styles.condominiosList} nestedScrollEnabled>
+                {condominios.map((cond) => (
+                  <TouchableOpacity
+                    key={cond.id}
+                    style={[
+                      styles.condominioItem,
+                      selectedCondominioId === cond.id && styles.condominioItemSelected
+                    ]}
+                    onPress={() => setSelectedCondominioId(cond.id)}
+                  >
+                    <Ionicons 
+                      name={selectedCondominioId === cond.id ? "radio-button-on" : "radio-button-off"} 
+                      size={20} 
+                      color={selectedCondominioId === cond.id ? COLORS.primary : COLORS.text.secondary}
+                    />
+                    <View style={styles.condominioInfo}>
+                      <Text style={styles.condominioNome}>{cond.nome}</Text>
+                      <Text style={styles.condominioEndereco}>{cond.endereco}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={styles.inputLabel}>Validade (dias)</Text>
+              <TextInput
+                style={styles.input}
+                value={expiracaoDias}
+                onChangeText={setExpiracaoDias}
+                placeholder="7"
+                keyboardType="numeric"
+                placeholderTextColor={COLORS.text.secondary}
+              />
+
+              <Text style={styles.infoModalText}>
+                <Ionicons name="information-circle" size={16} color={COLORS.primary} />
+                {' '}O QR Code será válido por {expiracaoDias || 7} dias e poderá ser usado apenas uma vez.
+              </Text>
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowCreateModal(false)}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleCreateProvisionamento}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={COLORS.background} />
+                ) : (
+                  <Text style={styles.modalButtonTextConfirm}>Criar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Visualização do QR Code */}
+      <Modal
+        visible={showQRModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQRModal(false)}
+      >
+        <View style={styles.qrModalOverlay}>
+          <View style={styles.qrModalContent}>
+            <View style={styles.qrModalHeader}>
+              <Text style={styles.qrModalTitle}>QR Code de Provisionamento</Text>
+              <TouchableOpacity onPress={() => setShowQRModal(false)}>
+                <Ionicons name="close" size={28} color={COLORS.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {qrImageUrl ? (
+              <View style={styles.qrImageContainer}>
+                <Image
+                  source={{ uri: qrImageUrl }}
+                  style={styles.qrImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.qrImageInfo}>
+                  ID: {currentProvisionId}
+                </Text>
+              </View>
+            ) : (
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            )}
+
+            <View style={styles.qrModalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleSaveQR}
+              >
+                <Ionicons name="download-outline" size={20} color={COLORS.background} />
+                <Text style={styles.modalButtonTextConfirm}>Salvar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={handleShareQR}
+              >
+                <Ionicons name="share-outline" size={20} color={COLORS.text.primary} />
+                <Text style={styles.modalButtonTextCancel}>Compartilhar</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.qrModalHint}>
+              💡 Dica: Faça um screenshot desta tela para salvar ou compartilhar o QR Code
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -404,5 +649,168 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.background,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: BORDER_RADIUS.lg,
+    borderTopRightRadius: BORDER_RADIUS.lg,
+    maxHeight: '90%',
+    paddingBottom: SPACING.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  modalScroll: {
+    padding: SPACING.md,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
+    marginTop: SPACING.sm,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.sm,
+    fontSize: 16,
+    color: COLORS.text.primary,
+    backgroundColor: COLORS.background,
+  },
+  condominiosList: {
+    maxHeight: 200,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.xs,
+  },
+  condominioItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    marginBottom: SPACING.xs,
+    gap: SPACING.sm,
+  },
+  condominioItemSelected: {
+    backgroundColor: `${COLORS.primary}10`,
+  },
+  condominioInfo: {
+    flex: 1,
+  },
+  condominioNome: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  condominioEndereco: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginTop: 2,
+  },
+  infoModalText: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginTop: SPACING.md,
+    lineHeight: 18,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: SPACING.xs,
+  },
+  modalButtonCancel: {
+    backgroundColor: COLORS.border,
+  },
+  modalButtonConfirm: {
+    backgroundColor: COLORS.primary,
+  },
+  modalButtonTextCancel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  modalButtonTextConfirm: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.background,
+  },
+  qrModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrModalContent: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.lg,
+    width: '90%',
+    maxWidth: 400,
+    padding: SPACING.lg,
+  },
+  qrModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  qrModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  qrImageContainer: {
+    alignItems: 'center',
+    marginVertical: SPACING.lg,
+  },
+  qrImage: {
+    width: 280,
+    height: 280,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  qrImageInfo: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    marginTop: SPACING.sm,
+    fontWeight: '500',
+  },
+  qrModalButtons: {
+    marginTop: SPACING.md,
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  qrModalHint: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    marginTop: SPACING.md,
+    lineHeight: 18,
   },
 });

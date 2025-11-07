@@ -1,12 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, FlatList } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { useAuth } from '../contexts/AuthContext';
-import { BackButton } from '../components';
+import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { sensorService, condominiumService } from '../services';
+import type { Sensor as APISensor } from '../services/sensorService';
 
 type SensorStatus = 'empty' | 'medium' | 'full';
 
@@ -17,6 +20,8 @@ interface Sensor {
     status: SensorStatus;
     coordinate: { latitude: number; longitude: number };
     condominiumId: string;
+    deviceId?: string;
+    ultimaAtualizacao?: string;
 }
 
 const INITIAL_REGION = {
@@ -26,27 +31,10 @@ const INITIAL_REGION = {
     longitudeDelta: 0.003,
 };
 
-const CONDOMINIUMS = [
-    { id: '1', name: 'Edifício Tulipas' },
-    { id: '2', name: 'Residencial Girassol' },
-    { id: '3', name: 'Condomínio Primavera' },
-    { id: '4', name: 'Edifício Alameda' },
-    { id: '5', name: 'Residencial Jardins' },
-    { id: '6', name: 'Condomínio Vila Verde' },
-    { id: '7', name: 'Edifício Horizonte' },
-    { id: '8', name: 'Residencial Solar' },
-];
-
-const MOCK_SENSORS: Sensor[] = [
-    { id: '1', name: 'Lixeira Portaria Principal', level: 95, status: 'full', coordinate: { latitude: -23.5010, longitude: -47.4520 }, condominiumId: '1' },
-    { id: '2', name: 'Lixeira Portaria dos Fundos', level: 25, status: 'empty', coordinate: { latitude: -23.5020, longitude: -47.4530 }, condominiumId: '1' },
-    { id: '3', name: 'Lixeira Salão de Festas', level: 60, status: 'medium', coordinate: { latitude: -23.5008, longitude: -47.4528 }, condominiumId: '2' },
-    { id: '4', name: 'Lixeira Área da Piscina', level: 85, status: 'full', coordinate: { latitude: -23.5012, longitude: -47.4522 }, condominiumId: '2' },
-    { id: '5', name: 'Lixeira Playground', level: 40, status: 'medium', coordinate: { latitude: -23.5015, longitude: -47.4532 }, condominiumId: '3' },
-    { id: '6', name: 'Lixeira Estacionamento A', level: 15, status: 'empty', coordinate: { latitude: -23.5018, longitude: -47.4524 }, condominiumId: '3' },
-    { id: '7', name: 'Lixeira Estacionamento B', level: 70, status: 'medium', coordinate: { latitude: -23.5022, longitude: -47.4528 }, condominiumId: '1' },
-    { id: '8', name: 'Lixeira Quadra', level: 90, status: 'full', coordinate: { latitude: -23.5005, longitude: -47.4525 }, condominiumId: '2' },
-];
+interface Condominium {
+    id: string;
+    nome: string;
+}
 
 interface MapScreenProps {
     onNavigateToSensorSetup?: () => void;
@@ -61,11 +49,154 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const [showCondominiumModal, setShowCondominiumModal] = useState(false);
     const [selectedCondominium, setSelectedCondominium] = useState('Todos');
     const [condominiumSearch, setCondominiumSearch] = useState('');
+    const [sensors, setSensors] = useState<Sensor[]>([]);
+    const [condominiums, setCondominiums] = useState<Condominium[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [initialRegion, setInitialRegion] = useState<Region>(INITIAL_REGION);
     const mapRef = React.useRef<MapView>(null);
 
     const isAdmin = hasPermission(['admin']);
     const isSindico = hasPermission(['sindico']);
     const canRegisterSensor = hasPermission(['sindico', 'admin']);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    return;
+                }
+
+                const location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+
+                const userRegion: Region = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                    latitudeDelta: 0.003,
+                    longitudeDelta: 0.003,
+                };
+
+                setInitialRegion(userRegion);
+                
+                if (mapRef.current) {
+                    mapRef.current.animateToRegion(userRegion, 1000);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao obter localização:', error);
+            }
+        })();
+    }, []);
+
+    const convertSensor = (apiSensor: APISensor): Sensor | null => {
+        const lat = apiSensor.latitude;
+        const lng = apiSensor.longitude;
+        
+        if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+            console.warn(`Sensor ${apiSensor.id} tem coordenadas inválidas:`, { lat, lng });
+            return null;
+        }
+
+        const level = apiSensor.nivelAtual || 0;
+        let status: SensorStatus = 'empty';
+        
+        if (level >= 80) {
+            status = 'full';
+        } else if (level >= 40) {
+            status = 'medium';
+        }
+
+        return {
+            id: apiSensor.id.toString(),
+            name: apiSensor.nome,
+            level,
+            status,
+            coordinate: {
+                latitude: lat,
+                longitude: lng,
+            },
+            condominiumId: apiSensor.condominioId.toString(),
+            deviceId: apiSensor.deviceId,
+            ultimaAtualizacao: apiSensor.ultimaAtualizacao,
+        };
+    };
+
+    const loadSensors = async () => {
+        try {
+            setLoading(true);
+            let response;
+
+            if (isAdmin) {
+                if (selectedCondominium === 'Todos') {
+                    response = await sensorService.getAll();
+                } else {
+                    const selectedCondoId = condominiums.find(c => c.nome === selectedCondominium)?.id;
+                    if (selectedCondoId) {
+                        response = await sensorService.getByCondominio(parseInt(selectedCondoId));
+                    } else {
+                        response = await sensorService.getAll();
+                    }
+                }
+            } else {
+                if (user?.condominiumId) {
+                    response = await sensorService.getByCondominio(user.condominiumId);
+                }
+            }
+
+            if (response?.dados) {
+                const convertedSensors = response.dados
+                    .map(convertSensor)
+                    .filter((sensor): sensor is Sensor => sensor !== null);
+                setSensors(convertedSensors);
+            }
+        } catch (error: any) {
+            console.error('Erro ao carregar sensores:', error);
+            Alert.alert(
+                'Erro',
+                error.response?.data?.mensagem || 'Não foi possível carregar os sensores'
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        const loadCondominiums = async () => {
+            if (!isAdmin) return;
+            
+            try {
+                const response = await condominiumService.getAll();
+                
+                if (response?.dados) {
+                    const condoList: Condominium[] = response.dados.map(cond => ({
+                        id: cond.id.toString(),
+                        nome: cond.nome,
+                    }));
+                    setCondominiums(condoList);
+                    console.log('✅ Condomínios carregados:', condoList.length);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar condomínios:', error);
+                const uniqueCondos: Condominium[] = [];
+                sensors.forEach(sensor => {
+                    if (!uniqueCondos.find(c => c.id === sensor.condominiumId)) {
+                        uniqueCondos.push({
+                            id: sensor.condominiumId,
+                            nome: `Condomínio ${sensor.condominiumId}`,
+                        });
+                    }
+                });
+                setCondominiums(uniqueCondos);
+            }
+        };
+
+        loadCondominiums();
+    }, [isAdmin]);
+
+    useEffect(() => {
+        loadSensors();
+    }, [selectedCondominium]);
 
     const getStatusColor = (status: SensorStatus) => {
         switch (status) {
@@ -90,31 +221,20 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     };
 
     const filteredCondominiums = useMemo(() => {
-        return CONDOMINIUMS.filter(cond =>
-            cond.name.toLowerCase().includes(condominiumSearch.toLowerCase())
+        return condominiums.filter(cond =>
+            cond.nome.toLowerCase().includes(condominiumSearch.toLowerCase())
         );
-    }, [condominiumSearch]);
+    }, [condominiumSearch, condominiums]);
 
     const filteredSensors = useMemo(() => {
-        let sensors = MOCK_SENSORS;
-
-        if (isAdmin) {
-            if (selectedCondominium !== 'Todos') {
-                const selectedCondoId = CONDOMINIUMS.find(c => c.name === selectedCondominium)?.id;
-                if (selectedCondoId) {
-                    sensors = sensors.filter(s => s.condominiumId === selectedCondoId);
-                }
-            }
-        } else {
-            sensors = sensors.filter(s => s.condominiumId === '1');
-        }
+        let filtered = sensors;
 
         if (selectedFilter !== 'all') {
-            sensors = sensors.filter(s => s.status === selectedFilter);
+            filtered = filtered.filter(s => s.status === selectedFilter);
         }
 
-        return sensors;
-    }, [selectedFilter, selectedCondominium, isAdmin]);
+        return filtered;
+    }, [selectedFilter, sensors]);
 
     const handleSensorPress = React.useCallback((sensor: Sensor) => {
         mapRef.current?.animateToRegion({
@@ -129,14 +249,22 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     }, []);
 
     const markers = useMemo(() => {
-        return filteredSensors.map((sensor) => (
-            <Marker
-                key={sensor.id}
-                coordinate={sensor.coordinate}
-                onPress={() => handleSensorPress(sensor)}
-                pinColor={getStatusColor(sensor.status)}
-            />
-        ));
+        return filteredSensors
+            .filter(sensor => {
+                const lat = sensor.coordinate?.latitude;
+                const lng = sensor.coordinate?.longitude;
+                return lat && lng && !isNaN(lat) && !isNaN(lng) && 
+                       lat >= -90 && lat <= 90 && 
+                       lng >= -180 && lng <= 180;
+            })
+            .map((sensor) => (
+                <Marker
+                    key={sensor.id}
+                    coordinate={sensor.coordinate}
+                    onPress={() => handleSensorPress(sensor)}
+                    pinColor={getStatusColor(sensor.status)}
+                />
+            ));
     }, [filteredSensors, handleSensorPress]);
 
     return (
@@ -146,7 +274,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             <View style={styles.header}>
                 <BackButton onPress={onBack || (() => {})} />
             </View>
-            
+
+            {loading ? (
+                <Loading />
+            ) : (
             <ScrollView 
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
@@ -157,7 +288,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                         ref={mapRef}
                         provider={PROVIDER_GOOGLE}
                         style={styles.map}
-                        initialRegion={INITIAL_REGION}
+                        initialRegion={initialRegion}
                         showsUserLocation={true}
                         showsMyLocationButton={true}
                     >
@@ -286,6 +417,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                     </View>
                 </View>
             </ScrollView>
+            )}
 
             {/* Modal de Detalhes do Sensor */}
             <Modal
@@ -394,7 +526,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                             <FlatList
                                 style={styles.modalList}
                                 data={[
-                                    { id: 'all', name: 'Todos' },
+                                    { id: 'all', nome: 'Todos' },
                                     ...filteredCondominiums
                                 ]}
                                 keyExtractor={(item) => item.id}
@@ -402,10 +534,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                     <TouchableOpacity
                                         style={[
                                             styles.condominiumOption,
-                                            selectedCondominium === item.name && styles.condominiumOptionSelected,
+                                            selectedCondominium === item.nome && styles.condominiumOptionSelected,
                                         ]}
                                         onPress={() => {
-                                            setSelectedCondominium(item.name);
+                                            setSelectedCondominium(item.nome);
                                             setShowCondominiumModal(false);
                                             setCondominiumSearch('');
                                         }}
@@ -414,16 +546,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                             <Ionicons
                                                 name={item.id === 'all' ? 'apps' : 'home'}
                                                 size={22}
-                                                color={selectedCondominium === item.name ? COLORS.primary : COLORS.text.secondary}
+                                                color={selectedCondominium === item.nome ? COLORS.primary : COLORS.text.secondary}
                                             />
                                             <Text style={[
                                                 styles.condominiumLabel,
-                                                selectedCondominium === item.name && styles.condominiumLabelSelected,
+                                                selectedCondominium === item.nome && styles.condominiumLabelSelected,
                                             ]}>
-                                                {item.id === 'all' ? 'Todos os Condomínios' : item.name}
+                                                {item.id === 'all' ? 'Todos os Condomínios' : item.nome}
                                             </Text>
                                         </View>
-                                        {selectedCondominium === item.name && (
+                                        {selectedCondominium === item.nome && (
                                             <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
                                         )}
                                     </TouchableOpacity>

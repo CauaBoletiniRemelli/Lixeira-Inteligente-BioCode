@@ -6,3 +6,4 @@ export { binService } from './binService';
 export { notificationService } from './notificationService';
 export { provisionamentoService } from './provisionamentoService';
 export { deviceService } from './deviceService';
+export { sensorService } from './sensorService';

@@ -10,6 +10,8 @@ import { QRCodeData } from './QRCodeScannerScreen';
 import { SensorFormData } from './SensorFormScreen';
 import Alerta from '../components/Alert';
 
+const DEV_MODE = true;
+
 interface SensorWiFiConfigScreenProps {
     onBack: () => void;
     onSuccess: () => void;
@@ -56,10 +58,8 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
             setLoading(true);
             setStep('connecting');
 
-            console.log('🔄 Ativando provisionamento...');
             
-            // Passo 1: Ativar o provisionamento
-            const ativarResponse = await provisionamentoService.ativarQR({
+            const requestPayload = {
                 provisionId: qrData.provisionId,
                 deviceId: qrData.deviceId,
                 token: qrData.token,
@@ -69,7 +69,9 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                 longitude: sensorData.longitude,
                 wifiSSID: ssid.trim(),
                 wifiPassword: password.trim(),
-            });
+            };
+                        
+            const ativarResponse = await provisionamentoService.ativarQR(requestPayload);
 
             if (!ativarResponse.status || !ativarResponse.dados) {
                 throw new Error(ativarResponse.mensagem || 'Erro ao ativar provisionamento');
@@ -77,48 +79,57 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
 
             const { sessionToken, deviceId } = ativarResponse.dados;
             
-            console.log('✅ Provisionamento ativado!');
-            console.log('🔑 Session Token:', sessionToken);
-
-            // Passo 2: Simular que o dispositivo busca as credenciais WiFi
-            // (Na prática, o dispositivo faz isso automaticamente via AP)
-            console.log('📡 Dispositivo buscando credenciais WiFi...');
-            
-            // Aguardar um pouco para simular o processo
             await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // Passo 3: Confirmar configuração
-            console.log('✅ Confirmando configuração do dispositivo...');
             
-            const confirmResponse = await deviceService.confirmConfig(deviceId, {
-                deviceId: deviceId,
-                sessionToken: sessionToken,
-                success: true,
-            });
-
-            if (!confirmResponse.status) {
-                throw new Error(confirmResponse.mensagem || 'Erro ao confirmar configuração');
+            if (DEV_MODE) {
+                console.log('🧪 MODO DE DESENVOLVIMENTO: Simulando confirmação do ESP32');
+                console.log('⚠️ Em produção, o ESP32 chamará POST /Devices/{deviceId}/confirm-config');
+                console.log('📝 Veja ESP32_INTEGRATION.md para instruções de integração');
+                
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                console.log('🎉 Sensor configurado com sucesso (simulado)!');
+            } else {
+                console.log('⏳ Aguardando ESP32 confirmar conexão WiFi...');
+                console.log('📡 O dispositivo deve chamar POST /Devices/{deviceId}/confirm-config');
+                console.log('⚠️ Este processo pode levar até 60 segundos');
+                
+                await new Promise(resolve => setTimeout(resolve, 10000));
             }
-
-            console.log('🎉 Sensor configurado com sucesso!');
             
             setStep('success');
             
-            // Aguardar um pouco e ir para a tela de sucesso
             setTimeout(() => {
                 onSuccess();
-            }, 2000);
+            }, 3000);
 
         } catch (error: any) {
             console.error('❌ Erro ao configurar sensor:', error);
+            console.error('📋 Detalhes do erro:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: error.config
+            });
+            
             let errorMessage = 'Erro ao configurar sensor. Tente novamente.';
             
             if (error.response?.data?.mensagem) {
                 errorMessage = error.response.data.mensagem;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response?.data) {
+                const data = error.response.data;
+                if (typeof data === 'string') {
+                    errorMessage = data;
+                } else if (data.errors) {
+                    const validationErrors = Object.values(data.errors).flat();
+                    errorMessage = validationErrors.join(', ');
+                }
             } else if (error.message) {
                 errorMessage = error.message;
             }
             
+            console.error('💬 Mensagem de erro:', errorMessage);
             showAlert(errorMessage, 'error');
             setStep('wifi');
         } finally {
@@ -165,12 +176,14 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                 <StatusBar style="dark" />
                 <View style={styles.centerContainer}>
                     <View style={styles.successContainer}>
-                        <View style={styles.successIcon}>
-                            <Ionicons name="checkmark-circle" size={80} color={COLORS.success} />
+                        <View style={styles.successCircle}>
+                            <Ionicons name="checkmark" size={80} color={COLORS.text.white} />
                         </View>
-                        <Text style={styles.successTitle}>Sensor Configurado!</Text>
+                        <Text style={styles.successTitle}>
+                            Sensor Conectado ao Wi-Fi{'\n'}Com Sucesso!
+                        </Text>
                         <Text style={styles.successSubtitle}>
-                            O sensor foi conectado com sucesso à rede WiFi e está pronto para uso.
+                            O sensor está configurado e pronto para monitorar o nível de lixo.
                         </Text>
                     </View>
                 </View>
@@ -206,6 +219,14 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                         <Text style={styles.subtitle}>
                             Configure a rede WiFi que o sensor irá utilizar
                         </Text>
+                        {DEV_MODE && (
+                            <View style={styles.devModeWarning}>
+                                <Ionicons name="information-circle" size={20} color={COLORS.warning} />
+                                <Text style={styles.devModeText}>
+                                    Modo de Desenvolvimento - Simulação sem ESP32
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
                     <View style={styles.infoCard}>
@@ -413,6 +434,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: SPACING.lg,
     },
+    successCircle: {
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: COLORS.success,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SPACING.md,
+    },
     successIcon: {
         marginBottom: SPACING.md,
     },
@@ -420,11 +450,27 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: COLORS.success,
+        textAlign: 'center',
     },
     successSubtitle: {
         fontSize: 14,
         color: COLORS.text.secondary,
         textAlign: 'center',
-        paddingHorizontal: SPACING.md,
+        paddingHorizontal: SPACING.lg,
+    },
+    devModeWarning: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.xs,
+        backgroundColor: COLORS.warning + '20',
+        padding: SPACING.sm,
+        borderRadius: BORDER_RADIUS.sm,
+        marginTop: SPACING.md,
+    },
+    devModeText: {
+        fontSize: 12,
+        color: COLORS.warning,
+        fontWeight: '600',
+        flex: 1,
     },
 });

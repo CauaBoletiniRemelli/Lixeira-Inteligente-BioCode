@@ -2,15 +2,26 @@
 
 ## 🎯 Visão Geral do Fluxo
 
-O novo sistema de provisionamento de sensores segue um fluxo em 4 etapas:
+O sistema de provisionamento de sensores segue um fluxo em 3 etapas:
 
 ```
-1. SensorFormScreen → 2. QRCodeScannerScreen → 3. SensorWiFiConfigScreen → 4. SensorSetupSuccessScreen
+1. QRCodeScannerScreen → 2. SensorFormScreen → 3. SensorWiFiConfigScreen
 ```
+
+Após a configuração WiFi bem-sucedida, é exibida uma confirmação de sucesso por 3 segundos e então retorna automaticamente para a tela inicial.
 
 ## 📝 Estrutura dos Dados
 
-### SensorFormData (da tela 1)
+### QRCodeData (da tela 1)
+```typescript
+{
+  provisionId: string;  // Ex: "1"
+  deviceId: string;     // Ex: "DEVICE_ID_123"
+  token: string;        // JWT token
+}
+```
+
+### SensorFormData (da tela 2)
 ```typescript
 {
   nomeSensor: string;
@@ -18,15 +29,6 @@ O novo sistema de provisionamento de sensores segue um fluxo em 4 etapas:
   longitude: number;
   condominioId: number;
   condominioNome: string;
-}
-```
-
-### QRCodeData (da tela 2)
-```typescript
-{
-  provisionId: string;  // Ex: "1"
-  deviceId: string;     // Ex: "DEVICE_ID_123"
-  token: string;        // JWT token
 }
 ```
 
@@ -38,19 +40,17 @@ O novo sistema de provisionamento de sensores segue um fluxo em 4 etapas:
 import React, { useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import {
-  SensorFormScreen,
   QRCodeScannerScreen,
+  SensorFormScreen,
   SensorWiFiConfigScreen,
-  SensorSetupSuccessScreen,
 } from '../screens';
 import type { SensorFormData } from '../screens/SensorFormScreen';
 import type { QRCodeData } from '../screens/QRCodeScannerScreen';
 
 type SensorProvisionStackParamList = {
-  SensorForm: undefined;
-  QRScanner: { sensorData: SensorFormData };
+  QRScanner: undefined;
+  SensorForm: { qrData: QRCodeData };
   WiFiConfig: { sensorData: SensorFormData; qrData: QRCodeData };
-  Success: undefined;
 };
 
 const Stack = createStackNavigator<SensorProvisionStackParamList>();
@@ -62,33 +62,32 @@ export function SensorProvisionNavigator() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="SensorForm" component={SensorFormScreenWrapper} />
       <Stack.Screen name="QRScanner" component={QRScannerScreenWrapper} />
+      <Stack.Screen name="SensorForm" component={SensorFormScreenWrapper} />
       <Stack.Screen name="WiFiConfig" component={WiFiConfigScreenWrapper} />
-      <Stack.Screen name="Success" component={SuccessScreenWrapper} />
     </Stack.Navigator>
   );
 }
 
 // Wrappers para conectar com o Stack Navigator
-function SensorFormScreenWrapper({ navigation }: any) {
+function QRScannerScreenWrapper({ navigation }: any) {
   return (
-    <SensorFormScreen
+    <QRCodeScannerScreen
       onBack={() => navigation.goBack()}
-      onNext={(sensorData) => {
-        navigation.navigate('QRScanner', { sensorData });
+      onScanSuccess={(qrData) => {
+        navigation.navigate('SensorForm', { qrData });
       }}
     />
   );
 }
 
-function QRScannerScreenWrapper({ navigation, route }: any) {
-  const { sensorData } = route.params;
+function SensorFormScreenWrapper({ navigation, route }: any) {
+  const { qrData } = route.params;
   
   return (
-    <QRCodeScannerScreen
+    <SensorFormScreen
       onBack={() => navigation.goBack()}
-      onScanSuccess={(qrData) => {
+      onNext={(sensorData) => {
         navigation.navigate('WiFiConfig', { sensorData, qrData });
       }}
     />
@@ -104,17 +103,7 @@ function WiFiConfigScreenWrapper({ navigation, route }: any) {
       sensorData={sensorData}
       qrData={qrData}
       onSuccess={() => {
-        navigation.navigate('Success');
-      }}
-    />
-  );
-}
-
-function SuccessScreenWrapper({ navigation }: any) {
-  return (
-    <SensorSetupSuccessScreen
-      onFinish={() => {
-        // Volta para a tela principal
+        // A tela WiFiConfig já mostra confirmação de sucesso e volta automaticamente
         navigation.popToTop();
       }}
     />
@@ -127,28 +116,27 @@ function SuccessScreenWrapper({ navigation }: any) {
 ```typescript
 import React, { useState } from 'react';
 import {
-  SensorFormScreen,
   QRCodeScannerScreen,
+  SensorFormScreen,
   SensorWiFiConfigScreen,
-  SensorSetupSuccessScreen,
 } from '../screens';
 import type { SensorFormData } from '../screens/SensorFormScreen';
 import type { QRCodeData } from '../screens/QRCodeScannerScreen';
 
-type ScreenType = 'form' | 'scanner' | 'wifi' | 'success';
+type ScreenType = 'scanner' | 'form' | 'wifi';
 
 export function SensorProvisionFlow() {
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('form');
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('scanner');
   const [sensorData, setSensorData] = useState<SensorFormData | null>(null);
   const [qrData, setQRData] = useState<QRCodeData | null>(null);
 
   const handleBack = () => {
     switch (currentScreen) {
-      case 'scanner':
-        setCurrentScreen('form');
+      case 'form':
+        setCurrentScreen('scanner');
         break;
       case 'wifi':
-        setCurrentScreen('scanner');
+        setCurrentScreen('form');
         break;
       default:
         // Volta para a tela anterior do app
@@ -163,30 +151,24 @@ export function SensorProvisionFlow() {
 
   const handleScanSuccess = (data: QRCodeData) => {
     setQRData(data);
+    setCurrentScreen('form');
+  };
+
+  const handleFormNext = (data: SensorFormData) => {
+    setSensorData(data);
     setCurrentScreen('wifi');
   };
 
   const handleWiFiSuccess = () => {
-    setCurrentScreen('success');
-  };
-
-  const handleFinish = () => {
     // Resetar e voltar para a tela inicial
-    setCurrentScreen('form');
+    // (A tela WiFiConfig já mostra confirmação de sucesso por 3s)
+    setCurrentScreen('scanner');
     setSensorData(null);
     setQRData(null);
   };
 
   // Renderizar a tela atual
   switch (currentScreen) {
-    case 'form':
-      return (
-        <SensorFormScreen
-          onBack={handleBack}
-          onNext={handleFormNext}
-        />
-      );
-
     case 'scanner':
       return (
         <QRCodeScannerScreen
@@ -194,6 +176,14 @@ export function SensorProvisionFlow() {
           onScanSuccess={handleScanSuccess}
         />
       );
+
+    case 'form':
+      return qrData ? (
+        <SensorFormScreen
+          onBack={handleBack}
+          onNext={handleFormNext}
+        />
+      ) : null;
 
     case 'wifi':
       return sensorData && qrData ? (
@@ -204,12 +194,6 @@ export function SensorProvisionFlow() {
           onSuccess={handleWiFiSuccess}
         />
       ) : null;
-
-    case 'success':
-      return (
-        <SensorSetupSuccessScreen
-          onFinish={handleFinish}
-        />
       );
 
     default:
@@ -338,10 +322,31 @@ const confirmResponse = await deviceService.confirmConfig(deviceId, {
 ## 🎯 Fluxo Backend (Resumo)
 
 1. **Admin cria provisionamento** → Gera QR Code
-2. **Síndico escaneia QR** → Preenche dados do sensor
-3. **App ativa provisionamento** → Backend gera sessionToken
-4. **Dispositivo busca WiFi** → Usa sessionToken para obter credenciais
-5. **Dispositivo confirma** → Sensor fica ativo no sistema
+2. **Usuário escaneia QR** → Captura token e deviceId
+3. **Usuário preenche dados** → Nome, localização, condomínio
+4. **App ativa provisionamento** → Backend gera sessionToken
+5. **Dispositivo busca WiFi** → Usa sessionToken para obter credenciais
+6. **Dispositivo confirma** → Sensor fica ativo no sistema
+
+## 📋 Ordem do Fluxo no App
+
+### Passo 1: QR Code Scanner
+- Usuário escaneia o QR Code do sensor físico
+- QR Code contém: `provisionId`, `deviceId`, `token`
+- Dados salvos em memória para próximas telas
+
+### Passo 2: Formulário do Sensor
+- Usuário preenche nome do sensor
+- Seleciona localização no mapa (ou digita coordenadas)
+- Seleciona condomínio (admin) ou usa condomínio fixo (síndico)
+- Dados validados antes de avançar
+
+### Passo 3: Configuração WiFi
+- Usuário informa SSID e senha da rede WiFi
+- App envia todos os dados para o backend
+- Backend registra o sensor e retorna sessionToken
+- Tela mostra confirmação de sucesso por 3 segundos
+- Retorna automaticamente para tela inicial
 
 ## ✅ Validações Importantes
 

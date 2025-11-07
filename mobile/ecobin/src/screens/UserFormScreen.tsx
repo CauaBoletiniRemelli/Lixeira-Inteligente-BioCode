@@ -70,8 +70,6 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             
             if (condominiumExists) {
                 setSelectedCondominium(userCondominiumId);
-            } else {
-                console.log('❌ Condomínio não encontrado na lista');
             }
         }
     }, [user?.condominiumId, condominiums]);
