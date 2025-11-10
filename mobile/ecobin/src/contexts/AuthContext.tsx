@@ -34,14 +34,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
             setInitialLoading(true);
             
-            const needsMigration = await checkIfMigrationNeeded();
-            if (needsMigration) {
-                const migrated = await migrateTokensToSecureStore();
-                if (migrated) {
-                    console.log('✅ Tokens migrados com sucesso do AsyncStorage para SecureStore');
-                }
-            }
-            
             const userData = await storage.getUserData();
             const refreshToken = await storage.getRefreshToken();
             const accessToken = await storage.getAccessToken();

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, View, StyleSheet, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
@@ -23,11 +23,15 @@ function AppContent() {
 }
 
 export default function App() {
-  OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-  
-  OneSignal.initialize('72d3902a-cb02-48c9-b1f4-fd4faea52430');
- 
-  OneSignal.Notifications.requestPermission(false);
+  useEffect(() => {
+    const initializeOneSignal = async () => {
+      OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+
+      OneSignal.initialize('72d3902a-cb02-48c9-b1f4-fd4faea52430');
+    };
+
+    initializeOneSignal();
+  }, []);
 
   return (
     <SafeAreaProvider>

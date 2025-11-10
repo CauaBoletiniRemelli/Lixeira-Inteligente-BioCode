@@ -163,9 +163,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    if (error.response?.status === 403) {
-      console.log('⚠️ Erro 403 em', originalRequest.url);
-      
+    if (error.response?.status === 403) {      
       const accessToken = await storage.getAccessToken();
       
       if (!accessToken) {

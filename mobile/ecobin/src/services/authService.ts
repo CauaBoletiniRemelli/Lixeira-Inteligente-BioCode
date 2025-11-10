@@ -108,8 +108,6 @@ export const authService = {
 
         await storage.saveTokens(token, refreshToken);
         await storage.saveUserData(response.data.dados);
-
-        console.log('✅ Login realizado com sucesso');
         return response.data;
       }
 

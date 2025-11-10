@@ -64,10 +64,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
     useEffect(() => {
         const initializeScreen = async () => {
-            if (!user) {
-                console.log('⚠️ Usuário não autenticado, não é possível carregar condomínios');
-                return;
-            }
 
             const userToken = await storage.getAccessToken();
 
