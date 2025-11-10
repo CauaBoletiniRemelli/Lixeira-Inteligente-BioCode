@@ -5,3 +5,5 @@ export * from './HeaderWithLogo';
 export * from './Input';
 export * from './PasswordInput';
 export * from './Loading';
+export { default as MapView, Marker } from './MapView';
+export type { Region, Coordinate, MapPressEvent, MarkerProps, MapViewProps, MapViewRef } from './MapView';

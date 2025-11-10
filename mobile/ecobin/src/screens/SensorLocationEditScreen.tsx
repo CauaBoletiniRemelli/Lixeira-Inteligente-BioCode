@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
+import { MapView, Marker, type MapPressEvent, type MapViewRef } from '../components';
 import * as Location from 'expo-location';
 import { BackButton, Button, Input, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
@@ -49,7 +49,7 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
 
-    const mapRef = useRef<MapView>(null);
+    const mapRef = useRef<MapViewRef>(null);
 
     const showAlert = (message: string, type: 'success' | 'error') => {
         setAlertMessage(message);
@@ -332,7 +332,6 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
 
                     <MapView
                         ref={mapRef}
-                        provider={PROVIDER_GOOGLE}
                         style={styles.fullMap}
                         initialRegion={{
                             latitude: sensor.latitude,
@@ -348,6 +347,8 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
                             <Marker
                                 coordinate={tempMarkerPosition}
                                 pinColor={COLORS.primary}
+                                title="Nova Localização"
+                                description={`Lat: ${tempMarkerPosition.latitude.toFixed(6)}, Lng: ${tempMarkerPosition.longitude.toFixed(6)}`}
                             />
                         )}
                     </MapView>

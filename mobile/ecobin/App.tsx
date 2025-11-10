@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { MainNavigator } from './src/navigation/MainNavigator';
 import { COLORS } from './src/constants';
+import { OneSignal, LogLevel } from 'react-native-onesignal';
+
 
 function AppContent() {
   const { isAuthenticated, initialLoading } = useAuth();
@@ -21,6 +23,12 @@ function AppContent() {
 }
 
 export default function App() {
+  OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+  
+  OneSignal.initialize('72d3902a-cb02-48c9-b1f4-fd4faea52430');
+ 
+  OneSignal.Notifications.requestPermission(false);
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

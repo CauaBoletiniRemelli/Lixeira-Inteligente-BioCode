@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { MapView, Marker, type Region, type MapViewRef } from '../components';
 import * as Location from 'expo-location';
 import { useAuth } from '../contexts/AuthContext';
 import { BackButton, Loading } from '../components';
@@ -56,7 +56,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const [initialRegion, setInitialRegion] = useState<Region>(INITIAL_REGION);
     const [showEditLocationScreen, setShowEditLocationScreen] = useState(false);
     const [sensorToEdit, setSensorToEdit] = useState<APISensor | null>(null);
-    const mapRef = React.useRef<MapView>(null);
+    const mapRef = React.useRef<MapViewRef>(null);
 
     const isAdmin = hasPermission(['admin']);
     const isSindico = hasPermission(['sindico']);
@@ -252,7 +252,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
 
     const handleEditLocation = async (sensor: Sensor) => {
         try {
-            // Buscar os dados completos do sensor da API
             const response = await sensorService.getAll();
             if (response?.dados) {
                 const fullSensor = response.dados.find(s => s.id.toString() === sensor.id);
@@ -271,7 +270,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const handleEditLocationSuccess = () => {
         setShowEditLocationScreen(false);
         setSensorToEdit(null);
-        loadSensors(); // Recarregar sensores
+        loadSensors(); 
     };
 
     const markers = useMemo(() => {
@@ -289,11 +288,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                     coordinate={sensor.coordinate}
                     onPress={() => handleSensorPress(sensor)}
                     pinColor={getStatusColor(sensor.status)}
+                    title={sensor.name}
+                    description={`${getStatusText(sensor.status)} - ${sensor.level}%`}
+                    identifier={sensor.id}
                 />
             ));
     }, [filteredSensors, handleSensorPress]);
 
-    // Renderizar tela de edição de localização
     if (showEditLocationScreen && sensorToEdit) {
         return (
             <SensorLocationEditScreen
@@ -318,15 +319,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             {loading ? (
                 <Loading />
             ) : (
-            <ScrollView 
-                style={styles.scrollView}
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-            >
+            <View style={styles.container}>
                 <View style={styles.mapContainer}>
                     <MapView
                         ref={mapRef}
-                        provider={PROVIDER_GOOGLE}
                         style={styles.map}
                         initialRegion={initialRegion}
                         showsUserLocation={true}
@@ -336,6 +332,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                     </MapView>
                 </View>
 
+                <ScrollView 
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                    nestedScrollEnabled={true}
+                >
                 {/* Filtro de Condomínio (apenas para admins) */}
                 {isAdmin && (
                     <View style={styles.condominiumFilterContainer}>
@@ -456,7 +458,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                             ))}
                     </View>
                 </View>
-            </ScrollView>
+                </ScrollView>
+            </View>
             )}
 
             {/* Modal de Detalhes do Sensor */}
@@ -637,19 +640,19 @@ const styles = StyleSheet.create({
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.xs,
     },
-    scrollView: {
-        flex: 1,
-    },
     container: {
         flex: 1,
     },
     mapContainer: {
-        height: 250,
+        height: 300,
         position: 'relative',
     },
     map: {
         width: '100%',
         height: '100%',
+    },
+    scrollView: {
+        flex: 1,
     },
     markerContainer: {
         alignItems: 'center',

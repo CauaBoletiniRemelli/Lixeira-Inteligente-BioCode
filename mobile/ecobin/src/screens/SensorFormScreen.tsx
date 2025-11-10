@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE, MapPressEvent, Region } from 'react-native-maps';
+import { MapView, Marker, type MapPressEvent, type Region, type MapViewRef } from '../components';
 import * as Location from 'expo-location';
 import { BackButton, Input, Button, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
@@ -60,7 +60,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
     const latitudeInputRef = useRef<TextInput>(null);
     const longitudeInputRef = useRef<TextInput>(null);
-    const mapRef = useRef<MapView>(null);
+    const mapRef = useRef<MapViewRef>(null);
 
     useEffect(() => {
         const initializeScreen = async () => {
@@ -521,7 +521,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
                     <MapView
                         ref={mapRef}
-                        provider={PROVIDER_GOOGLE}
                         style={styles.fullMap}
                         initialRegion={INITIAL_REGION}
                         onPress={handleMapPress}
@@ -532,6 +531,8 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                             <Marker
                                 coordinate={tempMarkerPosition}
                                 pinColor={COLORS.primary}
+                                title="Localização do Sensor"
+                                description={`Lat: ${tempMarkerPosition.latitude.toFixed(6)}, Lng: ${tempMarkerPosition.longitude.toFixed(6)}`}
                             />
                         )}
                     </MapView>
