@@ -8,6 +8,7 @@ namespace ApiEcoBin.Services.Sensores
         Task<ResponseModel<SensoresModel>> CreateSensorAsync(SensorCreateDTO dto);
 
         Task<ResponseModel<SensoresModel>> UpdateSensorAsync(SensorEditDTO dto);
+        Task<ResponseModel<SensoresModel>> UpdateSensorLocaleAsync(SensorUpdateLocaleDTO dto);
         Task<ResponseModel<List<SensoresModel>>> DeleteSensorAsync(int idSensor);
 
         Task<ResponseModel<List<SensoresModel>>> GetSensoresAsync();

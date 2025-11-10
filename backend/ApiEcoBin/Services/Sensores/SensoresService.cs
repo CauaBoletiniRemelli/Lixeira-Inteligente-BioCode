@@ -71,6 +71,28 @@ namespace ApiEcoBin.Services.Sensores
             };
         }
 
+        public async Task<ResponseModel<SensoresModel>> UpdateSensorLocaleAsync(SensorUpdateLocaleDTO dto)
+        {
+            var sensor = await _context.Sensores.FindAsync(dto.Id);
+
+            if (sensor == null)
+                return new ResponseModel<SensoresModel> { Status = false, Mensagem = "Sensor não encontrado." };
+
+            if (dto.Latitude.HasValue) sensor.Latitude = dto.Latitude.Value;
+            if (dto.Longitude.HasValue) sensor.Longitude = dto.Longitude.Value;
+
+           _context.Sensores.Update(sensor);
+
+            await _context.SaveChangesAsync();
+
+            return new ResponseModel<SensoresModel>
+            {
+                Status = true,
+                Mensagem = "Sensor atualizado com sucesso.",
+                Dados = sensor
+            };
+        }
+
         public async Task<ResponseModel<List<SensoresModel>>> DeleteSensorAsync(int idSensor)
         {
             var sensor = await _context.Sensores.FindAsync(idSensor);

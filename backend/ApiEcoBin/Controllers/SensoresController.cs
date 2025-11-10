@@ -49,6 +49,15 @@ namespace ApiEcoBin.Controllers
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
+        [Authorize]
+        [HttpPut("update-locale-{idSensor}")]
+        public async Task<IActionResult> UpdateSensorLocale(int idSensor, [FromBody] SensorUpdateLocaleDTO dto)
+        {
+            dto.Id = idSensor;
+            var response = await _sensores.UpdateSensorLocaleAsync(dto);
+            return response.Status ? Ok(response) : BadRequest(response);
+        }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{idSensor}")]
         public async Task<IActionResult> DeleteSensor(int idSensor)
