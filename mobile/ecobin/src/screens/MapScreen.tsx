@@ -10,6 +10,7 @@ import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { sensorService, condominiumService } from '../services';
 import type { Sensor as APISensor } from '../services/sensorService';
+import { SensorLocationEditScreen } from './SensorLocationEditScreen';
 
 type SensorStatus = 'empty' | 'medium' | 'full';
 
@@ -53,6 +54,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const [condominiums, setCondominiums] = useState<Condominium[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialRegion, setInitialRegion] = useState<Region>(INITIAL_REGION);
+    const [showEditLocationScreen, setShowEditLocationScreen] = useState(false);
+    const [sensorToEdit, setSensorToEdit] = useState<APISensor | null>(null);
     const mapRef = React.useRef<MapView>(null);
 
     const isAdmin = hasPermission(['admin']);
@@ -247,6 +250,30 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
         setShowSensorModal(true);
     }, []);
 
+    const handleEditLocation = async (sensor: Sensor) => {
+        try {
+            // Buscar os dados completos do sensor da API
+            const response = await sensorService.getAll();
+            if (response?.dados) {
+                const fullSensor = response.dados.find(s => s.id.toString() === sensor.id);
+                if (fullSensor) {
+                    setSensorToEdit(fullSensor);
+                    setShowSensorModal(false);
+                    setShowEditLocationScreen(true);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Erro ao buscar sensor:', error);
+            Alert.alert('Erro', 'Não foi possível carregar os dados do sensor');
+        }
+    };
+
+    const handleEditLocationSuccess = () => {
+        setShowEditLocationScreen(false);
+        setSensorToEdit(null);
+        loadSensors(); // Recarregar sensores
+    };
+
     const markers = useMemo(() => {
         return filteredSensors
             .filter(sensor => {
@@ -265,6 +292,20 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                 />
             ));
     }, [filteredSensors, handleSensorPress]);
+
+    // Renderizar tela de edição de localização
+    if (showEditLocationScreen && sensorToEdit) {
+        return (
+            <SensorLocationEditScreen
+                sensor={sensorToEdit}
+                onBack={() => {
+                    setShowEditLocationScreen(false);
+                    setSensorToEdit(null);
+                }}
+                onSuccess={handleEditLocationSuccess}
+            />
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -466,6 +507,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                     >
                                         {getStatusText(selectedSensor.status)}
                                     </Text>
+
+                                    {canRegisterSensor && (
+                                        <TouchableOpacity 
+                                            style={styles.modalEditLocationButton}
+                                            onPress={() => handleEditLocation(selectedSensor)}
+                                        >
+                                            <Ionicons name="location" size={20} color={COLORS.primary} />
+                                            <Text style={styles.modalEditLocationButtonText}>
+                                                Editar Localização
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
 
                                     {selectedSensor.status === 'full' && canRegisterSensor && (
                                         <TouchableOpacity style={styles.modalAlertButton}>
@@ -787,6 +840,24 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: SPACING.lg,
+    },
+    modalEditLocationButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: SPACING.sm,
+        backgroundColor: `${COLORS.primary}10`,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.lg,
+        borderRadius: BORDER_RADIUS.md,
+        marginTop: SPACING.md,
+    },
+    modalEditLocationButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.primary,
     },
     modalAlertButton: {
         flexDirection: 'row',

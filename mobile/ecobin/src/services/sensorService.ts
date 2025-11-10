@@ -32,6 +32,12 @@ export interface SensorEditDTO {
   status?: number;
 }
 
+export interface SensorUpdateLocaleDTO {
+  id: number;
+  latitude: number;
+  longitude: number;
+}
+
 export interface ResponseModel<T> {
   dados: T | null;
   mensagem: string;
@@ -53,6 +59,10 @@ export const sensorService = {
 
   update: async (data: SensorEditDTO): Promise<ResponseModel<Sensor>> => {
     return api.put<ResponseModel<Sensor>>('/Sensores', data);
+  },
+
+  updateLocale: async (idSensor: number, data: SensorUpdateLocaleDTO): Promise<ResponseModel<Sensor>> => {
+    return api.put<ResponseModel<Sensor>>(`/Sensores/update-locale-${idSensor}`, data);
   },
 
   delete: async (idSensor: number): Promise<ResponseModel<any>> => {

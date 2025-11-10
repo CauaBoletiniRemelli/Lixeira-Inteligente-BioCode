@@ -10,6 +10,7 @@ export * from './CondominiumFormScreen';
 export * from './QRCodeScannerScreen';
 export * from './QRCodeManagementScreen';
 export * from './SensorFormScreen';
+export * from './SensorLocationEditScreen';
 export * from './SensorWiFiConfigScreen';
 export * from './SensorWiFiSetupScreen';
 export * from './NotificationsScreen';
