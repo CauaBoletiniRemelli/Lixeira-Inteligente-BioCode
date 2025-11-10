@@ -94,3 +94,8 @@ export const storage = {
     }
   },
 };
+
+export const getToken = async (): Promise<string | null> => {
+  const token = await storage.getAccessToken();
+  return token?.token || null;
+};

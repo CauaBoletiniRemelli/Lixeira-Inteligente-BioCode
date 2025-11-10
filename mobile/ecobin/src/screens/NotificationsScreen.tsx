@@ -1,112 +1,106 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { BackButton } from '../components';
+import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
-
-interface Notification {
-    id: string;
-    message: string;
-    timestamp: string;
-    read: boolean;
-    type: 'alert' | 'info' | 'warning';
-}
+import { notificationService, Notification } from '../services/notificationService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NotificationsScreenProps {
     onBack: () => void;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-    {
-        id: '1',
-        message: 'A lixeira da portaria principal está cheia!',
-        timestamp: '2024-11-03T10:30:00',
-        read: false,
-        type: 'alert',
-    },
-    {
-        id: '2',
-        message: 'Lixeira do salão de festas está com 70% da capacidade',
-        timestamp: '2024-11-03T09:15:00',
-        read: false,
-        type: 'warning',
-    },
-    {
-        id: '3',
-        message: 'Novo sensor cadastrado no condomínio Edifício Tulipas',
-        timestamp: '2024-11-02T16:45:00',
-        read: true,
-        type: 'info',
-    },
-    {
-        id: '4',
-        message: 'A lixeira da área da piscina está cheia!',
-        timestamp: '2024-11-02T14:20:00',
-        read: true,
-        type: 'alert',
-    },
-    {
-        id: '5',
-        message: 'Manutenção programada para o sensor do playground',
-        timestamp: '2024-11-02T11:30:00',
-        read: true,
-        type: 'info',
-    },
-];
-
 export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack }) => {
-    const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+    const { user } = useAuth();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
-    const handleDeleteNotification = (id: string) => {
-        Alert.alert(
-            'Excluir Notificação',
-            'Tem certeza que deseja excluir esta notificação?',
-            [
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Excluir',
-                    style: 'destructive',
-                    onPress: () => {
-                        setNotifications(prev => prev.filter(notif => notif.id !== id));
-                    },
-                },
-            ]
-        );
-    };
+    useEffect(() => {
+        loadNotifications();
+    }, []);
 
-    const handleMarkAsRead = (id: string) => {
-        setNotifications(prev =>
-            prev.map(notif =>
-                notif.id === id ? { ...notif, read: true } : notif
-            )
-        );
-    };
-
-    const getIconName = (type: Notification['type']) => {
-        switch (type) {
-            case 'alert':
-                return 'alert-circle';
-            case 'warning':
-                return 'warning';
-            case 'info':
-                return 'information-circle';
+    const loadNotifications = async () => {
+        try {
+            setLoading(true);
+            if (user?.id) {
+                const data = await notificationService.listNotifications(user.id);
+                setNotifications(data);
+                
+                const unread = data.filter(n => !n.lida).length;
+                setUnreadCount(unread);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar notificações:', error);
+            Alert.alert('Erro', 'Não foi possível carregar as notificações');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const getIconColor = (type: Notification['type']) => {
-        switch (type) {
-            case 'alert':
-                return COLORS.error;
-            case 'warning':
-                return COLORS.warning;
-            case 'info':
-                return COLORS.primary;
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await loadNotifications();
+        setRefreshing(false);
+    };
+
+    const handleMarkAsRead = async (notificacaoId: number) => {
+        try {
+            const success = await notificationService.markAsRead(notificacaoId);
+            if (success) {
+                setNotifications(prev =>
+                    prev.map(notif =>
+                        notif.id === notificacaoId ? { ...notif, lida: true, dataLeitura: new Date().toISOString() } : notif
+                    )
+                );
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Erro ao marcar como lida:', error);
         }
+    };
+
+    const handleMarkAllAsRead = async () => {
+        try {
+            if (user?.id) {
+                const success = await notificationService.markAllAsRead(user.id);
+                if (success) {
+                    setNotifications(prev =>
+                        prev.map(notif => ({ ...notif, lida: true, dataLeitura: new Date().toISOString() }))
+                    );
+                    setUnreadCount(0);
+                    Alert.alert('Sucesso', 'Todas as notificações foram marcadas como lidas');
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao marcar todas como lidas:', error);
+            Alert.alert('Erro', 'Não foi possível marcar todas como lidas');
+        }
+    };
+
+    const getIconName = (dados?: string) => {
+        try {
+            if (dados) {
+                const parsed = JSON.parse(dados);
+                if (parsed.tipo === 'alerta') return 'alert-circle';
+                if (parsed.tipo === 'manutencao') return 'construct';
+            }
+        } catch (e) {}
+        return 'notifications';
+    };
+
+    const getIconColor = (dados?: string) => {
+        try {
+            if (dados) {
+                const parsed = JSON.parse(dados);
+                if (parsed.tipo === 'alerta') return COLORS.error;
+                if (parsed.tipo === 'manutencao') return COLORS.warning;
+            }
+        } catch (e) {}
+        return COLORS.primary;
     };
 
     const formatTimestamp = (timestamp: string) => {
@@ -129,46 +123,51 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         <TouchableOpacity
             style={[
                 styles.notificationCard,
-                !item.read && styles.notificationCardUnread,
+                !item.lida && styles.notificationCardUnread,
             ]}
-            onPress={() => handleMarkAsRead(item.id)}
+            onPress={() => !item.lida && handleMarkAsRead(item.id)}
             activeOpacity={0.95}
         >
             <View style={styles.notificationContent}>
                 <View style={styles.notificationIcon}>
                     <Ionicons
-                        name={getIconName(item.type)}
+                        name={getIconName(item.dados) as any}
                         size={24}
-                        color={getIconColor(item.type)}
+                        color={getIconColor(item.dados)}
                     />
                 </View>
 
                 <View style={styles.notificationText}>
                     <Text style={[
-                        styles.notificationMessage,
-                        !item.read && styles.notificationMessageUnread,
+                        styles.notificationTitle,
+                        !item.lida && styles.notificationTitleUnread,
                     ]}>
-                        {item.message}
+                        {item.titulo}
+                    </Text>
+                    <Text style={[
+                        styles.notificationMessage,
+                        !item.lida && styles.notificationMessageUnread,
+                    ]}>
+                        {item.mensagem}
                     </Text>
                     <Text style={styles.notificationTime}>
-                        {formatTimestamp(item.timestamp)}
+                        {formatTimestamp(item.dataEnvio)}
                     </Text>
                 </View>
 
-                <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteNotification(item.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-                </TouchableOpacity>
+                {!item.lida && <View style={styles.unreadIndicator} />}
             </View>
-
-            {!item.read && <View style={styles.unreadIndicator} />}
         </TouchableOpacity>
     );
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+                <StatusBar style="dark" />
+                <Loading />
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -176,32 +175,43 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
 
             <View style={styles.header}>
                 <BackButton onPress={onBack} />
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Notificações</Text>
-                    {unreadCount > 0 && (
-                        <View style={styles.badge}>
-                            <Text style={styles.badgeText}>{unreadCount}</Text>
-                        </View>
-                    )}
-                </View>
-                <View style={styles.headerSpacer} />
+                <Text style={styles.headerTitle}>Notificações</Text>
+                <View style={styles.headerRight} />
             </View>
 
+            {unreadCount > 0 && (
+                <View style={styles.unreadBanner}>
+                    <Text style={styles.unreadText}>
+                        {unreadCount} notificação{unreadCount !== 1 ? 'ões' : ''} não lida{unreadCount !== 1 ? 's' : ''}
+                    </Text>
+                    <TouchableOpacity onPress={handleMarkAllAsRead}>
+                        <Text style={styles.markAllButton}>Marcar todas como lidas</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             {notifications.length === 0 ? (
-                <View style={styles.emptyState}>
+                <View style={styles.emptyContainer}>
                     <Ionicons name="notifications-off-outline" size={64} color={COLORS.text.secondary} />
                     <Text style={styles.emptyText}>Nenhuma notificação</Text>
                     <Text style={styles.emptySubtext}>
-                        Você não tem notificações no momento
+                        Você receberá notificações sobre o status das lixeiras
                     </Text>
                 </View>
             ) : (
                 <FlatList
                     data={notifications}
                     renderItem={renderNotification}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            colors={[COLORS.primary]}
+                        />
+                    }
                 />
             )}
         </SafeAreaView>
@@ -222,33 +232,34 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: COLORS.border,
     },
-    headerTitleContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: SPACING.xs,
-    },
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
         color: COLORS.text.primary,
+        flex: 1,
+        textAlign: 'center',
     },
-    headerSpacer: {
+    headerRight: {
         width: 44,
     },
-    badge: {
-        backgroundColor: COLORS.error,
-        borderRadius: 10,
-        minWidth: 20,
-        height: 20,
-        justifyContent: 'center',
+    unreadBanner: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: SPACING.xs,
+        backgroundColor: COLORS.primary + '15',
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.primary + '30',
     },
-    badgeText: {
-        color: COLORS.text.white,
-        fontSize: 12,
+    unreadText: {
+        fontSize: 14,
+        color: COLORS.text.primary,
+        fontWeight: '500',
+    },
+    markAllButton: {
+        fontSize: 14,
+        color: COLORS.primary,
         fontWeight: '600',
     },
     listContent: {
@@ -261,47 +272,49 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.border,
         overflow: 'hidden',
-        borderLeftWidth: 1,
-        borderLeftColor: COLORS.border,
     },
     notificationCardUnread: {
         borderLeftWidth: 4,
         borderLeftColor: COLORS.primary,
-        backgroundColor: COLORS.surface,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: -2, height: 0 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        backgroundColor: COLORS.primary + '08',
     },
     notificationContent: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
         padding: SPACING.md,
-        gap: SPACING.md,
+        alignItems: 'flex-start',
     },
     notificationIcon: {
-        marginTop: 2,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: COLORS.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: SPACING.sm,
     },
     notificationText: {
         flex: 1,
-        gap: SPACING.xs,
+    },
+    notificationTitle: {
+        fontSize: 16,
+        color: COLORS.text.primary,
+        marginBottom: SPACING.xs,
+    },
+    notificationTitleUnread: {
+        fontWeight: '600',
     },
     notificationMessage: {
         fontSize: 14,
         color: COLORS.text.secondary,
         lineHeight: 20,
+        marginBottom: SPACING.xs,
     },
     notificationMessageUnread: {
         color: COLORS.text.primary,
-        fontWeight: '500',
     },
     notificationTime: {
         fontSize: 12,
         color: COLORS.text.secondary,
-    },
-    deleteButton: {
-        padding: SPACING.xs,
     },
     unreadIndicator: {
         position: 'absolute',
@@ -312,12 +325,11 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         backgroundColor: COLORS.primary,
     },
-    emptyState: {
+    emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: SPACING.xl,
-        gap: SPACING.md,
     },
     emptyText: {
         fontSize: 18,
@@ -328,6 +340,7 @@ const styles = StyleSheet.create({
     emptySubtext: {
         fontSize: 14,
         color: COLORS.text.secondary,
+        marginTop: SPACING.xs,
         textAlign: 'center',
     },
 });

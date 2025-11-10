@@ -3,7 +3,7 @@ import { User, UserRole } from '../types';
 import { authService } from '../services';
 import { mapTipoToRole, showConfirmAlert } from '../utils';
 import { storage } from '../utils/storage';
-import { migrateTokensToSecureStore, checkIfMigrationNeeded } from '../utils/tokenMigration';
+import { notificationService } from '../services/notificationService';
 
 interface AuthContextData {
     user: User | null;
@@ -78,6 +78,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         };
                         
                         setUser(authenticatedUser);
+                        
+                        // Registrar dispositivo para notificações
+                        notificationService.registerDevice(userData.userId).catch(err => {
+                            console.error('❌ Erro ao registrar dispositivo:', err);
+                        });
                     }
                 } catch (tokenError) {
                     console.error('❌ Erro ao validar token:', tokenError);
@@ -118,6 +123,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             };
 
             setUser(authenticatedUser);
+            
+            notificationService.registerDevice(userId).catch(err => {
+                console.error('❌ Erro ao registrar dispositivo para notificações:', err);
+            });
         } catch (error: any) {
             let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.';
 

@@ -17,7 +17,9 @@
       "bundleIdentifier": "com.cauaboletiniremelli.EcoBin",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "EcoBin precisa acessar sua localização para centralizar o mapa na sua posição atual e facilitar o cadastro de sensores.",
-        "UIBackgroundModes": [ "remote-notification" ]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       },
       "entitlements": {
         "aps-environment": "development",
@@ -25,6 +27,9 @@
           "group.${ios.bundleIdentifier}.onesignal"
         ]
       }
+    },
+    "android": {
+      "package": "com.cauaboletiniremelli.EcoBin"
     }
   },
   "android": {
