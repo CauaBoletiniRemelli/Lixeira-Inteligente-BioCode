@@ -3,6 +3,7 @@ using ApiEcoBin.Enums;
 using ApiEcoBin.Services;
 using ApiEcoBin.Services.Auth;
 using ApiEcoBin.Services.Condominio;
+using ApiEcoBin.Services.ExpoTokens;
 using ApiEcoBin.Services.PasswordHash;
 using ApiEcoBin.Services.Provisionamentos;
 using ApiEcoBin.Services.Sensores;
@@ -63,6 +64,9 @@ namespace ApiEcoBin
             builder.Services.AddScoped<IAuthInterface, AuthService>();
             builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
             builder.Services.AddSingleton<TokenService>();
+            builder.Services.AddScoped<IExpoTokensInterface, ExpoTokensService>();
+            builder.Services.AddHttpClient(); 
+
             builder.Services.AddAuthorizationBuilder()
                 .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Administrador).ToString()))
                 .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo",

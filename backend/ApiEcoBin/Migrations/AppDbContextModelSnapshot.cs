@@ -60,6 +60,117 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("CONdominios");
                 });
 
+            modelBuilder.Entity("ApiEcoBin.Models.ExpoTokensModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit")
+                        .HasColumnName("EXPAtivo");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("EXPDataCriacao");
+
+                    b.Property<string>("Dispositivo")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("EXPDispositivo");
+
+                    b.Property<string>("Plataforma")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("EXPPlataforma");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("EXPToken");
+
+                    b.Property<DateTime?>("UltimaAtualizacao")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("EXPUltimaAtualizacao");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int")
+                        .HasColumnName("EXP_USUId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("EXPoTokens");
+                });
+
+            modelBuilder.Entity("ApiEcoBin.Models.NotificacoesModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Dados")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("NOTDados");
+
+                    b.Property<DateTime>("DataEnvio")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NOTDataEnvio");
+
+                    b.Property<DateTime?>("DataLeitura")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NOTDataLeitura");
+
+                    b.Property<bool>("Enviada")
+                        .HasColumnType("bit")
+                        .HasColumnName("NOTEnviada");
+
+                    b.Property<string>("Erro")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("NOTErro");
+
+                    b.Property<int?>("ExpoTokenId")
+                        .HasColumnType("int")
+                        .HasColumnName("NOT_EXPId");
+
+                    b.Property<bool>("Lida")
+                        .HasColumnType("bit")
+                        .HasColumnName("NOTLida");
+
+                    b.Property<string>("Mensagem")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("NOTMensagem");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("NOTTitulo");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("int")
+                        .HasColumnName("NOT_USUId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpoTokenId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("NOTificacoes");
+                });
+
             modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentosModel", b =>
                 {
                     b.Property<int>("Id")
@@ -302,6 +413,32 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("USUarios");
                 });
 
+            modelBuilder.Entity("ApiEcoBin.Models.ExpoTokensModel", b =>
+                {
+                    b.HasOne("ApiEcoBin.Models.UsuariosModel", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ApiEcoBin.Models.NotificacoesModel", b =>
+                {
+                    b.HasOne("ApiEcoBin.Models.ExpoTokensModel", "ExpoToken")
+                        .WithMany("Notificacoes")
+                        .HasForeignKey("ExpoTokenId");
+
+                    b.HasOne("ApiEcoBin.Models.UsuariosModel", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+
+                    b.Navigation("ExpoToken");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentosModel", b =>
                 {
                     b.HasOne("ApiEcoBin.Models.SensoresModel", "Sensor")
@@ -364,6 +501,11 @@ namespace ApiEcoBin.Migrations
             modelBuilder.Entity("ApiEcoBin.Models.CondominiosModel", b =>
                 {
                     b.Navigation("Sensores");
+                });
+
+            modelBuilder.Entity("ApiEcoBin.Models.ExpoTokensModel", b =>
+                {
+                    b.Navigation("Notificacoes");
                 });
 
             modelBuilder.Entity("ApiEcoBin.Models.SensoresModel", b =>
