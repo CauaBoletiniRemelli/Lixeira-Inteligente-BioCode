@@ -30,19 +30,27 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDJQDMCJjoNsBBoEPp7qb_CQ2scAr6SE1g"
         }
-      }
+      },
+      "package": "com.cauaboletiniremelli.EcoBin"
     },
     "web": {
       "favicon": "./assets/EcoBinLogoVerdeCompleta.png"
     },
     "plugins": [
-      "expo-barcode-scanner",
       [
         "expo-location",
         {
