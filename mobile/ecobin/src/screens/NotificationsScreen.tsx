@@ -51,12 +51,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         try {
             const success = await notificationService.markAsRead(notificacaoId);
             if (success) {
-                setNotifications(prev =>
-                    prev.map(notif =>
-                        notif.id === notificacaoId ? { ...notif, lida: true, dataLeitura: new Date().toISOString() } : notif
-                    )
-                );
-                setUnreadCount(prev => Math.max(0, prev - 1));
+                await loadNotifications(); 
             }
         } catch (error) {
             console.error('Erro ao marcar como lida:', error);
@@ -104,12 +99,10 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
     };
 
     const formatTimestamp = (timestamp: string) => {
-        // Remove o timezone do backend e trata como horário local
-        const dateStr = timestamp.replace(/\.\d+$/, '').replace('Z', '');
+        const dateStr = timestamp.replace(/\.\d+$/, '') + 'Z';
         const date = new Date(dateStr);
         const now = new Date();
 
-        // Calcula a diferença em minutos
         const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
         console.log('Formatando timestamp:', timestamp, '->', date.toString(), 'Diff:', diffInMinutes, 'minutos');

@@ -317,7 +317,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                 if (result.success) {
                                     Alert.alert(
                                         'Sucesso!',
-                                        `Notificação enviada para ${result.count || 'os'} coletore(s) do condomínio.`
+                                        `Notificação enviada para ${result.count || 'os'} coletor(es) do condomínio.`
                                     );
                                 } else {
                                     Alert.alert('Erro', 'Não foi possível enviar a notificação');

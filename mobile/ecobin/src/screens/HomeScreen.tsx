@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { notificationService } from '../services/notificationService';
 
 interface MenuCardProps {
     title: string;
@@ -42,6 +43,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onNavigateToNotifications 
 }) => {
     const { user, logout, hasPermission } = useAuth();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        const fetchUnread = async () => {
+            if (user?.id) {
+                const notifications = await notificationService.listNotifications(user.id);
+                const unread = notifications.filter(n => !n.lida).length;
+                setUnreadCount(unread);
+            }
+        };
+        fetchUnread();
+    }, [user]);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -54,12 +67,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 >
                     <Ionicons name="log-out-outline" size={24} color={COLORS.error} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.notificationButton}
-                    onPress={() => onNavigateToNotifications?.()}
-                >
-                    <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
+                <View>
+                    <TouchableOpacity
+                        style={styles.notificationButton}
+                        onPress={() => onNavigateToNotifications?.()}
+                    >
+                        <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
+                        {unreadCount > 0 && (
+                            <View style={styles.notificationBadge} />
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -149,6 +167,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
+    notificationBadge: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: COLORS.error,
+        borderWidth: 1,
+        borderColor: '#fff',
+    },
     safeArea: {
         flex: 1,
         backgroundColor: '#FFFFFF',
