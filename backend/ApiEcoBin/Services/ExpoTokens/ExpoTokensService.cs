@@ -73,7 +73,7 @@ namespace ApiEcoBin.Services.ExpoTokens
             {
                 _logger.LogError(ex, "Erro ao salvar token");
                 response.Status = false;
-                response.Mensagem = $"Erro ao salvar token: {ex.Message}";
+                response.Mensagem = $"Erro ao salvar token: {ex.Message} + {ex.InnerException}";
             }
 
             return response;

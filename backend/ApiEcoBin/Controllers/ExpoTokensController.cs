@@ -39,8 +39,6 @@ namespace ApiEcoBin.Controllers
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
-
-        [Authorize(Policy = "AdminOnly")]
         [HttpPost("notificacoes/enviar-todos")]
         public async Task<IActionResult> EnviarParaTodos([FromBody] NotificacaoCreateDTO dto)
         {
@@ -48,7 +46,6 @@ namespace ApiEcoBin.Controllers
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
-        [Authorize(Policy = "AdminOnly")]
         [HttpPost("notificacoes/enviar")]
         public async Task<IActionResult> EnviarParaUsuarios([FromBody] NotificacaoEnviarDTO dto)
         {
@@ -63,7 +60,6 @@ namespace ApiEcoBin.Controllers
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
-        [Authorize(Policy = "AdminOnly")]
         [HttpPost("notificacoes/enviar-condominio/{condominioId}")]
         public async Task<IActionResult> EnviarParaCondominio(int condominioId, [FromBody] NotificacaoCreateDTO dto)
         {
@@ -71,7 +67,6 @@ namespace ApiEcoBin.Controllers
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
-        [Authorize(Policy = "AdminOnly")]
         [HttpPost("notificacoes/enviar-condominio-tipo")]
         public async Task<IActionResult> EnviarParaCondominioTipo([FromBody] NotificacaoCondominioTipoDTO dto)
         {
