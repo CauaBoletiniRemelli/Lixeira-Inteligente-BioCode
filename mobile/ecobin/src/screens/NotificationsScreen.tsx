@@ -29,7 +29,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
             if (user?.id) {
                 const data = await notificationService.listNotifications(user.id);
                 setNotifications(data);
-                
+
                 const unread = data.filter(n => !n.lida).length;
                 setUnreadCount(unread);
             }
@@ -88,7 +88,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
                 if (parsed.tipo === 'alerta') return 'alert-circle';
                 if (parsed.tipo === 'manutencao') return 'construct';
             }
-        } catch (e) {}
+        } catch (e) { }
         return 'notifications';
     };
 
@@ -99,22 +99,32 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
                 if (parsed.tipo === 'alerta') return COLORS.error;
                 if (parsed.tipo === 'manutencao') return COLORS.warning;
             }
-        } catch (e) {}
+        } catch (e) { }
         return COLORS.primary;
     };
 
     const formatTimestamp = (timestamp: string) => {
-        const date = new Date(timestamp);
+        // Remove o timezone do backend e trata como horário local
+        const dateStr = timestamp.replace(/\.\d+$/, '').replace('Z', '');
+        const date = new Date(dateStr);
         const now = new Date();
-        const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-        if (diffInHours < 1) {
-            const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+        // Calcula a diferença em minutos
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+        console.log('Formatando timestamp:', timestamp, '->', date.toString(), 'Diff:', diffInMinutes, 'minutos');
+
+        if (diffInMinutes < 0) {
+            return 'Agora mesmo';
+        } else if (diffInMinutes < 1) {
+            return 'Agora mesmo';
+        } else if (diffInMinutes < 60) {
             return `Há ${diffInMinutes} minuto${diffInMinutes !== 1 ? 's' : ''}`;
-        } else if (diffInHours < 24) {
+        } else if (diffInMinutes < 1440) { // 24 horas
+            const diffInHours = Math.floor(diffInMinutes / 60);
             return `Há ${diffInHours} hora${diffInHours !== 1 ? 's' : ''}`;
         } else {
-            const diffInDays = Math.floor(diffInHours / 24);
+            const diffInDays = Math.floor(diffInMinutes / 1440);
             return `Há ${diffInDays} dia${diffInDays !== 1 ? 's' : ''}`;
         }
     };

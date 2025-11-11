@@ -65,14 +65,7 @@ export const authService = {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const expirationTime = payload.exp * 1000;
       const now = Date.now();
-      const isValid = now < expirationTime;
-      
-      console.log('🔍 Verificando validade do token:', {
-        expira: new Date(expirationTime).toLocaleString(),
-        agora: new Date(now).toLocaleString(),
-        válido: isValid,
-        tempoRestante: isValid ? Math.floor((expirationTime - now) / 1000 / 60) + ' minutos' : 'expirado'
-      });
+      const isValid = now < expirationTime;   
       
       return isValid;
     } catch (error) {
@@ -83,18 +76,10 @@ export const authService = {
 
   async appLogin(): Promise<AuthModel> {
     try {
-      console.log('🔐 Iniciando AppLogin...');
-      console.log('📍 API_URL:', API_URL);
-      console.log('🔑 AppId:', APP_CREDENTIALS.appId);
       
       const response = await axios.post(`${API_URL}auth/AppLogin`, {
         appId: APP_CREDENTIALS.appId,
         appSecret: APP_CREDENTIALS.appSecret,
-      });
-
-      console.log('✅ AppLogin Response:', {
-        status: response.data.status,
-        hasToken: !!response.data.dados?.token,
       });
 
       if (response.data.status && response.data.dados) {
@@ -115,41 +100,28 @@ export const authService = {
 
   async login(data: LoginRequest): Promise<LoginResponse> {
     try {
-      console.log('👤 Iniciando Login...');
-      console.log('📧 Email:', data.Email);
-      
       let appToken = await storage.getAppToken();
-      console.log('🔍 AppToken do storage:', appToken ? 'Existe' : 'Não existe');
 
-      // Verificar se o token existe e é válido
       let appTokenStr: string | null = null;
       
       if (appToken) {
         const tokenToCheck = typeof appToken === 'string' ? appToken : appToken.token;
         if (this.isTokenValid(tokenToCheck)) {
           appTokenStr = tokenToCheck;
-          console.log('✅ AppToken válido, reutilizando...');
         } else {
-          console.log('⚠️ AppToken expirado, renovando...');
           appToken = null;
         }
       }
 
-      // Se não tem token ou está expirado, fazer novo AppLogin
       if (!appTokenStr) {
-        console.log('⚠️ Fazendo novo AppLogin...');
         const appData = await this.appLogin();
         appTokenStr = typeof appData.token === 'string' ? appData.token : appData.token.token;
       }
-
-      console.log('🔑 Usando AppToken:', appTokenStr?.substring(0, 20) + '...');
 
       const loginPayload = {
         Email: data.Email,
         Password: data.Password,
       };
-
-      console.log('📤 Enviando requisição de login...');
 
       const response = await axios.post(
         `${API_URL}auth/Login`,
@@ -161,12 +133,6 @@ export const authService = {
           },
         }
       );
-
-      console.log('✅ Login Response:', {
-        status: response.data.status,
-        hasToken: !!response.data.dados?.token,
-        mensagem: response.data.mensagem,
-      });
 
       if (response.data.status && response.data.dados) {
         const { token, refreshToken } = response.data.dados;

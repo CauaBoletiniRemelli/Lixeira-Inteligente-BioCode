@@ -1,7 +1,6 @@
 import { OneSignal } from 'react-native-onesignal';
 import * as Device from 'expo-device';
 import { api } from './api';
-import { getToken } from '../utils/storage';
 
 export type NotificationType = 'alert' | 'warning' | 'info';
 
@@ -39,7 +38,20 @@ export interface SendToCondominiumRequest extends CreateNotificationRequest {
 
 export interface SendToTypeRequest extends CreateNotificationRequest {
   condominioId: number;
-  tipoUsuario: 1 | 2 | 3; 
+  tipoUsuario: 1 | 2 | 3;
+}
+
+export interface RegisterDeviceRequest {
+  usuarioId: number;
+  token: string;
+  dispositivo: string;
+  plataforma: string;
+}
+
+export interface ResponseModel<T> {
+  dados: T | null;
+  mensagem: string;
+  status: boolean;
 }
 
 class NotificationService {
@@ -52,13 +64,11 @@ class NotificationService {
     }
 
     OneSignal.Notifications.addEventListener('click', (event) => {
-      console.log('[OneSignal] Notificação clicada:', event);
       const data = event.notification.additionalData;
       this.handleNotificationOpened(data);
     });
 
     OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
-      console.log('[OneSignal] Notificação recebida em foreground:', event);
       event.preventDefault();
       event.notification.display();
     });
@@ -66,8 +76,6 @@ class NotificationService {
 
   private handleNotificationOpened(data: any) {
     console.log('[OneSignal] Dados da notificação:', data);
-    // Aqui você pode adicionar navegação baseada nos dados
-    // Por exemplo: navigation.navigate('SensorDetails', { sensorId: data.sensorId });
   }
 
   async registerDevice(usuarioId: number): Promise<boolean> {
@@ -81,52 +89,39 @@ class NotificationService {
         return false;
       }
 
-      const token = await getToken();
-      
-      const response = await fetch('https://ecobinapi.runasp.net/api/ExpoTokens/token', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          usuarioId: usuarioId,
-          token: playerId,
-          dispositivo: `${Device.brand || 'Unknown'} ${Device.modelName || 'Device'}`,
-          plataforma: Device.osName || 'Unknown',
-        }),
-      });
+      const deviceData: RegisterDeviceRequest = {
+        usuarioId: usuarioId,
+        token: playerId,
+        dispositivo: `${Device.deviceName || 'Device'}`,
+        plataforma: Device.manufacturer || 'Unknown',
+      };
 
-      const data = await response.json();
-      
-      if (data.status) {
-        console.log('[NotificationService] Dispositivo registrado:', data.mensagem);
+      const response = await api.post<ResponseModel<ExpoToken>>(
+        '/ExpoTokens/token',
+        deviceData
+      );
+
+      if (response.status) {
         this.currentUserId = usuarioId;
         return true;
       } else {
-        console.error('[NotificationService] Erro ao registrar:', data.mensagem);
+        console.error('[NotificationService] Erro ao registrar:', response.mensagem);
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[NotificationService] Erro ao registrar dispositivo:', error);
+      console.error('[NotificationService] Erro detalhado:', error.response?.data);
+      console.error('[NotificationService] Status:', error.response?.status);
       return false;
     }
   }
 
   async listUserTokens(usuarioId: number): Promise<ExpoToken[]> {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/tokens/usuario/${usuarioId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+      const response = await api.get<ResponseModel<ExpoToken[]>>(
+        `/ExpoTokens/tokens/usuario/${usuarioId}`
       );
-
-      const data = await response.json();
-      return data.status ? data.dados : [];
+      return response.status ? response.dados || [] : [];
     } catch (error) {
       console.error('[NotificationService] Erro ao listar tokens:', error);
       return [];
@@ -135,26 +130,15 @@ class NotificationService {
 
   async deactivateToken(tokenId: number): Promise<boolean> {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/token/${tokenId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+      const response = await api.delete<ResponseModel<any>>(
+        `/ExpoTokens/token/${tokenId}`
       );
-
-      const data = await response.json();
-      return data.status;
+      return response.status;
     } catch (error) {
       console.error('[NotificationService] Erro ao desativar token:', error);
       return false;
     }
   }
-
-  // ==================== LISTAGEM DE NOTIFICAÇÕES ====================
 
   async listNotifications(usuarioId?: number): Promise<Notification[]> {
     try {
@@ -164,18 +148,10 @@ class NotificationService {
         return [];
       }
 
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/usuario/${userId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+      const response = await api.get<ResponseModel<Notification[]>>(
+        `/ExpoTokens/notificacoes/usuario/${userId}`
       );
-
-      const data = await response.json();
-      return data.status ? data.dados : [];
+      return response.status ? response.dados || [] : [];
     } catch (error) {
       console.error('[NotificationService] Erro ao listar notificações:', error);
       return [];
@@ -190,18 +166,10 @@ class NotificationService {
         return [];
       }
 
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/usuario/${userId}/nao-lidas`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+      const response = await api.get<ResponseModel<Notification[]>>(
+        `/ExpoTokens/notificacoes/usuario/${userId}/nao-lidas`
       );
-
-      const data = await response.json();
-      return data.status ? data.dados : [];
+      return response.status ? response.dados || [] : [];
     } catch (error) {
       console.error('[NotificationService] Erro ao listar não lidas:', error);
       return [];
@@ -218,23 +186,12 @@ class NotificationService {
     }
   }
 
-  // ==================== MARCAR COMO LIDA ====================
-
   async markAsRead(notificacaoId: number): Promise<boolean> {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/${notificacaoId}/marcar-lida`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+      const response = await api.put<ResponseModel<any>>(
+        `/ExpoTokens/notificacoes/${notificacaoId}/marcar-lida`
       );
-
-      const data = await response.json();
-      return data.status;
+      return response.status;
     } catch (error) {
       console.error('[NotificationService] Erro ao marcar como lida:', error);
       return false;
@@ -249,48 +206,29 @@ class NotificationService {
         return false;
       }
 
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/usuario/${userId}/marcar-todas-lidas`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+      const response = await api.put<ResponseModel<any>>(
+        `/ExpoTokens/notificacoes/usuario/${userId}/marcar-todas-lidas`
       );
-
-      const data = await response.json();
-      return data.status;
+      return response.status;
     } catch (error) {
       console.error('[NotificationService] Erro ao marcar todas como lidas:', error);
       return false;
     }
   }
 
-  // ==================== ENVIO DE NOTIFICAÇÕES ====================
-
   async sendToUser(usuarioId: number, notification: CreateNotificationRequest): Promise<boolean> {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/enviar-usuario/${usuarioId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            titulo: notification.titulo,
-            mensagem: notification.mensagem,
-            dados: notification.dados ? JSON.stringify(notification.dados) : undefined,
-          }),
-        }
-      );
+      const payload = {
+        titulo: notification.titulo,
+        mensagem: notification.mensagem,
+        dados: notification.dados ? JSON.stringify(notification.dados) : undefined,
+      };
 
-      const data = await response.json();
-      return data.status;
+      const response = await api.post<ResponseModel<any>>(
+        `/ExpoTokens/notificacoes/enviar-usuario/${usuarioId}`,
+        payload
+      );
+      return response.status;
     } catch (error) {
       console.error('[NotificationService] Erro ao enviar notificação:', error);
       return false;
@@ -299,27 +237,20 @@ class NotificationService {
 
   async sendToCondominium(request: SendToCondominiumRequest): Promise<{ success: boolean; count?: number }> {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        `https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/enviar-condominio/${request.condominioId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            titulo: request.titulo,
-            mensagem: request.mensagem,
-            dados: request.dados ? JSON.stringify(request.dados) : undefined,
-          }),
-        }
+      const payload = {
+        titulo: request.titulo,
+        mensagem: request.mensagem,
+        dados: request.dados ? JSON.stringify(request.dados) : undefined,
+      };
+
+      const response = await api.post<ResponseModel<any[]>>(
+        `/ExpoTokens/notificacoes/enviar-condominio/${request.condominioId}`,
+        payload
       );
 
-      const data = await response.json();
       return {
-        success: data.status,
-        count: data.dados?.length,
+        success: response.status,
+        count: response.dados?.length,
       };
     } catch (error) {
       console.error('[NotificationService] Erro ao enviar para condomínio:', error);
@@ -329,32 +260,26 @@ class NotificationService {
 
   async sendToUserType(request: SendToTypeRequest): Promise<{ success: boolean; count?: number }> {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        'https://ecobinapi.runasp.net/api/ExpoTokens/notificacoes/enviar-condominio-tipo',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            condominioId: request.condominioId,
-            tipoUsuario: request.tipoUsuario,
-            titulo: request.titulo,
-            mensagem: request.mensagem,
-            dados: request.dados ? JSON.stringify(request.dados) : undefined,
-          }),
-        }
+      const payload = {
+        condominioId: request.condominioId,
+        tipoUsuario: request.tipoUsuario,
+        titulo: request.titulo,
+        mensagem: request.mensagem,
+        dados: request.dados ? JSON.stringify(request.dados) : undefined,
+      };
+
+      const response = await api.post<ResponseModel<any[]>>(
+        '/ExpoTokens/notificacoes/enviar-condominio-tipo',
+        payload
       );
 
-      const data = await response.json();
       return {
-        success: data.status,
-        count: data.dados?.length,
+        success: response.status,
+        count: response.dados?.length,
       };
-    } catch (error) {
-      console.error('[NotificationService] Erro ao enviar para tipo de usuário:', error);
+    } catch (error:any) {
+      console.error('[NotificationService] Erro ao registrar dispositivo:', error);
+      console.error('[NotificationService] Erro detalhado:', error.response?.data);
       return { success: false };
     }
   }

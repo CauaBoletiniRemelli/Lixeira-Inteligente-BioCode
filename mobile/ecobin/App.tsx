@@ -27,20 +27,12 @@ export default function App() {
   useEffect(() => {
     const initializeOneSignal = async () => {
       try {
-        console.log('[OneSignal] Iniciando configuração...');
-        
-        // Enable verbose logging for debugging
         OneSignal.Debug.setLogLevel(LogLevel.Verbose);
         
-        // Initialize with your OneSignal App ID
         OneSignal.initialize('72d3902a-cb02-48c9-b1f4-fd4faea52430');
-        console.log('[OneSignal] Inicializado com sucesso');
         
-        // Inicializar o serviço de notificações (configura listeners)
         await notificationService.initialize();
-        console.log('[OneSignal] Listeners configurados');
         
-        // Solicitar permissão
         setTimeout(async () => {
           const hasPermission = await OneSignal.Notifications.requestPermission(true);
           console.log('[OneSignal] Permissão concedida:', hasPermission);

@@ -303,7 +303,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                             try {
                                 const result = await notificationService.sendToUserType({
                                     condominioId: parseInt(sensor.condominiumId),
-                                    tipoUsuario: 2,
+                                    tipoUsuario: 3,
                                     titulo: '🚨 Lixeira Cheia!',
                                     mensagem: `A lixeira "${sensor.name}" está com ${sensor.level}% de ocupação e precisa ser esvaziada.`,
                                     dados: {
