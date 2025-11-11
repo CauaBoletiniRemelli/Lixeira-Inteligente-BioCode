@@ -40,7 +40,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 {
                     tokenExistente.Token = dto.Token;
                     tokenExistente.Plataforma = dto.Plataforma;
-                    tokenExistente.UltimaAtualizacao = DateTime.UtcNow;
+                    tokenExistente.UltimaAtualizacao = DateTime.Now;
 
                     _context.ExpoTokens.Update(tokenExistente);
                     await _context.SaveChangesAsync();
@@ -56,7 +56,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Token = dto.Token,
                         Dispositivo = dto.Dispositivo,
                         Plataforma = dto.Plataforma,
-                        DataCriacao = DateTime.UtcNow,
+                        DataCriacao = DateTime.Now,
                         Ativo = true
                     };
 
@@ -73,7 +73,7 @@ namespace ApiEcoBin.Services.ExpoTokens
             {
                 _logger.LogError(ex, "Erro ao salvar token");
                 response.Status = false;
-                response.Mensagem = $"Erro ao salvar token: {ex.Message} + {ex.InnerException}";
+                response.Mensagem = $"Erro ao salvar token: {ex.Message}";
             }
 
             return response;
@@ -120,7 +120,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 }
 
                 token.Ativo = false;
-                token.UltimaAtualizacao = DateTime.UtcNow;
+                token.UltimaAtualizacao = DateTime.Now;
 
                 _context.ExpoTokens.Update(token);
                 await _context.SaveChangesAsync();
@@ -168,7 +168,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
+                        DataEnvio = DateTime.Now
                     };
 
                     notificacoes.Add(notificacao);
@@ -241,7 +241,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
+                        DataEnvio = DateTime.Now
                     };
 
                     notificacoes.Add(notificacao);
@@ -301,7 +301,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                     Titulo = dto.Titulo,
                     Mensagem = dto.Mensagem,
                     Dados = dto.Dados,
-                    DataEnvio = DateTime.UtcNow
+                    DataEnvio = DateTime.Now
                 };
 
                 await _context.Notificacoes.AddAsync(notificacao);
@@ -371,7 +371,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
+                        DataEnvio = DateTime.Now
                     };
 
                     notificacoes.Add(notificacao);
@@ -453,7 +453,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
+                        DataEnvio = DateTime.Now
                     };
 
                     notificacoes.Add(notificacao);
@@ -562,7 +562,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 }
 
                 notificacao.Lida = true;
-                notificacao.DataLeitura = DateTime.UtcNow;
+                notificacao.DataLeitura = DateTime.Now;
 
                 _context.Notificacoes.Update(notificacao);
                 await _context.SaveChangesAsync();
@@ -602,7 +602,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 foreach (var notificacao in notificacoes)
                 {
                     notificacao.Lida = true;
-                    notificacao.DataLeitura = DateTime.UtcNow;
+                    notificacao.DataLeitura = DateTime.Now;
                 }
 
                 await _context.SaveChangesAsync();
