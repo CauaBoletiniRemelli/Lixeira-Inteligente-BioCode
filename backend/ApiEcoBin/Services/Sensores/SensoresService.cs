@@ -112,7 +112,9 @@ namespace ApiEcoBin.Services.Sensores
 
         public async Task<ResponseModel<List<SensoresModel>>> GetSensoresAsync()
         {
-            var sensores = await _context.Sensores.ToListAsync();
+            var sensores = await _context.Sensores
+                .Include(s => s.Telemetrias)
+                .ToListAsync();
 
             return new ResponseModel<List<SensoresModel>>
             {
@@ -126,6 +128,7 @@ namespace ApiEcoBin.Services.Sensores
         {
             var sensores = await _context.Sensores
                 .Where(s => s.CondominioId == condominioId)
+                .Include(s => s.Telemetrias)
                 .ToListAsync();
 
             return new ResponseModel<List<SensoresModel>>
@@ -139,6 +142,7 @@ namespace ApiEcoBin.Services.Sensores
         public async Task<ResponseModel<SensoresModel>> GetSensorByDeviceIdAsync(string deviceId)
         {
             var sensor = await _context.Sensores
+                .Include(s => s.Telemetrias)
                 .FirstOrDefaultAsync(s => s.DeviceId == deviceId);
 
             if (sensor == null)

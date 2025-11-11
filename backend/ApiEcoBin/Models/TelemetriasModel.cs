@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ApiEcoBin.Models
 {
@@ -10,7 +11,6 @@ namespace ApiEcoBin.Models
         [Column("ID")]
         public int Id { get; set; }
 
-        [Required]
         [Column("TEL_SENId")]
         public int SensorId { get; set; }
 
@@ -29,7 +29,8 @@ namespace ApiEcoBin.Models
         [Column("TELDadosBrutos", TypeName = "nvarchar(max)")]
         public string? DadosBrutos { get; set; }
 
+        [JsonIgnore]
         [ForeignKey("SensorId")]
-        public required virtual SensoresModel Sensor { get; set; }
+        public virtual SensoresModel? Sensor { get; set; }
     }
 }

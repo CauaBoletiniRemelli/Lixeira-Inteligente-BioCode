@@ -51,9 +51,8 @@ namespace ApiEcoBin.Models
         public virtual CondominiosModel? Condominio { get; set; }
 
         [JsonIgnore]
-        public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = new List<ProvisionamentosModel>();
+        public virtual ICollection<ProvisionamentosModel> Provisionamentos { get; set; } = [];
 
-        [JsonIgnore]
-        public virtual ICollection<TelemetriasModel> Telemetrias { get; set; } = new List<TelemetriasModel>();
+        public virtual ICollection<TelemetriasModel> Telemetrias { get; set; } = [];
     }
 }
