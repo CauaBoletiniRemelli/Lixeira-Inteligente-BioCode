@@ -40,7 +40,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 {
                     tokenExistente.Token = dto.Token;
                     tokenExistente.Plataforma = dto.Plataforma;
-                    tokenExistente.UltimaAtualizacao = DateTime.Now;
+                    tokenExistente.UltimaAtualizacao = DateTime.UtcNow;
 
                     _context.ExpoTokens.Update(tokenExistente);
                     await _context.SaveChangesAsync();
@@ -56,7 +56,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Token = dto.Token,
                         Dispositivo = dto.Dispositivo,
                         Plataforma = dto.Plataforma,
-                        DataCriacao = DateTime.Now,
+                        DataCriacao = DateTime.UtcNow,
                         Ativo = true
                     };
 
@@ -120,7 +120,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 }
 
                 token.Ativo = false;
-                token.UltimaAtualizacao = DateTime.Now;
+                token.UltimaAtualizacao = DateTime.UtcNow;
 
                 _context.ExpoTokens.Update(token);
                 await _context.SaveChangesAsync();
@@ -168,7 +168,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.Now
+                        DataEnvio = DateTime.UtcNow
                     };
 
                     notificacoes.Add(notificacao);
@@ -241,7 +241,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.Now
+                        DataEnvio = DateTime.UtcNow
                     };
 
                     notificacoes.Add(notificacao);
@@ -301,7 +301,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                     Titulo = dto.Titulo,
                     Mensagem = dto.Mensagem,
                     Dados = dto.Dados,
-                    DataEnvio = DateTime.Now
+                    DataEnvio = DateTime.UtcNow
                 };
 
                 await _context.Notificacoes.AddAsync(notificacao);
@@ -371,7 +371,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.Now
+                        DataEnvio = DateTime.UtcNow
                     };
 
                     notificacoes.Add(notificacao);
@@ -453,7 +453,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                         Titulo = dto.Titulo,
                         Mensagem = dto.Mensagem,
                         Dados = dto.Dados,
-                        DataEnvio = DateTime.Now
+                        DataEnvio = DateTime.UtcNow
                     };
 
                     notificacoes.Add(notificacao);
@@ -562,7 +562,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 }
 
                 notificacao.Lida = true;
-                notificacao.DataLeitura = DateTime.Now;
+                notificacao.DataLeitura = DateTime.UtcNow;
 
                 _context.Notificacoes.Update(notificacao);
                 await _context.SaveChangesAsync();
@@ -602,7 +602,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 foreach (var notificacao in notificacoes)
                 {
                     notificacao.Lida = true;
-                    notificacao.DataLeitura = DateTime.Now;
+                    notificacao.DataLeitura = DateTime.UtcNow;
                 }
 
                 await _context.SaveChangesAsync();
