@@ -59,11 +59,42 @@ export interface AppLoginRequest {
 }
 
 export const authService = {
+  // Verifica se o token ainda está válido
+  isTokenValid(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = payload.exp * 1000;
+      const now = Date.now();
+      const isValid = now < expirationTime;
+      
+      console.log('🔍 Verificando validade do token:', {
+        expira: new Date(expirationTime).toLocaleString(),
+        agora: new Date(now).toLocaleString(),
+        válido: isValid,
+        tempoRestante: isValid ? Math.floor((expirationTime - now) / 1000 / 60) + ' minutos' : 'expirado'
+      });
+      
+      return isValid;
+    } catch (error) {
+      console.error('❌ Erro ao verificar token:', error);
+      return false;
+    }
+  },
+
   async appLogin(): Promise<AuthModel> {
     try {
+      console.log('🔐 Iniciando AppLogin...');
+      console.log('📍 API_URL:', API_URL);
+      console.log('🔑 AppId:', APP_CREDENTIALS.appId);
+      
       const response = await axios.post(`${API_URL}auth/AppLogin`, {
         appId: APP_CREDENTIALS.appId,
         appSecret: APP_CREDENTIALS.appSecret,
+      });
+
+      console.log('✅ AppLogin Response:', {
+        status: response.data.status,
+        hasToken: !!response.data.dados?.token,
       });
 
       if (response.data.status && response.data.dados) {
@@ -73,28 +104,56 @@ export const authService = {
 
       throw new Error(response.data.mensagem || 'Erro ao autenticar aplicativo');
     } catch (error: any) {
-      console.error('❌ Erro no AppLogin:', error);
+      console.error('❌ Erro no AppLogin:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       throw error;
     }
   },
 
   async login(data: LoginRequest): Promise<LoginResponse> {
     try {
+      console.log('👤 Iniciando Login...');
+      console.log('📧 Email:', data.Email);
+      
       let appToken = await storage.getAppToken();
+      console.log('🔍 AppToken do storage:', appToken ? 'Existe' : 'Não existe');
 
-      if (!appToken || !appToken.token) {
-        const appData = await this.appLogin();
-        appToken = appData.token;
+      // Verificar se o token existe e é válido
+      let appTokenStr: string | null = null;
+      
+      if (appToken) {
+        const tokenToCheck = typeof appToken === 'string' ? appToken : appToken.token;
+        if (this.isTokenValid(tokenToCheck)) {
+          appTokenStr = tokenToCheck;
+          console.log('✅ AppToken válido, reutilizando...');
+        } else {
+          console.log('⚠️ AppToken expirado, renovando...');
+          appToken = null;
+        }
       }
 
-      const appTokenStr = typeof appToken === 'string' ? appToken : appToken.token;
+      // Se não tem token ou está expirado, fazer novo AppLogin
+      if (!appTokenStr) {
+        console.log('⚠️ Fazendo novo AppLogin...');
+        const appData = await this.appLogin();
+        appTokenStr = typeof appData.token === 'string' ? appData.token : appData.token.token;
+      }
+
+      console.log('🔑 Usando AppToken:', appTokenStr?.substring(0, 20) + '...');
+
+      const loginPayload = {
+        Email: data.Email,
+        Password: data.Password,
+      };
+
+      console.log('📤 Enviando requisição de login...');
 
       const response = await axios.post(
         `${API_URL}auth/Login`,
-        {
-          Email: data.Email,
-          Password: data.Password,
-        },
+        loginPayload,
         {
           headers: {
             Authorization: `Bearer ${appTokenStr}`,
@@ -102,6 +161,12 @@ export const authService = {
           },
         }
       );
+
+      console.log('✅ Login Response:', {
+        status: response.data.status,
+        hasToken: !!response.data.dados?.token,
+        mensagem: response.data.mensagem,
+      });
 
       if (response.data.status && response.data.dados) {
         const { token, refreshToken } = response.data.dados;
@@ -113,13 +178,20 @@ export const authService = {
 
       throw new Error(response.data.mensagem || 'Erro ao fazer login');
     } catch (error: any) {
-      console.error('❌ Erro no Login:', error);
+      console.error('❌ Erro no Login:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url,
+      });
       throw error;
     }
   },
 
   async refreshToken(): Promise<AuthModel> {
     try {
+      console.log('🔄 Iniciando RefreshToken...');
+      
       const refreshToken = await storage.getRefreshToken();
       const accessToken = await storage.getAccessToken();
 
@@ -127,13 +199,25 @@ export const authService = {
         throw new Error('Refresh token não encontrado');
       }
 
+      // Verificar e renovar AppToken se necessário
       let appToken = await storage.getAppToken();
-      if (!appToken || !appToken.token) {
-        const appData = await this.appLogin();
-        appToken = appData.token;
+      let appTokenStr: string | null = null;
+
+      if (appToken) {
+        const tokenToCheck = typeof appToken === 'string' ? appToken : appToken.token;
+        if (this.isTokenValid(tokenToCheck)) {
+          appTokenStr = tokenToCheck;
+          console.log('✅ AppToken válido para refresh');
+        } else {
+          console.log('⚠️ AppToken expirado, renovando antes do refresh...');
+        }
       }
 
-      const appTokenStr = typeof appToken === 'string' ? appToken : appToken.token;
+      if (!appTokenStr) {
+        console.log('⚠️ Fazendo novo AppLogin para refresh...');
+        const appData = await this.appLogin();
+        appTokenStr = typeof appData.token === 'string' ? appData.token : appData.token.token;
+      }
 
       const response = await axios.post(
         `${API_URL}auth/RefreshToken`,
@@ -155,6 +239,7 @@ export const authService = {
         await storage.saveTokens(token, newRefreshToken);
         await storage.saveUserData(response.data.dados);
 
+        console.log('✅ Token renovado com sucesso');
         return response.data.dados;
       }
 

@@ -1,5 +1,15 @@
 import { api } from './api';
 
+export interface Telemetria {
+  id: number;
+  sensorId: number;
+  momento: string;
+  nivelOcupacao: number;
+  bateria: number;
+  temperatura: number;
+  dadosBrutos?: string | null;
+}
+
 export interface Sensor {
   id: number;
   deviceId: string;
@@ -11,7 +21,9 @@ export interface Sensor {
   status: number;
   nivelAtual?: number;
   ultimaAtualizacao?: string;
+  ultimaConexao?: string;
   criadoEm: string;
+  telemetrias?: Telemetria[];
 }
 
 export interface SensorCreateDTO {

@@ -11,6 +11,7 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { sensorService, condominiumService } from '../services';
 import type { Sensor as APISensor } from '../services/sensorService';
 import { SensorLocationEditScreen } from './SensorLocationEditScreen';
+import { notificationService } from '../services/notificationService';
 
 type SensorStatus = 'empty' | 'medium' | 'full';
 
@@ -18,6 +19,7 @@ interface Sensor {
     id: string;
     name: string;
     level: number;
+    battery: number;
     status: SensorStatus;
     coordinate: { latitude: number; longitude: number };
     condominiumId: string;
@@ -82,7 +84,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                 };
 
                 setInitialRegion(userRegion);
-                
+
                 if (mapRef.current) {
                     mapRef.current.animateToRegion(userRegion, 1000);
                 }
@@ -95,15 +97,21 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const convertSensor = (apiSensor: APISensor): Sensor | null => {
         const lat = apiSensor.latitude;
         const lng = apiSensor.longitude;
-        
+
         if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
             console.warn(`Sensor ${apiSensor.id} tem coordenadas inválidas:`, { lat, lng });
             return null;
         }
 
-        const level = apiSensor.nivelAtual || 0;
+        const telemetria = apiSensor.telemetrias && apiSensor.telemetrias.length > 0
+            ? apiSensor.telemetrias[0]
+            : null;
+
+        const level = telemetria?.nivelOcupacao || apiSensor.nivelAtual || 0;
+        const battery = telemetria?.bateria || 0;
+
         let status: SensorStatus = 'empty';
-        
+
         if (level >= 80) {
             status = 'full';
         } else if (level >= 40) {
@@ -114,6 +122,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             id: apiSensor.id.toString(),
             name: apiSensor.nome,
             level,
+            battery,
             status,
             coordinate: {
                 latitude: lat,
@@ -167,10 +176,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     useEffect(() => {
         const loadCondominiums = async () => {
             if (!isAdmin) return;
-            
+
             try {
                 const response = await condominiumService.getAll();
-                
+
                 if (response?.dados) {
                     const condoList: Condominium[] = response.dados.map(cond => ({
                         id: cond.id.toString(),
@@ -270,7 +279,62 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const handleEditLocationSuccess = () => {
         setShowEditLocationScreen(false);
         setSensorToEdit(null);
-        loadSensors(); 
+        loadSensors();
+    };
+
+    const handleNotifyCollectors = async (sensor: Sensor) => {
+        try {
+            if (!sensor.condominiumId) {
+                Alert.alert('Erro', 'Condomínio não identificado');
+                return;
+            }
+
+            Alert.alert(
+                'Enviar Notificação',
+                `Deseja notificar todos os coletores do condomínio sobre a lixeira "${sensor.name}" que está ${sensor.level}% cheia?`,
+                [
+                    {
+                        text: 'Cancelar',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Enviar',
+                        onPress: async () => {
+                            try {
+                                const result = await notificationService.sendToUserType({
+                                    condominioId: parseInt(sensor.condominiumId),
+                                    tipoUsuario: 2,
+                                    titulo: '🚨 Lixeira Cheia!',
+                                    mensagem: `A lixeira "${sensor.name}" está com ${sensor.level}% de ocupação e precisa ser esvaziada.`,
+                                    dados: {
+                                        tipo: 'alerta',
+                                        sensorId: sensor.id,
+                                        sensorNome: sensor.name,
+                                        nivelOcupacao: sensor.level,
+                                    },
+                                });
+
+                                if (result.success) {
+                                    Alert.alert(
+                                        'Sucesso!',
+                                        `Notificação enviada para ${result.count || 'os'} coletore(s) do condomínio.`
+                                    );
+                                } else {
+                                    Alert.alert('Erro', 'Não foi possível enviar a notificação');
+                                }
+                            } catch (error) {
+                                console.log('Erro ao enviar notificação:', error);
+                                console.error('Erro ao enviar notificação:', error);
+                                Alert.alert('Erro', 'Não foi possível enviar a notificação');
+                            }
+                        },
+                    },
+                ]
+            );
+        } catch (error) {
+            console.error('Erro ao notificar coletores:', error);
+            Alert.alert('Erro', 'Não foi possível enviar a notificação');
+        }
     };
 
     const markers = useMemo(() => {
@@ -278,9 +342,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             .filter(sensor => {
                 const lat = sensor.coordinate?.latitude;
                 const lng = sensor.coordinate?.longitude;
-                return lat && lng && !isNaN(lat) && !isNaN(lng) && 
-                       lat >= -90 && lat <= 90 && 
-                       lng >= -180 && lng <= 180;
+                return lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                    lat >= -90 && lat <= 90 &&
+                    lng >= -180 && lng <= 180;
             })
             .map((sensor) => (
                 <Marker
@@ -313,153 +377,174 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             <StatusBar style="dark" />
 
             <View style={styles.header}>
-                <BackButton onPress={onBack || (() => {})} />
+                <BackButton onPress={onBack || (() => { })} />
             </View>
 
             {loading ? (
                 <Loading />
             ) : (
-            <View style={styles.container}>
-                <View style={styles.mapContainer}>
-                    <MapView
-                        ref={mapRef}
-                        style={styles.map}
-                        initialRegion={initialRegion}
-                        showsUserLocation={true}
-                        showsMyLocationButton={true}
-                    >
-                        {markers}
-                    </MapView>
-                </View>
-
-                <ScrollView 
-                    style={styles.scrollView}
-                    showsVerticalScrollIndicator={false}
-                    bounces={false}
-                    nestedScrollEnabled={true}
-                >
-                {/* Filtro de Condomínio (apenas para admins) */}
-                {isAdmin && (
-                    <View style={styles.condominiumFilterContainer}>
-                        <Text style={styles.filterTitle}>Condomínio</Text>
-                        <TouchableOpacity
-                            style={styles.condominiumSelect}
-                            onPress={() => setShowCondominiumModal(true)}
+                <View style={styles.container}>
+                    <View style={styles.mapContainer}>
+                        <MapView
+                            ref={mapRef}
+                            style={styles.map}
+                            initialRegion={initialRegion}
+                            showsUserLocation={true}
+                            showsMyLocationButton={true}
                         >
-                            <View style={styles.selectContent}>
-                                <Ionicons name="home" size={20} color={COLORS.primary} />
-                                <Text style={styles.selectText}>{selectedCondominium}</Text>
-                            </View>
-                            <Ionicons name="chevron-down" size={20} color={COLORS.text.secondary} />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                <View style={styles.filterContainer}>
-                        <Text style={styles.filterTitle}>Filtro por Status</Text>
-                        <View style={styles.filterButtons}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.filterButton,
-                                    selectedFilter === 'empty' && styles.filterButtonActive,
-                                ]}
-                                onPress={() => setSelectedFilter(selectedFilter === 'empty' ? 'all' : 'empty')}
-                            >
-                                <Ionicons name="location" size={20} color={COLORS.success} />
-                                <Text style={styles.filterButtonText}>Vazias/Baixo</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.filterButton,
-                                    selectedFilter === 'medium' && styles.filterButtonActive,
-                                ]}
-                                onPress={() => setSelectedFilter(selectedFilter === 'medium' ? 'all' : 'medium')}
-                            >
-                                <Ionicons name="location" size={20} color={COLORS.warning} />
-                                <Text style={styles.filterButtonText}>Médias</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.filterButton,
-                                    selectedFilter === 'full' && styles.filterButtonActive,
-                                ]}
-                                onPress={() => setSelectedFilter(selectedFilter === 'full' ? 'all' : 'full')}
-                            >
-                                <Ionicons name="location" size={20} color={COLORS.error} />
-                                <Text style={styles.filterButtonText}>Cheias</Text>
-                            </TouchableOpacity>
-                        </View>
+                            {markers}
+                        </MapView>
                     </View>
 
-                {/* Botão de Cadastrar (síndicos e admins) */}
-                {canRegisterSensor && (
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={onNavigateToSensorSetup}
+                    <ScrollView
+                        style={styles.scrollView}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                        nestedScrollEnabled={true}
                     >
-                        <Text style={styles.addButtonText}>Cadastrar Novo Sensor</Text>
-                    </TouchableOpacity>
-                )}
-
-                {/* Lista de Sensores (todos os usuários) */}
-                <View style={styles.sensorListContainer}>
-                    <View style={styles.sensorListHeader}>
-                        <Text style={styles.sensorListTitle}>
-                            {isAdmin ? 'Sensores' : 'Meus Sensores'} ({filteredSensors.length})
-                        </Text>
-                    </View>
-
-                    <View style={styles.sensorList}>
-                            {filteredSensors.map((sensor) => (
+                        {/* Filtro de Condomínio (apenas para admins) */}
+                        {isAdmin && (
+                            <View style={styles.condominiumFilterContainer}>
+                                <Text style={styles.filterTitle}>Condomínio</Text>
                                 <TouchableOpacity
-                                    key={sensor.id}
-                                    style={styles.sensorCard}
-                                    onPress={() => handleSensorPress(sensor)}
+                                    style={styles.condominiumSelect}
+                                    onPress={() => setShowCondominiumModal(true)}
                                 >
-                                    <View style={styles.sensorCardLeft}>
-                                        <View
-                                            style={[
-                                                styles.levelCircle,
-                                                { borderColor: getStatusColor(sensor.status) },
-                                            ]}
-                                        >
-                                            <Text
-                                                style={[
-                                                    styles.levelText,
-                                                    { color: getStatusColor(sensor.status) },
-                                                ]}
-                                            >
-                                                {sensor.level}%
-                                            </Text>
-                                        </View>
-                                        <View style={styles.sensorInfo}>
-                                            <Text style={styles.sensorName}>{sensor.name}</Text>
-                                            <Text
-                                                style={[
-                                                    styles.sensorStatus,
-                                                    { color: getStatusColor(sensor.status) },
-                                                ]}
-                                            >
-                                                {getStatusText(sensor.status).toUpperCase()}
-                                            </Text>
-                                        </View>
+                                    <View style={styles.selectContent}>
+                                        <Ionicons name="home" size={20} color={COLORS.primary} />
+                                        <Text style={styles.selectText}>{selectedCondominium}</Text>
                                     </View>
-
-                                    {sensor.status === 'full' && canRegisterSensor && (
-                                        <TouchableOpacity style={styles.alertButton}>
-                                            <Text style={styles.alertButtonText}>
-                                                Clique para enviar um alerta 🔔
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
+                                    <Ionicons name="chevron-down" size={20} color={COLORS.text.secondary} />
                                 </TouchableOpacity>
-                            ))}
-                    </View>
+                            </View>
+                        )}
+
+                        <View style={styles.filterContainer}>
+                            <Text style={styles.filterTitle}>Filtro por Status</Text>
+                            <View style={styles.filterButtons}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterButton,
+                                        selectedFilter === 'empty' && styles.filterButtonActive,
+                                    ]}
+                                    onPress={() => setSelectedFilter(selectedFilter === 'empty' ? 'all' : 'empty')}
+                                >
+                                    <Ionicons name="location" size={20} color={COLORS.success} />
+                                    <Text style={styles.filterButtonText}>Vazias/Baixo</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterButton,
+                                        selectedFilter === 'medium' && styles.filterButtonActive,
+                                    ]}
+                                    onPress={() => setSelectedFilter(selectedFilter === 'medium' ? 'all' : 'medium')}
+                                >
+                                    <Ionicons name="location" size={20} color={COLORS.warning} />
+                                    <Text style={styles.filterButtonText}>Médias</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterButton,
+                                        selectedFilter === 'full' && styles.filterButtonActive,
+                                    ]}
+                                    onPress={() => setSelectedFilter(selectedFilter === 'full' ? 'all' : 'full')}
+                                >
+                                    <Ionicons name="location" size={20} color={COLORS.error} />
+                                    <Text style={styles.filterButtonText}>Cheias</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* Botão de Cadastrar (síndicos e admins) */}
+                        {canRegisterSensor && (
+                            <TouchableOpacity
+                                style={styles.addButton}
+                                onPress={onNavigateToSensorSetup}
+                            >
+                                <Text style={styles.addButtonText}>Cadastrar Novo Sensor</Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Lista de Sensores (todos os usuários) */}
+                        <View style={styles.sensorListContainer}>
+                            <View style={styles.sensorListHeader}>
+                                <Text style={styles.sensorListTitle}>
+                                    {isAdmin ? 'Sensores' : 'Meus Sensores'} ({filteredSensors.length})
+                                </Text>
+                            </View>
+
+                            <View style={styles.sensorList}>
+                                {filteredSensors.map((sensor) => (
+                                    <TouchableOpacity
+                                        key={sensor.id}
+                                        style={styles.sensorCard}
+                                        onPress={() => handleSensorPress(sensor)}
+                                    >
+                                        <View style={styles.sensorCardLeft}>
+                                            <View
+                                                style={[
+                                                    styles.levelCircle,
+                                                    { borderColor: getStatusColor(sensor.status) },
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.levelText,
+                                                        { color: getStatusColor(sensor.status) },
+                                                    ]}
+                                                >
+                                                    {sensor.level}%
+                                                </Text>
+                                            </View>
+                                            <View style={styles.sensorInfo}>
+                                                <Text style={styles.sensorName}>{sensor.name}</Text>
+                                                <Text
+                                                    style={[
+                                                        styles.sensorStatus,
+                                                        { color: getStatusColor(sensor.status) },
+                                                    ]}
+                                                >
+                                                    {getStatusText(sensor.status).toUpperCase()}
+                                                </Text>
+                                                <View style={styles.sensorBatteryRow}>
+                                                    <Ionicons
+                                                        name={
+                                                            sensor.battery > 80 ? "battery-full" :
+                                                                sensor.battery > 50 ? "battery-half" :
+                                                                    "battery-dead"
+                                                        }
+                                                        size={16}
+                                                        color={
+                                                            sensor.battery > 50 ? COLORS.success :
+                                                                sensor.battery > 20 ? COLORS.warning :
+                                                                    COLORS.error
+                                                        }
+                                                    />
+                                                    <Text style={styles.sensorBatteryText}>
+                                                        {sensor.battery}%
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        {sensor.level > 80 && canRegisterSensor && (
+                                            <TouchableOpacity
+                                                style={styles.alertButton}
+                                                onPress={() => handleNotifyCollectors(sensor)}
+                                            >
+                                                <Text style={styles.alertButtonText}>
+                                                    Notificar Coletores
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    </ScrollView>
                 </View>
-                </ScrollView>
-            </View>
             )}
 
             {/* Modal de Detalhes do Sensor */}
@@ -501,18 +586,38 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                         </Text>
                                     </View>
 
-                                    <Text style={styles.modalStatusLabel}>Status:</Text>
+                                    <Text style={styles.modalStatusLabel}>Ocupação:</Text>
                                     <Text
                                         style={[
                                             styles.modalStatusValue,
                                             { color: getStatusColor(selectedSensor.status) },
                                         ]}
                                     >
-                                        {getStatusText(selectedSensor.status)}
+                                        {getStatusText(selectedSensor.status)} - {selectedSensor.level}%
                                     </Text>
 
+                                    <View style={styles.modalBatteryContainer}>
+                                        <Ionicons
+                                            name={
+                                                selectedSensor.battery > 80 ? "battery-full" :
+                                                    selectedSensor.battery > 50 ? "battery-half" :
+                                                        selectedSensor.battery > 20 ? "battery-dead" :
+                                                            "battery-dead"
+                                            }
+                                            size={24}
+                                            color={
+                                                selectedSensor.battery > 50 ? COLORS.success :
+                                                    selectedSensor.battery > 20 ? COLORS.warning :
+                                                        COLORS.error
+                                            }
+                                        />
+                                        <Text style={styles.modalBatteryText}>
+                                            Bateria: {selectedSensor.battery}%
+                                        </Text>
+                                    </View>
+
                                     {canRegisterSensor && (
-                                        <TouchableOpacity 
+                                        <TouchableOpacity
                                             style={styles.modalEditLocationButton}
                                             onPress={() => handleEditLocation(selectedSensor)}
                                         >
@@ -523,11 +628,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                         </TouchableOpacity>
                                     )}
 
-                                    {selectedSensor.status === 'full' && canRegisterSensor && (
-                                        <TouchableOpacity style={styles.modalAlertButton}>
+                                    {selectedSensor.level > 80 && canRegisterSensor && (
+                                        <TouchableOpacity
+                                            style={styles.modalAlertButton}
+                                            onPress={() => handleNotifyCollectors(selectedSensor)}
+                                        >
                                             <Ionicons name="notifications" size={20} color={COLORS.text.white} />
                                             <Text style={styles.modalAlertButtonText}>
-                                                Enviar Alerta para Coletores
+                                                Notificar Coletores
                                             </Text>
                                         </TouchableOpacity>
                                     )}
@@ -771,6 +879,16 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
+    sensorBatteryRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.xs,
+        marginTop: SPACING.xs,
+    },
+    sensorBatteryText: {
+        fontSize: 11,
+        color: COLORS.text.secondary,
+    },
     alertButton: {
         backgroundColor: `${COLORS.error}10`,
         borderWidth: 1,
@@ -843,6 +961,21 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: SPACING.lg,
+    },
+    modalBatteryContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+        backgroundColor: COLORS.background,
+        paddingVertical: SPACING.sm,
+        paddingHorizontal: SPACING.md,
+        borderRadius: BORDER_RADIUS.md,
+        marginBottom: SPACING.md,
+    },
+    modalBatteryText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.text.primary,
     },
     modalEditLocationButton: {
         flexDirection: 'row',

@@ -39,21 +39,18 @@ export interface SendToCondominiumRequest extends CreateNotificationRequest {
 
 export interface SendToTypeRequest extends CreateNotificationRequest {
   condominioId: number;
-  tipoUsuario: 0 | 1 | 2; // 0 = Admin, 1 = Sindico, 2 = Morador
+  tipoUsuario: 1 | 2 | 3; 
 }
 
 class NotificationService {
   private ONESIGNAL_APP_ID = '72d3902a-cb02-48c9-b1f4-fd4faea52430';
   private currentUserId: number | null = null;
 
-  // ==================== INICIALIZAÇÃO ====================
-
   async initialize(userId?: number) {
     if (userId) {
       this.currentUserId = userId;
     }
 
-    // Configurar listeners do OneSignal
     OneSignal.Notifications.addEventListener('click', (event) => {
       console.log('[OneSignal] Notificação clicada:', event);
       const data = event.notification.additionalData;
@@ -73,11 +70,8 @@ class NotificationService {
     // Por exemplo: navigation.navigate('SensorDetails', { sensorId: data.sensorId });
   }
 
-  // ==================== REGISTRO DE DISPOSITIVO ====================
-
   async registerDevice(usuarioId: number): Promise<boolean> {
     try {
-      // Aguardar um pouco para garantir que o OneSignal está pronto
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
