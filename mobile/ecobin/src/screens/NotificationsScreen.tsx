@@ -105,15 +105,13 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
 
         const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
-        console.log('Formatando timestamp:', timestamp, '->', date.toString(), 'Diff:', diffInMinutes, 'minutos');
-
         if (diffInMinutes < 0) {
             return 'Agora mesmo';
         } else if (diffInMinutes < 1) {
             return 'Agora mesmo';
         } else if (diffInMinutes < 60) {
             return `Há ${diffInMinutes} minuto${diffInMinutes !== 1 ? 's' : ''}`;
-        } else if (diffInMinutes < 1440) { // 24 horas
+        } else if (diffInMinutes < 1440) {
             const diffInHours = Math.floor(diffInMinutes / 60);
             return `Há ${diffInHours} hora${diffInHours !== 1 ? 's' : ''}`;
         } else {

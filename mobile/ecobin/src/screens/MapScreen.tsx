@@ -323,7 +323,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                     Alert.alert('Erro', 'Não foi possível enviar a notificação');
                                 }
                             } catch (error) {
-                                console.log('Erro ao enviar notificação:', error);
                                 console.error('Erro ao enviar notificação:', error);
                                 Alert.alert('Erro', 'Não foi possível enviar a notificação');
                             }

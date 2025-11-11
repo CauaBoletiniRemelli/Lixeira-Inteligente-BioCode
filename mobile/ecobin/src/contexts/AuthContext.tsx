@@ -79,7 +79,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         
                         setUser(authenticatedUser);
                         
-                        // Registrar dispositivo para notificações
                         notificationService.registerDevice(userData.userId).catch(err => {
                             console.error('❌ Erro ao registrar dispositivo:', err);
                         });

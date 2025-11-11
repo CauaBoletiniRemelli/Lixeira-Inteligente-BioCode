@@ -59,7 +59,6 @@ export interface AppLoginRequest {
 }
 
 export const authService = {
-  // Verifica se o token ainda está válido
   isTokenValid(token: string): boolean {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -165,7 +164,6 @@ export const authService = {
         throw new Error('Refresh token não encontrado');
       }
 
-      // Verificar e renovar AppToken se necessário
       let appToken = await storage.getAppToken();
       let appTokenStr: string | null = null;
 

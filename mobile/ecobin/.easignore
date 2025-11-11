@@ -1,0 +1,56 @@
+# Node/npm / yarn / pnpm
+node_modules
+npm-debug.log
+yarn-error.log
+.pnpm-store
+.pnpm-debug.log
+
+# IDEs / editor
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Expo / build caches
+.expo
+.expo-shared
+.expo/web
+.expo/cache
+.expo/packager
+.expo/local
+.expo/state.json
+
+# Build outputs / dist
+build
+dist
+.out
+ios/build
+android/build
+android/.gradle
+**/gradle
+*.keystore
+
+# CocoaPods (se estiver no bare workflow, EAS reinstala pods)
+ios/Pods
+ios/Podfile.lock
+
+# Dev-only bundles / maps / zip / tarballs / backups
+*.tgz
+*.zip
+*.map
+*.log
+*.bak
+
+# Large assets que você não quer embutir (vídeos, backups)
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.zip
+**/*.tar.gz
+
+# Arquivos temporários / sistema
+.DS_Store
+Thumbs.db
+*.swp
