@@ -63,10 +63,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
             if (user?.id) {
                 const success = await notificationService.markAllAsRead(user.id);
                 if (success) {
-                    setNotifications(prev =>
-                        prev.map(notif => ({ ...notif, lida: true, dataLeitura: new Date().toISOString() }))
-                    );
-                    setUnreadCount(0);
+                    await loadNotifications(); 
                     Alert.alert('Sucesso', 'Todas as notificações foram marcadas como lidas');
                 }
             }

@@ -69,7 +69,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
             if (isAdmin) {
                 if (!userToken) {
-                    console.warn('⚠️ Admin sem token válido - aguardando renovação...');
                     setTimeout(() => loadCondominiums(), 2000);
                 } else {
                     loadCondominiums();
@@ -402,7 +401,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Modal de seleção de condomínio */}
             <Modal
                 visible={showCondominiumModal}
                 transparent
@@ -486,7 +484,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                 </TouchableOpacity>
             </Modal>
 
-            {/* Modal de seleção no mapa */}
             <Modal
                 visible={showMapModal}
                 transparent={false}

@@ -153,7 +153,6 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Modal de Seleção de Condomínio */}
             {isAdmin && (
                 <Modal
                     visible={showCondominiumModal}

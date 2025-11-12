@@ -401,7 +401,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                         bounces={false}
                         nestedScrollEnabled={true}
                     >
-                        {/* Filtro de Condomínio (apenas para admins) */}
                         {isAdmin && (
                             <View style={styles.condominiumFilterContainer}>
                                 <Text style={styles.filterTitle}>Condomínio</Text>
@@ -456,7 +455,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                             </View>
                         </View>
 
-                        {/* Botão de Cadastrar (síndicos e admins) */}
                         {canRegisterSensor && (
                             <TouchableOpacity
                                 style={styles.addButton}
@@ -466,7 +464,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                             </TouchableOpacity>
                         )}
 
-                        {/* Lista de Sensores (todos os usuários) */}
                         <View style={styles.sensorListContainer}>
                             <View style={styles.sensorListHeader}>
                                 <Text style={styles.sensorListTitle}>
@@ -546,7 +543,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                 </View>
             )}
 
-            {/* Modal de Detalhes do Sensor */}
             <Modal
                 visible={showSensorModal}
                 transparent
@@ -569,6 +565,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                 </View>
 
                                 <View style={styles.modalBody}>
+                                    {isAdmin && (
+                                        <View style={{ marginBottom: SPACING.md, alignItems: 'center' }}>
+                                            <Ionicons name="home" size={20} color={COLORS.primary} />
+                                            <Text style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 4 }}>
+                                                Condomínio: {
+                                                    condominiums.find(c => c.id === selectedSensor.condominiumId)?.nome || `ID ${selectedSensor.condominiumId}`
+                                                }
+                                            </Text>
+                                        </View>
+                                    )}
                                     <View
                                         style={[
                                             styles.modalLevelCircle,
@@ -645,7 +651,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                 </TouchableOpacity>
             </Modal>
 
-            {/* Modal de Seleção de Condomínio (apenas para admins) */}
             {isAdmin && (
                 <Modal
                     visible={showCondominiumModal}

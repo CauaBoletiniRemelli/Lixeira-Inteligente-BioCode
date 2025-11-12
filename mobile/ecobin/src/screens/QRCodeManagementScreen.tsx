@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  TextInput,
-  Modal,
-  Linking,
-  Image,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -361,96 +350,99 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
         )}
       </ScrollView>
 
-      {/* Modal de Criação */}
       <Modal
         visible={showCreateModal}
         transparent
         animationType="slide"
         onRequestClose={() => setShowCreateModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Criar Novo QR Code</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text.primary} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Criar Novo QR Code</Text>
+                <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.text.primary} />
+                </TouchableOpacity>
+              </View>
 
-            <ScrollView style={styles.modalScroll}>
-              <Text style={styles.inputLabel}>Nome do Sensor *</Text>
-              <TextInput
-                style={styles.input}
-                value={nomeSensor}
-                onChangeText={setNomeSensor}
-                placeholder="Ex: Lixeira 01"
-                placeholderTextColor={COLORS.text.secondary}
-              />
+              <ScrollView style={styles.modalScroll}>
+                <Text style={styles.inputLabel}>Nome do Sensor *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={nomeSensor}
+                  onChangeText={setNomeSensor}
+                  placeholder="Ex: Lixeira 01"
+                  placeholderTextColor={COLORS.text.secondary}
+                />
 
-              <Text style={styles.inputLabel}>Condomínio *</Text>
-              <ScrollView style={styles.condominiosList} nestedScrollEnabled>
-                {condominios.map((cond) => (
-                  <TouchableOpacity
-                    key={cond.id}
-                    style={[
-                      styles.condominioItem,
-                      selectedCondominioId === cond.id && styles.condominioItemSelected
-                    ]}
-                    onPress={() => setSelectedCondominioId(cond.id)}
-                  >
-                    <Ionicons 
-                      name={selectedCondominioId === cond.id ? "radio-button-on" : "radio-button-off"} 
-                      size={20} 
-                      color={selectedCondominioId === cond.id ? COLORS.primary : COLORS.text.secondary}
-                    />
-                    <View style={styles.condominioInfo}>
-                      <Text style={styles.condominioNome}>{cond.nome}</Text>
-                      <Text style={styles.condominioEndereco}>{cond.endereco}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                <Text style={styles.inputLabel}>Condomínio *</Text>
+                <ScrollView style={styles.condominiosList} nestedScrollEnabled>
+                  {condominios.map((cond) => (
+                    <TouchableOpacity
+                      key={cond.id}
+                      style={[
+                        styles.condominioItem,
+                        selectedCondominioId === cond.id && styles.condominioItemSelected
+                      ]}
+                      onPress={() => setSelectedCondominioId(cond.id)}
+                    >
+                      <Ionicons 
+                        name={selectedCondominioId === cond.id ? "radio-button-on" : "radio-button-off"} 
+                        size={20} 
+                        color={selectedCondominioId === cond.id ? COLORS.primary : COLORS.text.secondary}
+                      />
+                      <View style={styles.condominioInfo}>
+                        <Text style={styles.condominioNome}>{cond.nome}</Text>
+                        <Text style={styles.condominioEndereco}>{cond.endereco}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={styles.inputLabel}>Validade (dias)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={expiracaoDias}
+                  onChangeText={setExpiracaoDias}
+                  placeholder="7"
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.text.secondary}
+                />
+
+                <Text style={styles.infoModalText}>
+                  <Ionicons name="information-circle" size={16} color={COLORS.primary} />
+                  {' '}O QR Code será válido por {expiracaoDias || 7} dias e poderá ser usado apenas uma vez.
+                </Text>
               </ScrollView>
 
-              <Text style={styles.inputLabel}>Validade (dias)</Text>
-              <TextInput
-                style={styles.input}
-                value={expiracaoDias}
-                onChangeText={setExpiracaoDias}
-                placeholder="7"
-                keyboardType="numeric"
-                placeholderTextColor={COLORS.text.secondary}
-              />
-
-              <Text style={styles.infoModalText}>
-                <Ionicons name="information-circle" size={16} color={COLORS.primary} />
-                {' '}O QR Code será válido por {expiracaoDias || 7} dias e poderá ser usado apenas uma vez.
-              </Text>
-            </ScrollView>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setShowCreateModal(false)}
-              >
-                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
-                onPress={handleCreateProvisionamento}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color={COLORS.background} />
-                ) : (
-                  <Text style={styles.modalButtonTextConfirm}>Criar</Text>
-                )}
-              </TouchableOpacity>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setShowCreateModal(false)}
+                >
+                  <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonConfirm]}
+                  onPress={handleCreateProvisionamento}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color={COLORS.background} />
+                  ) : (
+                    <Text style={styles.modalButtonTextConfirm}>Criar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
-      {/* Modal de Visualização do QR Code */}
       <Modal
         visible={showQRModal}
         transparent

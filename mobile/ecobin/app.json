@@ -4,11 +4,11 @@
     "slug": "EcoBin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/EcoBinLogoVerdeCompleta.png",
+    "icon": "./assets/EcoBinLogoGrande.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/EcoBinLogoVerdeCompleta.png",
+      "image": "./assets/EcoBinLogoGrande.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -39,7 +39,7 @@
   },
   "android": {
     "adaptiveIcon": {
-      "foregroundImage": "./assets/EcoBinLogoVerdeCompleta.png",
+      "foregroundImage": "./assets/EcoBinLogoGrande.png",
       "backgroundColor": "#ffffff"
     },
     "edgeToEdgeEnabled": true,
@@ -56,7 +56,7 @@
     "versionCode": 1
   },
   "web": {
-    "favicon": "./assets/EcoBinLogoVerdeCompleta.png"
+    "favicon": "./assets/EcoBinLogoGrande.png"
   },
   "plugins": [
     [

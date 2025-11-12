@@ -1,15 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Modal,
-    Alert,
-    Platform,
-    KeyboardAvoidingView,
-    ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,13 +10,6 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { sensorService } from '../services';
 import type { Sensor } from '../services/sensorService';
 import Alerta from '../components/Alert';
-
-const INITIAL_REGION = {
-    latitude: -23.5013,
-    longitude: -47.4526,
-    latitudeDelta: 0.003,
-    longitudeDelta: 0.003,
-};
 
 interface SensorLocationEditScreenProps {
     sensor: Sensor;
@@ -190,9 +173,6 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
                     keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.titleContainer}>
-                        <View style={styles.iconContainer}>
-                            <Ionicons name="location-outline" size={48} color={COLORS.primary} />
-                        </View>
                         <Text style={styles.title}>Editar Localização</Text>
                         <Text style={styles.subtitle}>
                             Atualize a localização GPS do sensor "{sensor.nome}"
@@ -301,7 +281,6 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Modal de seleção no mapa */}
             <Modal
                 visible={showMapModal}
                 transparent={false}

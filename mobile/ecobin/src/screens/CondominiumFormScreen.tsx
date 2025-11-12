@@ -156,6 +156,7 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                     CEP: cep, 
                     Ativo: status === 'active',
                 };
+
                 const response = await condominiumService.create(createData);
                 showApiAlert(response);
             }
@@ -229,7 +230,6 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
                     </View>
 
                     <View style={styles.form}>
-                        {/* Card de Informações do Condomínio */}
                         <View style={styles.card}>
                             <View style={styles.cardHeader}>
                                 <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
