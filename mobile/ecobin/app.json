@@ -53,7 +53,7 @@
       "android.permission.POST_NOTIFICATIONS"
     ],
     "package": "com.cauaboletiniremelli.EcoBin",
-    "versionCode": 2
+    "versionCode": 3
   },
   "web": {
     "favicon": "./assets/EcoBinLogoGrande.png"
