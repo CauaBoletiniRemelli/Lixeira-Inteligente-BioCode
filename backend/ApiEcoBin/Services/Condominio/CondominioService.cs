@@ -46,6 +46,7 @@ namespace ApiEcoBin.Services.Condominio
                     CriadoEm = DateTime.Now,
                     Nome = condominioCreateDTO.Nome,
                     Endereco = condominioCreateDTO.Endereco,
+                    Cep = condominioCreateDTO.CEP!.ToString(),
                     Ativo = condominioCreateDTO.Ativo,
                 };
 
