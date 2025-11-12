@@ -75,6 +75,58 @@ namespace ApiEcoBin.Services.Auth
             return response;
         }
 
+        public async Task<ResponseModel<AuthModel>> ArduinoLogin(ArduinoLoginRequest request)
+        {
+            ResponseModel<AuthModel> response = new();
+            try
+            {
+                var arduinoId = _configuration["ArduinoCredentials:ArduinoId"];
+                var arduinoSecret = _configuration["ArduinoCredentials:ArduinoSecret"];
+
+                if (string.IsNullOrEmpty(request.ArduinoId) ||
+                    string.IsNullOrEmpty(request.ArduinoSecret) ||
+                    request.ArduinoId != arduinoId ||
+                    request.ArduinoSecret != arduinoSecret)
+                {
+                    response.Dados = null;
+                    response.Mensagem = "Credenciais do aplicativo inválidas.";
+                    response.Status = false;
+                    return response;
+                }
+
+                var appUser = new UsuariosModel
+                {
+                    Id = 0,
+                    Email = "arduino@ecobin.com",
+                    Nome = "EcoBin Arduino",
+                    Tipo = TipoUsuario.Arduino,
+                    CondominioId = null
+                };
+
+                object token = TokenService.GenerateToken(appUser);
+                string refreshToken = TokenService.GenerateRefreshToken();
+
+                response.Dados = new AuthModel
+                {
+                    Token = token,
+                    RefreshToken = refreshToken,
+                    UserId = 0,
+                    Email = appUser.Email,
+                    Nome = appUser.Nome,
+                    Tipo = TipoUsuario.Arduino
+                };
+                response.Mensagem = "Autenticação do aplicativo realizada com sucesso!";
+                response.Status = true;
+            }
+            catch (Exception ex)
+            {
+                response.Dados = null;
+                response.Mensagem = ex.Message;
+                response.Status = false;
+            }
+            return response;
+        }
+
         public async Task<ResponseModel<AuthModel>> Login(LoginRequest request)
         {
             ResponseModel<AuthModel> response = new();

@@ -6,6 +6,7 @@
         Administrador = 1,
         Sindico = 2,
         Coletor = 3,
-        Aplicativo = 5
+        Aplicativo = 5,
+        Arduino = 6
     }
 }

@@ -32,6 +32,17 @@ namespace ApiEcoBin.Controllers
             return Unauthorized(response);
         }
 
+        [HttpPost("ArduinoLogin")]
+        public async Task<ActionResult<ResponseModel<AuthModel>>> ArduinoLogin([FromBody] ArduinoLoginRequest request)
+        {
+            ResponseModel<AuthModel> response = await _authInterface.ArduinoLogin(request);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return Unauthorized(response);
+        }
+
         [Authorize(Policy = "AppOnly")]
         [HttpPost("Login")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> Auth([FromBody] LoginRequest request)

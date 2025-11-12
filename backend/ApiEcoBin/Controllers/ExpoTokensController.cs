@@ -101,5 +101,12 @@ namespace ApiEcoBin.Controllers
             var response = await _expoTokensService.MarcarTodasComoLidasAsync(usuarioId);
             return response.Status ? Ok(response) : BadRequest(response);
         }
+
+        [HttpDelete("limpeza")]
+        public async Task<IActionResult> DeleteNotificacoesAntigas([FromQuery] DateTime dataLimite)
+        {
+            var response = await _expoTokensService.DeletarNotificacoesAntigasAsync(dataLimite);
+            return response.Status ? Ok(response) : BadRequest(response);
+        }
     }
 }

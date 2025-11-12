@@ -17,5 +17,6 @@ namespace ApiEcoBin.Services.ExpoTokens
         Task<ResponseModel<List<NotificacoesModel>>> ListarNotificacoesNaoLidasAsync(int usuarioId);
         Task<ResponseModel<NotificacoesModel>> MarcarComoLidaAsync(int notificacaoId);
         Task<ResponseModel<bool>> MarcarTodasComoLidasAsync(int usuarioId);
+        Task<ResponseModel<int>> DeletarNotificacoesAntigasAsync(DateTime dataLimite);
     }
 }

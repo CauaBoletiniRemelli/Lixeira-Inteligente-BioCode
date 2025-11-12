@@ -7,6 +7,7 @@ using ApiEcoBin.Services.ExpoTokens;
 using ApiEcoBin.Services.PasswordHash;
 using ApiEcoBin.Services.Provisionamentos;
 using ApiEcoBin.Services.Sensores;
+using ApiEcoBin.Services.Telemetrias;
 using ApiEcoBin.Services.Usuario;
 using ApiEcoBin.Services.Usuarios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -65,13 +66,15 @@ namespace ApiEcoBin
             builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
             builder.Services.AddSingleton<TokenService>();
             builder.Services.AddScoped<IExpoTokensInterface, ExpoTokensService>();
+            builder.Services.AddScoped<ITelemetriasInterface, TelemetriasService>();
             builder.Services.AddHttpClient(); 
 
             builder.Services.AddAuthorizationBuilder()
                 .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Administrador).ToString()))
                 .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo",
                     ((int)TipoUsuario.Administrador).ToString(),
-                    ((int)TipoUsuario.Aplicativo).ToString()));
+                    ((int)TipoUsuario.Aplicativo).ToString()))
+                .AddPolicy("ArduinoOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Arduino).ToString()));
 
             Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key não configurada");
 

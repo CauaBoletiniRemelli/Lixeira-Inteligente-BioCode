@@ -673,5 +673,36 @@ namespace ApiEcoBin.Services.ExpoTokens
                 return false;
             }
         }
+
+        public async Task<ResponseModel<int>> DeletarNotificacoesAntigasAsync(DateTime dataLimite)
+        {
+            var response = new ResponseModel<int>();
+
+            try
+            {
+                var notificacoesAntigas = await _context.Notificacoes
+                    .Where(t => t.DataEnvio < dataLimite)
+                    .ToListAsync();
+
+                var count = notificacoesAntigas.Count;
+
+                _context.Notificacoes.RemoveRange(notificacoesAntigas);
+                await _context.SaveChangesAsync();
+
+                response.Status = true;
+                response.Dados = count;
+                response.Mensagem = $"{count} notificações antigas removidas.";
+
+                _logger.LogInformation($"Limpeza: {count} notificações anteriores a {dataLimite:yyyy-MM-dd} removidas.");
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Mensagem = ex.Message;
+                _logger.LogError(ex, "Erro ao deletar notificações antigas");
+            }
+
+            return response;
+        }
     }
 }
