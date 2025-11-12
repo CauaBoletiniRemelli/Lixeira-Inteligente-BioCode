@@ -17,7 +17,7 @@ namespace ApiEcoBin.Services
                 Subject = new System.Security.Claims.ClaimsIdentity(
                 [
                     new Claim("userId", user.Id.ToString()),
-                    new Claim("Tipo", user.Tipo.ToString())
+            new Claim("Tipo", ((int)user.Tipo).ToString())
                 ]),
                 Expires = DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

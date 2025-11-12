@@ -25,7 +25,7 @@ namespace ApiEcoBin.Services.Condominio
                 }
 
                 response.Mensagem = "Nenhum condomínio encontrado.";
-                response.Status = true;
+                response.Status = false;
                 return response;
             }
             catch (Exception ex)
@@ -46,6 +46,7 @@ namespace ApiEcoBin.Services.Condominio
                     CriadoEm = DateTime.Now,
                     Nome = condominioCreateDTO.Nome,
                     Endereco = condominioCreateDTO.Endereco,
+                    Cep = condominioCreateDTO.CEP!.ToString(),
                     Ativo = condominioCreateDTO.Ativo,
                 };
 
@@ -79,15 +80,18 @@ namespace ApiEcoBin.Services.Condominio
                 if (condominio == null)
                 {
                     response.Mensagem = "Nenhum condomínio localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 
-                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Nome))
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Nome) || condominio.Nome != condominioEditDTO.Nome)
                     condominio.Nome = condominioEditDTO.Nome;
 
-                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Endereco))
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.Endereco) || condominio.Endereco != condominioEditDTO.Endereco)
                     condominio.Endereco = condominioEditDTO.Endereco;
+
+                if (!string.IsNullOrWhiteSpace(condominioEditDTO.CEP!.ToString()) || condominio.Cep != condominioEditDTO.CEP.ToString())
+                    condominio.Cep = condominioEditDTO.CEP.ToString();
 
                 if (condominio.Ativo != condominioEditDTO.Ativo)
                     condominio.Ativo = condominioEditDTO.Ativo;
@@ -119,7 +123,7 @@ namespace ApiEcoBin.Services.Condominio
                 if (condominio == null)
                 {
                     response.Mensagem = "Nenhum condomínio localizado!";
-                    response.Status = true;
+                    response.Status = false;
                     return response;
                 }
 
@@ -127,7 +131,7 @@ namespace ApiEcoBin.Services.Condominio
                 await _context.SaveChangesAsync();
 
                 response.Dados = await _context.Condominios.ToListAsync();
-                response.Mensagem = "Usuário removido com sucesso!";
+                response.Mensagem = "Condomínio removido com sucesso!";
                 response.Status = true;
             }
             catch (Exception ex)

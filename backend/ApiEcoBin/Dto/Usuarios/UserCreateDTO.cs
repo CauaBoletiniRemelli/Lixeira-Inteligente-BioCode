@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ApiEcoBin.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace ApiEcoBin.Dto.Usuarios
 {
@@ -10,6 +11,7 @@ namespace ApiEcoBin.Dto.Usuarios
         public string? Email { get; set; }
         [Required]
         public string? SenhaHash { get; set; }
-        public int Tipo { get; set; } = 0;
+        public TipoUsuario Tipo { get; set; } = 0;
+        public int? CondominioId { get; set; }
     }
 }

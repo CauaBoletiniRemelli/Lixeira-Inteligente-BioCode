@@ -22,6 +22,10 @@ namespace ApiEcoBin.Models
         [MaxLength(255)]
         public string? Endereco { get; set; }
 
+        [Column("CONCep")]
+        [MaxLength(9)]
+        public string? Cep { get; set; }
+
         [Column("CONCriadoEm")]
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
 

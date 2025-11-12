@@ -1,7 +1,11 @@
-using ApiEcoBin.Data;
+﻿using ApiEcoBin.Data;
+using ApiEcoBin.Enums;
 using ApiEcoBin.Services;
+using ApiEcoBin.Services.Auth;
 using ApiEcoBin.Services.Condominio;
+using ApiEcoBin.Services.ExpoTokens;
 using ApiEcoBin.Services.PasswordHash;
+using ApiEcoBin.Services.Provisionamentos;
 using ApiEcoBin.Services.Sensores;
 using ApiEcoBin.Services.Usuario;
 using ApiEcoBin.Services.Usuarios;
@@ -56,13 +60,20 @@ namespace ApiEcoBin
             builder.Services.AddScoped<IUsuarioInterface, UsuarioService>();
             builder.Services.AddScoped<ICondominioInterface, CondominioService>();
             builder.Services.AddScoped<ISensoresInterface, SensoresService>();
+            builder.Services.AddScoped<IProvisionamentosInteraface, ProvisionamentosService>();
+            builder.Services.AddScoped<IAuthInterface, AuthService>();
             builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
             builder.Services.AddSingleton<TokenService>();
-            builder.Services.AddAuthorizationBuilder()
-                .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", "1"))
-                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo", "1", "2"));
+            builder.Services.AddScoped<IExpoTokensInterface, ExpoTokensService>();
+            builder.Services.AddHttpClient(); 
 
-            Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key n�o configurada");
+            builder.Services.AddAuthorizationBuilder()
+                .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Administrador).ToString()))
+                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo",
+                    ((int)TipoUsuario.Administrador).ToString(),
+                    ((int)TipoUsuario.Aplicativo).ToString()));
+
+            Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key não configurada");
 
             byte[] key = Encoding.ASCII.GetBytes(Key.Secret);
 
@@ -85,10 +96,51 @@ namespace ApiEcoBin
 
             builder.Services.AddDbContext<AppDbContext>(options =>
             {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("EcoBinConnectionString"));
+                var connectionString = builder.Environment.IsDevelopment()
+                    ? builder.Configuration.GetConnectionString("LocalConnection")
+                    : builder.Configuration.GetConnectionString("EcoBinConnectionString");
+
+                options.UseSqlServer(connectionString);
             });
 
             var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var logger = services.GetRequiredService<ILogger<Program>>();
+
+                try
+                {
+                    var dbContext = services.GetRequiredService<AppDbContext>();
+
+                    logger.LogInformation("Verificando migrations pendentes...");
+                    var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+
+                    if (pendingMigrations.Any())
+                    {
+                        logger.LogWarning("Aplicando {Count} migrations: {Migrations}",
+                            pendingMigrations.Count,
+                            string.Join(", ", pendingMigrations));
+
+                        dbContext.Database.Migrate();
+
+                        logger.LogInformation("✅ Migrations aplicadas com sucesso!");
+                    }
+                    else
+                    {
+                        logger.LogInformation("✅ Nenhuma migration pendente. Banco de dados está atualizado.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "❌ Erro ao aplicar migrations: {Message}", ex.Message);
+
+                    // ⚠️ Descomente a linha abaixo se quiser impedir a API de subir caso migrations falhem
+                    // throw;
+                }
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

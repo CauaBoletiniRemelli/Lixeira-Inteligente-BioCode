@@ -5,9 +5,14 @@ namespace ApiEcoBin.Services.Sensores
 {
     public interface ISensoresInterface
     {
-        Task<ResponseModel<List<SensoresModel>>> GetSensores();
-        Task<ResponseModel<SensoresModel>> CreateSensor(SensorCreateDTO sensorCreateDTO);
-        Task<ResponseModel<SensoresModel>> UpdateSensor(SensorEditDTO sensorEditDTO);
-        Task<ResponseModel<List<SensoresModel>>> DeleteSensor(int idSensor);
+        Task<ResponseModel<SensoresModel>> CreateSensorAsync(SensorCreateDTO dto);
+
+        Task<ResponseModel<SensoresModel>> UpdateSensorAsync(SensorEditDTO dto);
+        Task<ResponseModel<SensoresModel>> UpdateSensorLocaleAsync(SensorUpdateLocaleDTO dto);
+        Task<ResponseModel<List<SensoresModel>>> DeleteSensorAsync(int idSensor);
+
+        Task<ResponseModel<List<SensoresModel>>> GetSensoresAsync();
+        Task<ResponseModel<List<SensoresModel>>> GetSensoresByCondominioAsync(int condominioId);
+        Task<ResponseModel<SensoresModel>> GetSensorByDeviceIdAsync(string deviceId);
     }
 }

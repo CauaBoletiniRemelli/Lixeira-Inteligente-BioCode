@@ -1,11 +1,8 @@
-﻿using ApiEcoBin.Data;
-using ApiEcoBin.Models;
-using ApiEcoBin.Services;
-using ApiEcoBin.Services.PasswordHash;
+﻿using ApiEcoBin.Models;
 using ApiEcoBin.Requests;
+using ApiEcoBin.Services.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ApiEcoBin.Controllers
 {
@@ -13,195 +10,74 @@ namespace ApiEcoBin.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IPasswordHashService _passwordHashService;
-        private readonly TokenService _tokenService;
+        #region Propriedades
+        private readonly IAuthInterface _authInterface;
+        #endregion
 
-        public AuthController(AppDbContext context, IPasswordHashService passwordHashService, TokenService tokenService)
+        #region Construtores
+        public AuthController(IAuthInterface authInterface)
         {
-            _context = context;
-            _passwordHashService = passwordHashService;
-            _tokenService = tokenService;
+            _authInterface = authInterface;
+        }
+        #endregion
+
+        [HttpPost("AppLogin")]
+        public async Task<ActionResult<ResponseModel<AuthModel>>> AppLogin([FromBody] AppLoginRequest request)
+        {
+            ResponseModel<AuthModel> response = await _authInterface.AppLogin(request);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return Unauthorized(response);
         }
 
+        [Authorize(Policy = "AppOnly")]
         [HttpPost("Login")]
         public async Task<ActionResult<ResponseModel<AuthModel>>> Auth([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            ResponseModel<AuthModel> response = await _authInterface.Login(request);
+            if (response.Status)
             {
-                return BadRequest(new ResponseModel<AuthModel>
-                {
-                    Dados = null,
-                    Mensagem = "Email e senha são obrigatórios.",
-                    Status = false
-                });
+                return Ok(response);
             }
-
-            UsuariosModel? usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-            if (usuario == null || string.IsNullOrEmpty(usuario.SenhaHash) || !_passwordHashService.VerifyPassword(request.Password, usuario.SenhaHash))
-            {
-                return Unauthorized(new ResponseModel<AuthModel>
-                {
-                    Dados = null,
-                    Mensagem = "E-mail ou senha incorretos.",
-                    Status = false
-                });
-            }
-
-            object token = TokenService.GenerateToken(usuario);
-            string refreshToken = TokenService.GenerateRefreshToken();
-
-            RefreshTokensModel refreshTokenModel = new RefreshTokensModel
-            {
-                UsuarioId = usuario.Id,
-                Token = refreshToken,
-                Expiracao = DateTime.UtcNow.AddDays(7),
-                Usuario = usuario
-            };
-
-            _context.RefreshTokens.Add(refreshTokenModel);
-            await _context.SaveChangesAsync();
-
-            return Ok(new ResponseModel<AuthModel>
-            {
-                Dados = new AuthModel
-                {
-                    Token = token,
-                    RefreshToken = refreshToken,
-                    UserId = usuario.Id,
-                    Email = usuario.Email,
-                    Nome = usuario.Nome
-                },
-                Mensagem = "Login realizado com sucesso!",
-                Status = true
-            });
+            return Unauthorized(response);
         }
 
         [HttpPost("RefreshToken")]
+        [AllowAnonymous]
         public async Task<ActionResult<ResponseModel<AuthModel>>> RefreshToken([FromBody] RefreshTokenRequest request)
         {
-            if (string.IsNullOrEmpty(request.AccessToken) || string.IsNullOrEmpty(request.RefreshToken))
+            ResponseModel<AuthModel> response = await _authInterface.RefreshToken(request);
+            if (response.Status)
             {
-                return BadRequest(new ResponseModel<AuthModel>
-                {
-                    Dados = null,
-                    Mensagem = "Token inválido.",
-                    Status = false
-                });
+                return Ok(response);
             }
-
-            try
-            {
-                ClaimsPrincipal? principal = TokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-                if (principal == null)
-                {
-                    return Unauthorized(new ResponseModel<AuthModel>
-                    {
-                        Dados = null,
-                        Mensagem = "Token inválido.",
-                        Status = false
-                    });
-                }
-
-                string? userIdClaim = principal.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized(new ResponseModel<AuthModel>
-                    {
-                        Dados = null,
-                        Mensagem = "Token inválido.",
-                        Status = false
-                    });
-                }
-
-                int userId = int.Parse(userIdClaim);
-
-                RefreshTokensModel? storedRefreshToken = await _context.RefreshTokens
-                    .Include(rt => rt.Usuario)
-                    .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken && rt.UsuarioId == userId);
-
-                if (storedRefreshToken == null || storedRefreshToken.Revogado || storedRefreshToken.Expiracao < DateTime.UtcNow)
-                {
-                    return Unauthorized(new ResponseModel<AuthModel>
-                    {
-                        Dados = null,
-                        Mensagem = "Refresh token inválido ou expirado.",
-                        Status = false
-                    });
-                }
-
-                object newAccessToken = TokenService.GenerateToken(storedRefreshToken.Usuario);
-                string newRefreshToken = TokenService.GenerateRefreshToken();
-
-                storedRefreshToken.Revogado = true;
-
-                RefreshTokensModel newRefreshTokenModel = new RefreshTokensModel
-                {
-                    UsuarioId = userId,
-                    Token = newRefreshToken,
-                    Expiracao = DateTime.UtcNow.AddDays(7),
-                    Usuario = storedRefreshToken.Usuario
-                };
-
-                _context.RefreshTokens.Add(newRefreshTokenModel);
-                await _context.SaveChangesAsync();
-
-                return Ok(new ResponseModel<AuthModel>
-                {
-                    Dados = new AuthModel
-                    {
-                        Token = newAccessToken,
-                        RefreshToken = newRefreshToken,
-                        UserId = storedRefreshToken.Usuario.Id,
-                        Email = storedRefreshToken.Usuario.Email,
-                        Nome = storedRefreshToken.Usuario.Nome
-                    },
-                    Mensagem = "Token renovado com sucesso!",
-                    Status = true
-                });
-            }
-            catch (Exception)
-            {
-                return Unauthorized(new ResponseModel<AuthModel>
-                {
-                    Dados = null,
-                    Mensagem = "Token inválido.",
-                    Status = false
-                });
-            }
+            return Unauthorized(response);
         }
 
         [HttpPost("Logout")]
+        [AllowAnonymous]
         public async Task<ActionResult<ResponseModel<object>>> Logout([FromBody] RefreshTokenRequest request)
         {
-            if (string.IsNullOrEmpty(request.RefreshToken))
+            ResponseModel<object> response = await _authInterface.Logout(request);
+            if (response.Status)
             {
-                return BadRequest(new ResponseModel<object>
-                {
-                    Dados = null,
-                    Mensagem = "Token é obrigatório.",
-                    Status = false
-                });
+                return Ok(response);
             }
+            return BadRequest(response);
+        }
 
-            RefreshTokensModel? storedRefreshToken = await _context.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
-
-            if (storedRefreshToken != null)
+        [Authorize(Policy = "AppOnly")]
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ForgotMyPassword(string usuEmail)
+        {
+            ResponseModel<UsuariosModel> response = await _authInterface.ForgotPassword(usuEmail);
+            if (response.Status)
             {
-                storedRefreshToken.Revogado = true;
-                await _context.SaveChangesAsync();
+                return Ok(response);
             }
-
-            return Ok(new ResponseModel<object>
-            {
-                Dados = null,
-                Mensagem = "Logout realizado com sucesso!",
-                Status = true
-            });
+            return BadRequest(response);
         }
     }
-
 }

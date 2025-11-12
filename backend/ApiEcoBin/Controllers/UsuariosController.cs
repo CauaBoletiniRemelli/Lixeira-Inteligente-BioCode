@@ -39,7 +39,7 @@ namespace ApiEcoBin.Controllers
 
         [Authorize]
         [HttpGet("{idUser}")]
-        public async Task<ActionResult<ResponseModel<UsuariosModel>>>  GetUserById(int idUser)
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> GetUserById(int idUser)
         {
             ResponseModel<UsuariosModel> response = await _usuarioInterface.GetUserById(idUser);
             if (response.Status)
@@ -49,7 +49,7 @@ namespace ApiEcoBin.Controllers
             return BadRequest(response);
         }
 
-        [Authorize(Policy = "AppOnly")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<ActionResult<ResponseModel<UserCreateDTO>>> CreateUser([FromBody] UserCreateDTO userCreateDTO)
         {
@@ -81,6 +81,30 @@ namespace ApiEcoBin.Controllers
         public async Task<ActionResult<ResponseModel<List<UsuariosModel>>>> DeleteUser(int idUser)
         {
             ResponseModel<List<UsuariosModel>> response = await _usuarioInterface.DeleteUser(idUser);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ChangePassword([FromBody] ChangePasswordDTO changePasswordDTO)
+        {
+            ResponseModel<UsuariosModel> response = await _usuarioInterface.ChangePassword(changePasswordDTO);
+            if (response.Status)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [Authorize]
+        [HttpPost("change-email")]
+        public async Task<ActionResult<ResponseModel<UsuariosModel>>> ChangeEmail([FromBody] ChangeEmailDTO changeEmailDTO)
+        {
+            ResponseModel<UsuariosModel> response = await _usuarioInterface.ChangeEmail(changeEmailDTO);
             if (response.Status)
             {
                 return Ok(response);

@@ -14,12 +14,10 @@ namespace ApiEcoBin.Models
         [Column("PRO_SENId")]
         public int SensorId { get; set; }
 
-        [Required]
         [Column("PROSsidCriptografado")]
         [MaxLength(512)]
         public string? SsidCriptografado { get; set; }
 
-        [Required]
         [Column("PROSenhaWifiCriptografada")]
         [MaxLength(1024)]
         public string? SenhaWifiCriptografada { get; set; }
@@ -42,10 +40,16 @@ namespace ApiEcoBin.Models
         [Column("PROCriadoEm")]
         public DateTime? CriadoEm { get; set; } = DateTime.Now;
 
+        [Column("PROSessionToken")]
+        public string? SessionToken { get; set; }
+
+        [Column("PROSessionExpires")]
+        public DateTime? SessionExpires { get; set; }
+
         [ForeignKey("SensorId")]
-        public virtual required SensoresModel Sensor { get; set; }
+        public virtual SensoresModel? Sensor { get; set; }
 
         [ForeignKey("UsuarioId")]
-        public virtual required UsuariosModel Usuario { get; set; }
+        public virtual UsuariosModel? Usuario { get; set; }
     }
 }
