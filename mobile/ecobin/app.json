@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "EcoBin",
+    "slug": "EcoBin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/EcoBinLogoGrande.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/EcoBinLogoGrande.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cauaboletiniremelli.EcoBin",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "EcoBin precisa acessar sua localização para centralizar o mapa na sua posição atual e facilitar o cadastro de sensores.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "entitlements": {
+        "aps-environment": "development",
+        "com.apple.security.application-groups": [
+          "group.${ios.bundleIdentifier}.onesignal"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.cauaboletiniremelli.EcoBin"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e42cfa80-11e8-4ee4-ad76-434e904a68fb"
+      }
+    }
+  },
+  "android": {
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/EcoBinLogoGrande.png",
+      "backgroundColor": "#ffffff"
+    },
+    "edgeToEdgeEnabled": true,
+    "predictiveBackGestureEnabled": false,
+    "permissions": [
+      "ACCESS_COARSE_LOCATION",
+      "ACCESS_FINE_LOCATION",
+      "android.permission.CAMERA",
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.POST_NOTIFICATIONS"
+    ],
+    "package": "com.cauaboletiniremelli.EcoBin",
+    "versionCode": 3
+  },
+  "web": {
+    "favicon": "./assets/EcoBinLogoGrande.png"
+  },
+  "plugins": [
+    [
+      "expo-location",
+      {
+        "locationAlwaysAndWhenInUsePermission": "EcoBin precisa acessar sua localização para centralizar o mapa na sua posição atual e facilitar o cadastro de sensores."
+      }
+    ],
+    "expo-secure-store",
+    [
+      "onesignal-expo-plugin",
+      {
+        "mode": "development"
+      }
+    ]
+  ]
+}
