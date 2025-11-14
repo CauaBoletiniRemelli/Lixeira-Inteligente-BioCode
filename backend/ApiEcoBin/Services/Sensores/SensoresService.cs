@@ -114,6 +114,8 @@ namespace ApiEcoBin.Services.Sensores
         {
             var sensores = await _context.Sensores
                 .Include(s => s.Telemetrias)
+                .Include(s => s.Condominio)                
+                .Where(s => s.Condominio!.Ativo == true) 
                 .ToListAsync();
 
             return new ResponseModel<List<SensoresModel>>
