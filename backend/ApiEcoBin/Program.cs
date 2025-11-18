@@ -1,5 +1,6 @@
 ﻿using ApiEcoBin.Data;
 using ApiEcoBin.Enums;
+using ApiEcoBin.Models;
 using ApiEcoBin.Services;
 using ApiEcoBin.Services.Auth;
 using ApiEcoBin.Services.Condominio;
@@ -67,6 +68,7 @@ namespace ApiEcoBin
             builder.Services.AddSingleton<TokenService>();
             builder.Services.AddScoped<IExpoTokensInterface, ExpoTokensService>();
             builder.Services.AddScoped<ITelemetriasInterface, TelemetriasService>();
+            builder.Services.AddSingleton<ProvisionSession>();
             builder.Services.AddHttpClient(); 
 
             builder.Services.AddAuthorizationBuilder()

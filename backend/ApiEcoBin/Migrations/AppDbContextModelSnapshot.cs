@@ -171,6 +171,52 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("NOTificacoes");
                 });
 
+            modelBuilder.Entity("ApiEcoBin.Models.ProvisionSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AssignedWifiPassword")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AssignedWifiSSID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceMac")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Firmware")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SessionToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProvisionSessions");
+                });
+
             modelBuilder.Entity("ApiEcoBin.Models.ProvisionamentosModel", b =>
                 {
                     b.Property<int>("Id")

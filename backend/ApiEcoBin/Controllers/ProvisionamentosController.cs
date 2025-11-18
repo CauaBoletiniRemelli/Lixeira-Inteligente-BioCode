@@ -1,8 +1,6 @@
 ﻿using ApiEcoBin.Dto.Provisionamentos;
-using ApiEcoBin.Services.Condominio;
 using ApiEcoBin.Services.Provisionamentos;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiEcoBin.Controllers
@@ -58,6 +56,9 @@ namespace ApiEcoBin.Controllers
             return File(res.Dados!.QrBytes, res.Dados.MediaType);
         }
 
+        /// <summary>
+        /// Ativa o provisionamento (chamado pelo app). Deve gerar e retornar sessionToken.
+        /// </summary>
         [Authorize]
         [HttpPost("ativar-qr")]
         public async Task<IActionResult> AtivarQr([FromBody] ProvisionActivateRequestDTO dto)
@@ -69,6 +70,45 @@ namespace ApiEcoBin.Controllers
             return Ok(res);
         }
 
+        /// <summary>
+        /// ASSIGN WIFI
+        /// O app envia SSID/password vinculado ao sessionToken gerado pelo AtivarQr.
+        /// Rota: POST /api/Provisionamentos/{sessionToken}/assign-wifi
+        /// Requer autenticação do app (Policy pode ser "AppOnly" ou "Authorize")
+        /// </summary>
+        [Authorize(Policy = "AppOnly")]
+        [HttpPost("{sessionToken}/assign-wifi")]
+        public async Task<IActionResult> AssignWifi(string sessionToken, [FromBody] AssignWifiRequestDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(sessionToken))
+                return BadRequest(new { status = false, mensagem = "sessionToken obrigatório" });
+
+            var res = await _provService.AssignWifiToSessionAsync(sessionToken, dto);
+            if (!res.Status) return BadRequest(res);
+            return Ok(res);
+        }
+
+        /// <summary>
+        /// GET WIFI CREDENTIALS (polling do dispositivo)
+        /// Rota: GET /api/Provisionamentos/wifi-credentials/{deviceId}?sessionToken=...
+        /// AllowAnonymous para que ESPs sem JWT possam poll (validação é feita com sessionToken + deviceId)
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("wifi-credentials/{deviceId}")]
+        public async Task<IActionResult> GetWifiCredentials(string deviceId, [FromQuery] string sessionToken)
+        {
+            if (string.IsNullOrEmpty(deviceId) || string.IsNullOrEmpty(sessionToken))
+                return BadRequest(new { status = false, mensagem = "deviceId e sessionToken são obrigatórios" });
+
+            var res = await _provService.GetWifiCredentialsAsync(deviceId, sessionToken);
+            if (!res.Status) return NotFound(res);
+            return Ok(res);
+        }
+
+        /// <summary>
+        /// ConfirmConfig (o ESP chama após conectar ao WiFi)
+        /// Rota já existente: POST /api/Provisionamentos/confirm-config/{deviceId}
+        /// </summary>
         [AllowAnonymous]
         [HttpPost("confirm-config/{deviceId}")]
         public async Task<IActionResult> ConfirmConfig(string deviceId, [FromBody] Dto.Devices.ConfirmConfigDTO dto)

@@ -23,24 +23,30 @@ export interface CreateProvisionamentoComSensorRequest {
 }
 
 export interface AtivarQRRequest {
-  provisionId: string;
+  provisionId?: string;
   deviceId: string;
   token: string;
-  condominioId: number;
-  nomeSensor: string;
-  latitude: number;
-  longitude: number;
+  condominioId?: number;
+  nomeSensor?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface AtivarQRResponse {
+  deviceId: string;
+  sensorId?: number;
+  sessionToken: string;
+  sessionExpires?: string;
+  message?: string;
+}
+
+export interface AssignWifiRequest {
   wifiSSID: string;
   wifiPassword: string;
 }
 
-export interface AtivarQRResponse {
-  success: boolean;
-  deviceId: string;
-  sensorId: number;
-  sessionToken: string;
-  sessionExpires: string;
-  message: string;
+export interface ProvisionStatusDto {
+  status: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'FAILED' | string;
 }
 
 export interface ResponseModel<T> {
@@ -51,29 +57,44 @@ export interface ResponseModel<T> {
 
 export const provisionamentoService = {
   criar: async (data: CreateProvisionamentoRequest): Promise<ResponseModel<Provisionamento>> => {
-    return api.post<ResponseModel<Provisionamento>>('/Provisionamentos/criar', data);
+    const resp = await api.post<ResponseModel<Provisionamento>>('/Provisionamentos/criar', data);
+    return resp;
   },
 
   criarComSensor: async (data: CreateProvisionamentoComSensorRequest): Promise<ResponseModel<Provisionamento>> => {
-    return api.post<ResponseModel<Provisionamento>>('/Provisionamentos/criar-com-sensor', data);
+    const resp = await api.post<ResponseModel<Provisionamento>>('/Provisionamentos/criar-com-sensor', data);
+    return resp;
   },
 
   gerarQR: async (provisionId: number): Promise<Blob> => {
-    const response = await api.get<Blob>(`/Provisionamentos/gerar-qr/${provisionId}`, {
+    const resp = await api.get<Blob>(`/Provisionamentos/gerar-qr/${provisionId}`, {
       responseType: 'blob',
     });
-    return response;
+    return resp;
   },
 
   ativarQR: async (data: AtivarQRRequest): Promise<ResponseModel<AtivarQRResponse>> => {
-    return api.post<ResponseModel<AtivarQRResponse>>('/Provisionamentos/ativar-qr', data);
+    const resp = await api.post<ResponseModel<AtivarQRResponse>>('/Provisionamentos/ativar-qr', data);
+    return resp;
+  },
+
+  assignWifi: async (sessionToken: string, wifiPayload: AssignWifiRequest): Promise<ResponseModel<object>> => {
+    const resp = await api.post<ResponseModel<object>>(`/Provisionamentos/${encodeURIComponent(sessionToken)}/assign-wifi`, wifiPayload);
+    return resp;
+  },
+
+  getProvisionStatus: async (sessionToken: string): Promise<ResponseModel<ProvisionStatusDto>> => {
+    const resp = await api.get<ResponseModel<ProvisionStatusDto>>(`/Provisionamentos/session-status/${encodeURIComponent(sessionToken)}`);
+    return resp;
   },
 
   listar: async (): Promise<ResponseModel<Provisionamento[]>> => {
-    return api.get<ResponseModel<Provisionamento[]>>('/Provisionamentos');
+    const resp = await api.get<ResponseModel<Provisionamento[]>>('/Provisionamentos');
+    return resp;
   },
 
   buscarPorId: async (id: number): Promise<ResponseModel<Provisionamento>> => {
-    return api.get<ResponseModel<Provisionamento>>(`/Provisionamentos/${id}`);
+    const resp = await api.get<ResponseModel<Provisionamento>>(`/Provisionamentos/${id}`);
+    return resp;
   },
 };

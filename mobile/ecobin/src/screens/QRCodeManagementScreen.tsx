@@ -24,13 +24,13 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [provisionamentos, setProvisionamentos] = useState<Provisionamento[]>([]);
   const [generatingQR, setGeneratingQR] = useState<number | null>(null);
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [nomeSensor, setNomeSensor] = useState('');
   const [condominios, setCondominios] = useState<Condominium[]>([]);
   const [selectedCondominioId, setSelectedCondominioId] = useState<number | null>(null);
   const [expiracaoDias, setExpiracaoDias] = useState('7');
-  
+
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [currentProvisionId, setCurrentProvisionId] = useState<number | null>(null);
@@ -57,7 +57,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       const response = await provisionamentoService.listar();
 
       if (response.status && response.dados) {
-        const sorted = response.dados.sort((a, b) => 
+        const sorted = response.dados.sort((a, b) =>
           new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime()
         );
         setProvisionamentos(sorted);
@@ -97,10 +97,10 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
         usuarioId: user.id,
         expiracaoDias: parseInt(expiracaoDias) || 7,
       };
-      
-      
+
+
       const response = await provisionamentoService.criarComSensor(requestData);
-      
+
       if (response.status && response.dados) {
         Alert.alert('Sucesso', 'QR Code criado com sucesso!');
         setShowCreateModal(false);
@@ -117,7 +117,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       console.error('📄 Response data:', error.response?.data);
       console.error('📄 Response status:', error.response?.status);
       console.error('📄 Response headers:', error.response?.headers);
-      
+
       const mensagem = error.response?.data?.mensagem || 'Erro ao criar o código de provisionamento';
       Alert.alert('Erro', mensagem);
     } finally {
@@ -131,10 +131,10 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       setCurrentProvisionId(provisionId);
 
       const response = await provisionamentoService.gerarQR(provisionId);
-      
+
       const reader = new FileReader();
       reader.readAsDataURL(response as any);
-      
+
       reader.onloadend = () => {
         const base64data = reader.result as string;
         setQrImageUrl(base64data);
@@ -160,7 +160,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
 
     try {
       const shareUrl = `${ENV.API_URL}Provisionamentos/gerar-qr/${currentProvisionId}`;
-      
+
       Alert.alert(
         'Compartilhar QR Code',
         'Para compartilhar este QR Code, você pode:\n\n1. Fazer screenshot desta tela\n2. Ou copiar o link abaixo para compartilhar',
@@ -184,7 +184,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
 
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
-      
+
       if (status !== 'granted') {
         Alert.alert(
           'Permissão Negada',
@@ -203,7 +203,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       });
 
       const asset = await MediaLibrary.createAssetAsync(fileUri);
-      
+
       try {
         await MediaLibrary.createAlbumAsync('EcoBin', asset, false);
       } catch (e) {
@@ -245,8 +245,6 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
 
       <View style={styles.header}>
         <BackButton onPress={() => onNavigateBack?.()} />
-        <Text style={styles.headerTitle}>QR Codes de Provisionamento</Text>
-        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -254,7 +252,8 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        
+        <Text style={styles.title}>QR Codes de Provisionamento</Text>
+
         <Button
           title="Criar Novo QR Code"
           onPress={() => setShowCreateModal(true)}
@@ -289,11 +288,11 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
                   </View>
                   <View style={[
                     styles.statusBadge,
-                    item.usado 
-                      ? styles.statusUsed 
-                      : expired 
-                      ? styles.statusExpired 
-                      : styles.statusActive
+                    item.usado
+                      ? styles.statusUsed
+                      : expired
+                        ? styles.statusExpired
+                        : styles.statusActive
                   ]}>
                     <Text style={styles.statusText}>
                       {item.usado ? 'USADO' : expired ? 'EXPIRADO' : 'ATIVO'}
@@ -390,9 +389,9 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
                       ]}
                       onPress={() => setSelectedCondominioId(cond.id)}
                     >
-                      <Ionicons 
-                        name={selectedCondominioId === cond.id ? "radio-button-on" : "radio-button-off"} 
-                        size={20} 
+                      <Ionicons
+                        name={selectedCondominioId === cond.id ? "radio-button-on" : "radio-button-off"}
+                        size={20}
                         color={selectedCondominioId === cond.id ? COLORS.primary : COLORS.text.secondary}
                       />
                       <View style={styles.condominioInfo}>
@@ -511,10 +510,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     color: COLORS.text.primary,
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,

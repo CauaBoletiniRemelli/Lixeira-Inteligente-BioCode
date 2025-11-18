@@ -12,6 +12,7 @@ import { sensorService, condominiumService } from '../services';
 import type { Sensor as APISensor } from '../services/sensorService';
 import { SensorLocationEditScreen } from './SensorLocationEditScreen';
 import { notificationService } from '../services/notificationService';
+import Alerta from '../components/Alert';
 
 type SensorStatus = 'empty' | 'medium' | 'full';
 
@@ -59,6 +60,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const [showEditLocationScreen, setShowEditLocationScreen] = useState(false);
     const [sensorToEdit, setSensorToEdit] = useState<APISensor | null>(null);
     const mapRef = React.useRef<MapViewRef>(null);
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
 
     const isAdmin = hasPermission(['admin']);
     const isSindico = hasPermission(['sindico']);
@@ -164,10 +174,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             }
         } catch (error: any) {
             console.error('Erro ao carregar sensores:', error);
-            Alert.alert(
-                'Erro',
-                error.response?.data?.mensagem || 'Não foi possível carregar os sensores'
-            );
+            showAlert('Não foi possível carregar os sensores', 'error');
         } finally {
             setLoading(false);
         }
@@ -272,7 +279,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             }
         } catch (error) {
             console.error('❌ Erro ao buscar sensor:', error);
-            Alert.alert('Erro', 'Não foi possível carregar os dados do sensor');
+            showAlert('Não foi possível carregar os dados do sensor', 'error');
         }
     };
 
@@ -285,7 +292,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     const handleNotifyCollectors = async (sensor: Sensor) => {
         try {
             if (!sensor.condominiumId) {
-                Alert.alert('Erro', 'Condomínio não identificado');
+                showAlert('Condomínio não identificado', 'error');
                 return;
             }
 
@@ -315,16 +322,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                 });
 
                                 if (result.success) {
-                                    Alert.alert(
-                                        'Sucesso!',
-                                        `Notificação enviada para ${result.count || 'os'} coletor(es) do condomínio.`
+                                    showAlert(
+                                        `Notificação enviada para ${result.count || 'os'} coletor(es) do condomínio.`,
+                                        'success'
                                     );
                                 } else {
-                                    Alert.alert('Erro', 'Não foi possível enviar a notificação');
+                                    showAlert('Não foi possível enviar a notificação', 'error');
                                 }
                             } catch (error) {
                                 console.error('Erro ao enviar notificação:', error);
-                                Alert.alert('Erro', 'Não foi possível enviar a notificação');
+                                showAlert('Não foi possível enviar a notificação', 'error');
                             }
                         },
                     },
@@ -332,7 +339,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             );
         } catch (error) {
             console.error('Erro ao notificar coletores:', error);
-            Alert.alert('Erro', 'Não foi possível enviar a notificação');
+            showAlert('Não foi possível enviar a notificação', 'error');
         }
     };
 
@@ -383,6 +390,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                 <Loading />
             ) : (
                 <View style={styles.container}>
+                    <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
                     <View style={styles.mapContainer}>
                         <MapView
                             ref={mapRef}

@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="058c9e4c-62e7-4f29-b746-af212f07b4e4" name="Changes" comment="" />
+    <list default="true" id="058c9e4c-62e7-4f29-b746-af212f07b4e4" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/MapScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/MapScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/NotificationsScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/NotificationsScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/QRCodeManagementScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/QRCodeManagementScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/QRCodeScannerScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/QRCodeScannerScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiConfigScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiConfigScreen.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,7 +26,8 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
-    "cidr.known.project.marker": "true"
+    "cidr.known.project.marker": "true",
+    "com.android.tools.idea.devicemanager.tab": "Physical"
   }
 }]]></component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />

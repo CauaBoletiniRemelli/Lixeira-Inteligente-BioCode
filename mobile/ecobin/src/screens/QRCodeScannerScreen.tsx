@@ -21,6 +21,15 @@ export interface QRCodeData {
 export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack, onScanSuccess }) => {
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [scanned, setScanned] = useState(false);
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
 
     useEffect(() => {
         (async () => {
@@ -32,7 +41,7 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
     const parseQRCode = (data: string): QRCodeData | null => {
         try {
             const parts = data.split('|');
-            
+
             if (parts.length !== 3) {
                 console.error('QR Code inválido: formato incorreto');
                 return null;
@@ -51,11 +60,11 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
 
     const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
         if (scanned) return;
-        
+
         setScanned(true);
-        
+
         const qrData = parseQRCode(data);
-        
+
         if (!qrData) {
             Alert.alert(
                 'QR Code Inválido',
@@ -137,9 +146,9 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
                     <Text style={styles.instructionSubtitle}>
                         O código será lido automaticamente
                     </Text>
-                    
+
                     {scanned && (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.scanAgainButton}
                             onPress={() => setScanned(false)}
                         >

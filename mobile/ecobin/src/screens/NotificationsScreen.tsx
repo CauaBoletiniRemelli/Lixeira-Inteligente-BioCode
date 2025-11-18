@@ -7,6 +7,7 @@ import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { notificationService, Notification } from '../services/notificationService';
 import { useAuth } from '../contexts/AuthContext';
+import Alerta from '../components/Alert';
 
 interface NotificationsScreenProps {
     onBack: () => void;
@@ -18,6 +19,15 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+    const showAlert = (message: string, type: 'success' | 'error') => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+    };
 
     useEffect(() => {
         loadNotifications();
@@ -35,7 +45,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
             }
         } catch (error) {
             console.error('Erro ao carregar notificações:', error);
-            Alert.alert('Erro', 'Não foi possível carregar as notificações');
+            showAlert('Não foi possível carregar as notificações', 'error');
         } finally {
             setLoading(false);
         }
@@ -51,7 +61,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         try {
             const success = await notificationService.markAsRead(notificacaoId);
             if (success) {
-                await loadNotifications(); 
+                await loadNotifications();
             }
         } catch (error) {
             console.error('Erro ao marcar como lida:', error);
@@ -63,13 +73,13 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
             if (user?.id) {
                 const success = await notificationService.markAllAsRead(user.id);
                 if (success) {
-                    await loadNotifications(); 
-                    Alert.alert('Sucesso', 'Todas as notificações foram marcadas como lidas');
+                    await loadNotifications();
+                    showAlert('Todas as notificações foram marcadas como lidas', 'success');
                 }
             }
         } catch (error) {
             console.error('Erro ao marcar todas como lidas:', error);
-            Alert.alert('Erro', 'Não foi possível marcar todas como lidas');
+            showAlert('Não foi possível marcar todas como lidas', 'error');
         }
     };
 
@@ -169,11 +179,11 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <StatusBar style="dark" />
 
             <View style={styles.header}>
                 <BackButton onPress={onBack} />
-                <Text style={styles.headerTitle}>Notificações</Text>
                 <View style={styles.headerRight} />
             </View>
 

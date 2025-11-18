@@ -319,17 +319,18 @@ namespace ApiEcoBin.Services.Provisionamentos
         {
             var keyBytes = Convert.FromBase64String(_configuration["JwtSettings:SecretKey"]!);
             using var aes = Aes.Create();
-            aes.Key = [.. keyBytes.Take(32)]; 
+            // garante chave com 32 bytes (AES-256)
+            aes.Key = keyBytes.Take(32).ToArray();
             aes.GenerateIV();
-            
-            using var encryptor = aes.CreateEncryptor();
+
+            using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
             var plainBytes = Encoding.UTF8.GetBytes(dado);
             var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
-            
+
             var result = new byte[aes.IV.Length + cipherBytes.Length];
             Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
             Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
-            
+
             return Convert.ToBase64String(result);
         }
 
@@ -339,17 +340,18 @@ namespace ApiEcoBin.Services.Provisionamentos
             var fullCipher = Convert.FromBase64String(dadoCriptografado);
 
             using var aes = Aes.Create();
-            aes.Key = [.. keyBytes.Take(32)]; 
+            aes.Key = keyBytes.Take(32).ToArray();
 
-            var iv = new byte[aes.BlockSize / 8];
-            var cipher = new byte[fullCipher.Length - iv.Length];
+            var ivLength = aes.BlockSize / 8;
+            var iv = new byte[ivLength];
+            var cipher = new byte[fullCipher.Length - ivLength];
 
-            Buffer.BlockCopy(fullCipher, 0, iv, 0, iv.Length);
-            Buffer.BlockCopy(fullCipher, iv.Length, cipher, 0, cipher.Length);
+            Buffer.BlockCopy(fullCipher, 0, iv, 0, ivLength);
+            Buffer.BlockCopy(fullCipher, ivLength, cipher, 0, cipher.Length);
 
             aes.IV = iv;
 
-            using var decryptor = aes.CreateDecryptor();
+            using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
             var plainBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
 
             return Encoding.UTF8.GetString(plainBytes);
@@ -457,5 +459,43 @@ namespace ApiEcoBin.Services.Provisionamentos
                 return new ResponseModel<bool> { Status = false, Mensagem = ex.Message };
             }
         }
+
+        public async Task<ResponseModel<object>> AssignWifiToSessionAsync(string sessionToken, AssignWifiRequestDTO dto)
+        {
+            var response = new ResponseModel<object>();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sessionToken))
+                    return new ResponseModel<object> { Status = false, Mensagem = "sessionToken obrigatório." };
+
+                var prov = await _context.Provisionamentos
+                    .FirstOrDefaultAsync(p => p.SessionToken == sessionToken);
+
+                if (prov == null)
+                    return new ResponseModel<object> { Status = false, Mensagem = "Session token inválido." };
+
+                if (prov.SessionExpires == null || prov.SessionExpires < DateTime.UtcNow)
+                    return new ResponseModel<object> { Status = false, Mensagem = "Session expirado." };
+
+                if (prov.Usado)
+                    return new ResponseModel<object> { Status = false, Mensagem = "Provisionamento já utilizado." };
+
+                prov.SsidCriptografado = CriptografarDado(dto.WifiSSID ?? string.Empty);
+                prov.SenhaWifiCriptografada = CriptografarDado(dto.WifiPassword ?? string.Empty);
+
+                _context.Provisionamentos.Update(prov);
+                await _context.SaveChangesAsync();
+
+                response.Status = true;
+                response.Mensagem = "Credenciais Wi-Fi atribuídas à sessão com sucesso.";
+                response.Dados = null;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return new ResponseModel<object> { Status = false, Mensagem = ex.Message };
+            }
+        }
+
     }
 }

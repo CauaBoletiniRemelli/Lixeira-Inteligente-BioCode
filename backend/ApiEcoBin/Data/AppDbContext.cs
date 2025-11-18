@@ -17,5 +17,6 @@ namespace ApiEcoBin.Data
         public DbSet<RefreshTokensModel> RefreshTokens { get; set; }
         public DbSet<ExpoTokensModel> ExpoTokens { get; set; }
         public DbSet<NotificacoesModel> Notificacoes { get; set; }
+        public DbSet<ProvisionSession> ProvisionSessions { get; set; }
     }
 }

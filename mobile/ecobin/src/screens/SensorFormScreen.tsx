@@ -92,9 +92,9 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const loadCondominiums = async (retryCount = 0) => {
         try {
             setLoadingCondominiums(true);
-            
+
             const userToken = await storage.getAccessToken();
-            
+
             if (!userToken) {
                 if (retryCount < 3) {
                     setTimeout(() => loadCondominiums(retryCount + 1), 2000);
@@ -103,7 +103,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                 }
                 return;
             }
-            
+
             const response = await condominiumService.getAll();
 
             if (!response.dados) {
@@ -119,12 +119,12 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             setCondominiums(condominiumsList);
         } catch (error: any) {
             console.error('❌ Erro ao carregar condomínios:', error);
-            
+
             if ((error.response?.status === 401 || error.response?.status === 403) && retryCount < 2) {
                 setTimeout(() => loadCondominiums(retryCount + 1), 2000);
                 return;
             }
-            
+
             if (error.response?.status !== 401 && error.response?.status !== 403) {
                 showAlert('Erro ao carregar condomínios. Tente novamente.', 'error');
             } else if (retryCount >= 2) {
@@ -162,7 +162,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const handleOpenMap = async () => {
         const lat = parseFloat(latitude);
         const lng = parseFloat(longitude);
-        
+
         if (!isNaN(lat) && !isNaN(lng)) {
             setTempMarkerPosition({ latitude: lat, longitude: lng });
             setShowMapModal(true);
@@ -184,9 +184,10 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                 };
 
                 setTempMarkerPosition(userLocation);
-                                
+                setLatitude(userLocation.latitude.toFixed(6));
+                setLongitude(userLocation.longitude.toFixed(6));
                 setShowMapModal(true);
-                
+
                 setTimeout(() => {
                     if (mapRef.current) {
                         mapRef.current.animateToRegion({
@@ -286,14 +287,14 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                     value={nomeSensor}
                                     onChangeText={setNomeSensor}
                                     placeholder="Ex: Lixeira Bloco A"
-                                    returnKeyType="next"
+                                    returnKeyType="done"
                                     onSubmitEditing={() => latitudeInputRef.current?.focus()}
                                     blurOnSubmit={false}
                                 />
 
                                 <View style={styles.coordinatesSection}>
                                     <Text style={styles.label}>Coordenadas GPS:</Text>
-                                    
+
                                     <TouchableOpacity
                                         style={styles.mapButton}
                                         onPress={handleOpenMap}
@@ -339,7 +340,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                     <Text style={styles.infoText}>
                                         Use o botão "Selecionar no Mapa" acima para definir as coordenadas
                                     </Text>
-                                    
+
                                     {!latitude && !longitude && (
                                         <View style={styles.warningBox}>
                                             <Ionicons name="alert-circle" size={16} color={COLORS.warning} />
@@ -515,7 +516,12 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                     <MapView
                         ref={mapRef}
                         style={styles.fullMap}
-                        initialRegion={INITIAL_REGION}
+                        initialRegion={tempMarkerPosition ? {
+                            latitude: tempMarkerPosition.latitude,
+                            longitude: tempMarkerPosition.longitude,
+                            latitudeDelta: 0.003,
+                            longitudeDelta: 0.003,
+                        } : INITIAL_REGION}
                         onPress={handleMapPress}
                         showsUserLocation={true}
                         showsMyLocationButton={true}

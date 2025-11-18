@@ -56,45 +56,39 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
     };
 
     const handleOpenMap = async () => {
-        const lat = parseFloat(latitude);
-        const lng = parseFloat(longitude);
-        
-        if (!isNaN(lat) && !isNaN(lng)) {
-            setTempMarkerPosition({ latitude: lat, longitude: lng });
-            setShowMapModal(true);
-        } else {
-            try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    setShowMapModal(true);
-                    return;
-                }
-
-                const location = await Location.getCurrentPositionAsync({
-                    accuracy: Location.Accuracy.Balanced,
-                });
-
-                const userLocation = {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                };
-
-                setTempMarkerPosition(userLocation);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
                 setShowMapModal(true);
-                
-                setTimeout(() => {
-                    if (mapRef.current) {
-                        mapRef.current.animateToRegion({
-                            ...userLocation,
-                            latitudeDelta: 0.003,
-                            longitudeDelta: 0.003,
-                        }, 1000);
-                    }
-                }, 500);
-            } catch (error) {
-                console.error('❌ Erro ao obter localização:', error);
-                setShowMapModal(true);
+                return;
             }
+
+            const location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
+
+            const userLocation = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            };
+
+            setTempMarkerPosition(userLocation);
+            setLatitude(userLocation.latitude.toFixed(6));
+            setLongitude(userLocation.longitude.toFixed(6));
+            setShowMapModal(true);
+
+            setTimeout(() => {
+                if (mapRef.current) {
+                    mapRef.current.animateToRegion({
+                        ...userLocation,
+                        latitudeDelta: 0.003,
+                        longitudeDelta: 0.003,
+                    }, 1000);
+                }
+            }, 500);
+        } catch (error) {
+            console.error('❌ Erro ao obter localização:', error);
+            setShowMapModal(true);
         }
     };
 
