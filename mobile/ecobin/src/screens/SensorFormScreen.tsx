@@ -287,7 +287,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                     value={nomeSensor}
                                     onChangeText={setNomeSensor}
                                     placeholder="Ex: Lixeira Bloco A"
-                                    returnKeyType="done"
                                     onSubmitEditing={() => latitudeInputRef.current?.focus()}
                                     blurOnSubmit={false}
                                 />
