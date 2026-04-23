@@ -5,11 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="058c9e4c-62e7-4f29-b746-af212f07b4e4" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/MapScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/MapScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/NotificationsScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/NotificationsScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/QRCodeManagementScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/QRCodeManagementScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/QRCodeScannerScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/QRCodeScannerScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiConfigScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiConfigScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.vs/slnx.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/../.vs/slnx.sqlite" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,15 +20,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "cidr.known.project.marker": "true",
-    "com.android.tools.idea.devicemanager.tab": "Physical"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;com.android.tools.idea.devicemanager.tab&quot;: &quot;Physical&quot;
   }
-}]]></component>
+}</component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
