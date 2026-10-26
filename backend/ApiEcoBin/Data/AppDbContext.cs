@@ -18,5 +18,6 @@ namespace ApiEcoBin.Data
         public DbSet<ExpoTokensModel> ExpoTokens { get; set; }
         public DbSet<NotificacoesModel> Notificacoes { get; set; }
         public DbSet<ProvisionSession> ProvisionSessions { get; set; }
+        public DbSet<OleoColetasModel> OleoColetas { get; set; }
     }
 }

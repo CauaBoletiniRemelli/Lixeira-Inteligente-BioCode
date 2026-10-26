@@ -4,7 +4,10 @@ using ApiEcoBin.Models;
 using ApiEcoBin.Services;
 using ApiEcoBin.Services.Auth;
 using ApiEcoBin.Services.Condominio;
+using ApiEcoBin.Services.Condominos;
+using ApiEcoBin.Services.Dashboard;
 using ApiEcoBin.Services.ExpoTokens;
+using ApiEcoBin.Services.OleoColetas;
 using ApiEcoBin.Services.PasswordHash;
 using ApiEcoBin.Services.Provisionamentos;
 using ApiEcoBin.Services.Sensores;
@@ -68,15 +71,24 @@ namespace ApiEcoBin
             builder.Services.AddSingleton<TokenService>();
             builder.Services.AddScoped<IExpoTokensInterface, ExpoTokensService>();
             builder.Services.AddScoped<ITelemetriasInterface, TelemetriasService>();
+            builder.Services.AddScoped<IDashboardInterface, DashboardService>();
+            builder.Services.AddScoped<ICondominosInterface, CondominosService>();
+            builder.Services.AddScoped<IOleoColetasInterface, OleoColetasService>();
             builder.Services.AddSingleton<ProvisionSession>();
             builder.Services.AddHttpClient(); 
 
             builder.Services.AddAuthorizationBuilder()
                 .AddPolicy("AdminOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Administrador).ToString()))
-                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo",
+                .AddPolicy("AppOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Administrador).ToString(), ((int)TipoUsuario.Aplicativo).ToString()))
+                .AddPolicy("ArduinoOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Arduino).ToString()))
+                .AddPolicy("ProprietarioOrAbove", policy => policy.RequireClaim("Tipo",
                     ((int)TipoUsuario.Administrador).ToString(),
-                    ((int)TipoUsuario.Aplicativo).ToString()))
-                .AddPolicy("ArduinoOnly", policy => policy.RequireClaim("Tipo", ((int)TipoUsuario.Arduino).ToString()));
+                    ((int)TipoUsuario.Sindico).ToString(),
+                    ((int)TipoUsuario.Proprietario).ToString()))
+                .AddPolicy("ColetorOrAbove", policy => policy.RequireClaim("Tipo",
+                    ((int)TipoUsuario.Administrador).ToString(),
+                    ((int)TipoUsuario.Sindico).ToString(),
+                    ((int)TipoUsuario.Coletor).ToString()));
 
             Key.Secret = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key não configurada");
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Image, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { BackButton, Loading, Button, Card, Input } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
@@ -21,6 +21,8 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
   onNavigateBack,
 }) => {
   const { user } = useAuth();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const qrImageSize = Math.min(screenWidth * 0.65, 280);
   const [loading, setLoading] = useState(false);
   const [provisionamentos, setProvisionamentos] = useState<Provisionamento[]>([]);
   const [generatingQR, setGeneratingQR] = useState<number | null>(null);
@@ -199,7 +201,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
       const base64Code = qrImageUrl.split(',')[1];
 
       await FileSystem.writeAsStringAsync(fileUri, base64Code, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64' as any,
       });
 
       const asset = await MediaLibrary.createAssetAsync(fileUri);
@@ -240,7 +242,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       <StatusBar style="dark" />
 
       <View style={styles.header}>
@@ -356,7 +358,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
         onRequestClose={() => setShowCreateModal(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           style={{ flex: 1 }}
         >
           <View style={styles.modalOverlay}>
@@ -379,7 +381,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
                 />
 
                 <Text style={styles.inputLabel}>Condomínio *</Text>
-                <ScrollView style={styles.condominiosList} nestedScrollEnabled>
+                <ScrollView style={[styles.condominiosList, { maxHeight: screenHeight * 0.25 }]} nestedScrollEnabled>
                   {condominios.map((cond) => (
                     <TouchableOpacity
                       key={cond.id}
@@ -461,7 +463,7 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
               <View style={styles.qrImageContainer}>
                 <Image
                   source={{ uri: qrImageUrl }}
-                  style={styles.qrImage}
+                  style={[styles.qrImage, { width: qrImageSize, height: qrImageSize }]}
                   resizeMode="contain"
                 />
                 <Text style={styles.qrImageInfo}>
@@ -474,14 +476,14 @@ export const QRCodeManagementScreen: React.FC<QRCodeManagementScreenProps> = ({
 
             <View style={styles.qrModalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
+                style={[styles.modalButton, styles.modalButtonConfirm, { flex: 0 }]}
                 onPress={handleSaveQR}
               >
                 <Ionicons name="download-outline" size={20} color={COLORS.background} />
-                <Text style={styles.modalButtonTextConfirm}>Salvar</Text>
+                <Text style={styles.modalButtonTextConfirm}>Salvar na galeria</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
+                style={[styles.modalButton, styles.modalButtonCancel, { flex: 0 }]}
                 onPress={handleShareQR}
               >
                 <Ionicons name="share-outline" size={20} color={COLORS.text.primary} />
@@ -780,8 +782,6 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.lg,
   },
   qrImage: {
-    width: 280,
-    height: 280,
     borderRadius: BORDER_RADIUS.md,
   },
   qrImageInfo: {
@@ -792,8 +792,11 @@ const styles = StyleSheet.create({
   },
   qrModalButtons: {
     marginTop: SPACING.md,
-    flexDirection: 'row',
     gap: SPACING.sm,
+  },
+  qrModalButtonFull: {
+    flex: 0,
+    alignSelf: 'stretch',
   },
   qrModalHint: {
     fontSize: 12,

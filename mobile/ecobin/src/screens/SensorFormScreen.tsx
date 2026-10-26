@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { MapView, Marker, type MapPressEvent, type Region, type MapViewRef } from '../components';
+import { KeyboardAvoider, MapView, Marker, type MapPressEvent, type Region, type MapViewRef } from '../components';
 import * as Location from 'expo-location';
 import { BackButton, Input, Button, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
@@ -23,12 +23,30 @@ export interface SensorFormData {
     longitude: number;
     condominioId: number;
     condominioNome: string;
+    tipoLixeira: number;
+    capacidadeLitros?: number;
 }
+
+const TIPO_OLEO = 8;
 
 interface CondominiumOption {
     id: number;
     name: string;
 }
+
+const TIPOS_LIXEIRA = [
+    { value: 0, label: 'Não Definido', icon: 'help-circle-outline' as const },
+    { value: 1, label: 'Orgânico', icon: 'leaf-outline' as const },
+    { value: 2, label: 'Reciclável', icon: 'refresh-outline' as const },
+    { value: 3, label: 'Papel', icon: 'document-outline' as const },
+    { value: 4, label: 'Plástico', icon: 'flask-outline' as const },
+    { value: 5, label: 'Metal', icon: 'hardware-chip-outline' as const },
+    { value: 6, label: 'Vidro', icon: 'wine-outline' as const },
+    { value: 7, label: 'Rejeito', icon: 'trash-outline' as const },
+    { value: TIPO_OLEO, label: 'Óleo de cozinha', icon: 'water-outline' as const },
+];
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const INITIAL_REGION = {
     latitude: -23.5013,
@@ -53,6 +71,9 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const [condominiumSearch, setCondominiumSearch] = useState('');
     const [showMapModal, setShowMapModal] = useState(false);
     const [tempMarkerPosition, setTempMarkerPosition] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [tipoLixeira, setTipoLixeira] = useState(0);
+    const [capacidadeLitros, setCapacidadeLitros] = useState('');
+    const [showTipoModal, setShowTipoModal] = useState(false);
 
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -61,6 +82,20 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
     const latitudeInputRef = useRef<TextInput>(null);
     const longitudeInputRef = useRef<TextInput>(null);
     const mapRef = useRef<MapViewRef>(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') return;
+                const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                setLatitude(loc.coords.latitude.toFixed(6));
+                setLongitude(loc.coords.longitude.toFixed(6));
+                setTempMarkerPosition({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+            } catch {
+            }
+        })();
+    }, []);
 
     useEffect(() => {
         const initializeScreen = async () => {
@@ -142,7 +177,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
     const getSelectedCondominiumName = () => {
         const cond = condominiums.find(c => c.id === selectedCondominium);
-        return cond?.name || 'Selecione um condomínio';
+        return cond?.name || 'Selecione';
     };
 
     const handleMapPress = (event: MapPressEvent) => {
@@ -166,41 +201,37 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
         if (!isNaN(lat) && !isNaN(lng)) {
             setTempMarkerPosition({ latitude: lat, longitude: lng });
             setShowMapModal(true);
-        } else {
-            try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    setShowMapModal(true);
-                    return;
-                }
+            return;
+        }
 
-                const location = await Location.getCurrentPositionAsync({
-                    accuracy: Location.Accuracy.Balanced,
-                });
+        setShowMapModal(true);
 
-                const userLocation = {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                };
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') return;
 
-                setTempMarkerPosition(userLocation);
-                setLatitude(userLocation.latitude.toFixed(6));
-                setLongitude(userLocation.longitude.toFixed(6));
-                setShowMapModal(true);
+            const location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
 
-                setTimeout(() => {
-                    if (mapRef.current) {
-                        mapRef.current.animateToRegion({
-                            ...userLocation,
-                            latitudeDelta: 0.003,
-                            longitudeDelta: 0.003,
-                        }, 1000);
-                    }
-                }, 500);
-            } catch (error) {
-                console.error('❌ Erro ao obter localização:', error);
-                setShowMapModal(true);
-            }
+            const userLocation = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            };
+
+            setTempMarkerPosition(userLocation);
+            setLatitude(userLocation.latitude.toFixed(6));
+            setLongitude(userLocation.longitude.toFixed(6));
+
+            setTimeout(() => {
+                mapRef.current?.animateToRegion({
+                    ...userLocation,
+                    latitudeDelta: 0.003,
+                    longitudeDelta: 0.003,
+                }, 800);
+            }, 300);
+        } catch (error) {
+            console.error('Erro ao obter localização:', error);
         }
     };
 
@@ -233,19 +264,27 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             return;
         }
 
+        const capacidade = parseFloat(capacidadeLitros.replace(',', '.'));
+        if (tipoLixeira === TIPO_OLEO && (isNaN(capacidade) || capacidade <= 0)) {
+            showAlert('Informe a capacidade do recipiente de óleo em litros', 'error');
+            return;
+        }
+
         const sensorData: SensorFormData = {
             nomeSensor: nomeSensor.trim(),
             latitude: lat,
             longitude: lng,
             condominioId: selectedCondominium,
             condominioNome: getSelectedCondominiumName(),
+            tipoLixeira,
+            capacidadeLitros: tipoLixeira === TIPO_OLEO ? capacidade : undefined,
         };
 
         onNext(sensorData);
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
@@ -255,7 +294,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView
@@ -291,6 +330,36 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                     blurOnSubmit={false}
                                 />
 
+                                <Text style={styles.label}>Tipo de Lixeira:</Text>
+                                <TouchableOpacity
+                                    style={styles.selectInput}
+                                    onPress={() => setShowTipoModal(true)}
+                                >
+                                    <View style={styles.selectContent}>
+                                        <Ionicons
+                                            name={TIPOS_LIXEIRA.find(t => t.value === tipoLixeira)?.icon ?? 'help-circle-outline'}
+                                            size={20}
+                                            color={COLORS.primary}
+                                        />
+                                        <Text style={styles.selectText}>
+                                            {TIPOS_LIXEIRA.find(t => t.value === tipoLixeira)?.label ?? 'Não Definido'}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-down" size={20} color={COLORS.text.secondary} />
+                                </TouchableOpacity>
+
+                                {tipoLixeira === TIPO_OLEO && (
+                                    <>
+                                        <Text style={styles.label}>Capacidade do recipiente (litros):</Text>
+                                        <Input
+                                            value={capacidadeLitros}
+                                            onChangeText={setCapacidadeLitros}
+                                            placeholder="Ex: 20"
+                                            keyboardType="decimal-pad"
+                                        />
+                                    </>
+                                )}
+
                                 <View style={styles.coordinatesSection}>
                                     <Text style={styles.label}>Coordenadas GPS:</Text>
 
@@ -303,38 +372,6 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                                             {tempMarkerPosition || (latitude && longitude) ? 'Ajustar no Mapa' : 'Selecionar no Mapa'}
                                         </Text>
                                     </TouchableOpacity>
-
-                                    <View style={styles.coordinateInputs}>
-                                        <View style={styles.coordinateInput}>
-                                            <Text style={styles.coordinateLabel}>Latitude:</Text>
-                                            <Input
-                                                ref={latitudeInputRef}
-                                                value={latitude}
-                                                onChangeText={setLatitude}
-                                                placeholder="-23.5505"
-                                                keyboardType="numeric"
-                                                returnKeyType="next"
-                                                onSubmitEditing={() => longitudeInputRef.current?.focus()}
-                                                blurOnSubmit={false}
-                                                editable={false}
-                                                style={styles.disabledInput}
-                                            />
-                                        </View>
-
-                                        <View style={styles.coordinateInput}>
-                                            <Text style={styles.coordinateLabel}>Longitude:</Text>
-                                            <Input
-                                                ref={longitudeInputRef}
-                                                value={longitude}
-                                                onChangeText={setLongitude}
-                                                placeholder="-46.6333"
-                                                keyboardType="numeric"
-                                                returnKeyType="done"
-                                                editable={false}
-                                                style={styles.disabledInput}
-                                            />
-                                        </View>
-                                    </View>
 
                                     <Text style={styles.infoText}>
                                         Use o botão "Selecionar no Mapa" acima para definir as coordenadas
@@ -402,11 +439,68 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
             </KeyboardAvoidingView>
 
             <Modal
+                visible={showTipoModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowTipoModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowTipoModal(false)}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Tipo de Lixeira</Text>
+                            <TouchableOpacity onPress={() => setShowTipoModal(false)}>
+                                <Ionicons name="close" size={24} color={COLORS.text.primary} />
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={TIPOS_LIXEIRA}
+                            keyExtractor={(item) => String(item.value)}
+                            style={styles.modalList}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.condominiumOption,
+                                        tipoLixeira === item.value && styles.condominiumOptionSelected,
+                                    ]}
+                                    onPress={() => {
+                                        setTipoLixeira(item.value);
+                                        setShowTipoModal(false);
+                                    }}
+                                >
+                                    <View style={styles.condominiumInfo}>
+                                        <Ionicons
+                                            name={item.icon}
+                                            size={22}
+                                            color={tipoLixeira === item.value ? COLORS.primary : COLORS.text.secondary}
+                                        />
+                                        <Text style={[
+                                            styles.condominiumLabel,
+                                            tipoLixeira === item.value && styles.condominiumLabelSelected,
+                                        ]}>
+                                            {item.label}
+                                        </Text>
+                                    </View>
+                                    {tipoLixeira === item.value && (
+                                        <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
+                                    )}
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            <Modal
                 visible={showCondominiumModal}
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowCondominiumModal(false)}
             >
+                <KeyboardAvoider>
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
@@ -482,6 +576,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                         />
                     </View>
                 </TouchableOpacity>
+                </KeyboardAvoider>
             </Modal>
 
             <Modal
@@ -490,7 +585,7 @@ export const SensorFormScreen: React.FC<SensorFormScreenProps> = ({ onBack, onNe
                 animationType="slide"
                 onRequestClose={() => setShowMapModal(false)}
             >
-                <SafeAreaView style={styles.mapModalContainer} edges={['top', 'left', 'right']}>
+                <SafeAreaView style={styles.mapModalContainer} edges={['top', 'left', 'right', 'bottom']}>
                     <View style={styles.mapModalHeader}>
                         <TouchableOpacity
                             style={styles.mapModalCloseButton}
@@ -750,7 +845,7 @@ const styles = StyleSheet.create({
         padding: 0,
     },
     modalList: {
-        maxHeight: 400,
+        maxHeight: Math.round(SCREEN_HEIGHT * 0.45),
     },
     condominiumOption: {
         flexDirection: 'row',

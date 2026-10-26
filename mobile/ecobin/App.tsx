@@ -5,8 +5,20 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { MainNavigator } from './src/navigation/MainNavigator';
 import { COLORS } from './src/constants';
-import { OneSignal, LogLevel } from 'react-native-onesignal';
+import Constants from 'expo-constants';
 import { notificationService } from './src/services/notificationService';
+
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+let OneSignal: any = null;
+let LogLevel: any = null;
+if (!isExpoGo) {
+  try {
+    const os = require('react-native-onesignal');
+    OneSignal = os.OneSignal;
+    LogLevel = os.LogLevel;
+  } catch {
+  }
+}
 
 
 function AppContent() {
@@ -27,6 +39,8 @@ export default function App() {
   useEffect(() => {
     const initializeOneSignal = async () => {
       try {
+        if (!OneSignal) return;
+
         OneSignal.Debug.setLogLevel(LogLevel.Verbose);
         
         OneSignal.initialize('72d3902a-cb02-48c9-b1f4-fd4faea52430');

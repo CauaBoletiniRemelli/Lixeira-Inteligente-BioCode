@@ -37,6 +37,10 @@ namespace ApiEcoBin.Services.Telemetrias
                     NivelOcupacao = dto.NivelOcupacao,
                     Bateria = dto.Bateria,
                     Temperatura = dto.Temperatura,
+                    TensaoBateria = dto.TensaoBateria,
+                    TensaoPainel = dto.TensaoPainel,
+                    CorrentePainel = dto.CorrentePainel,
+                    Carregando = dto.Carregando ?? InferirCarregando(dto.TensaoPainel, dto.TensaoBateria),
                     Momento = dto.Momento ?? DateTime.UtcNow,
                     DadosBrutos = dto.DadosBrutos
                 };
@@ -78,6 +82,10 @@ namespace ApiEcoBin.Services.Telemetrias
             return response;
         }
 
+        // Sem sensor de corrente, a carga é inferida pela tensão: o painel só carrega a bateria quando a supera.
+        private static bool? InferirCarregando(decimal? tensaoPainel, decimal? tensaoBateria) =>
+            tensaoPainel.HasValue && tensaoBateria.HasValue ? tensaoPainel.Value > tensaoBateria.Value : null;
+
         public async Task<ResponseModel<TelemetriaResponseDTO>> CreateTelemetriaArduinoAsync(TelemetriaArduinoDTO dto)
         {
             try
@@ -88,6 +96,10 @@ namespace ApiEcoBin.Services.Telemetrias
                     NivelOcupacao = (int)Math.Round(dto.NivelLixo),
                     Bateria = dto.Bateria,
                     Temperatura = dto.Temperatura.HasValue ? (decimal)dto.Temperatura.Value : null,
+                    TensaoBateria = dto.TensaoBateria.HasValue ? Math.Round((decimal)dto.TensaoBateria.Value, 2) : null,
+                    TensaoPainel = dto.TensaoPainel.HasValue ? Math.Round((decimal)dto.TensaoPainel.Value, 2) : null,
+                    CorrentePainel = dto.CorrentePainel.HasValue ? Math.Round((decimal)dto.CorrentePainel.Value, 2) : null,
+                    Carregando = dto.Carregando,
                     Momento = !string.IsNullOrWhiteSpace(dto.DataHora)
                         ? DateTime.Parse(dto.DataHora)
                         : DateTime.UtcNow,
@@ -100,6 +112,10 @@ namespace ApiEcoBin.Services.Telemetrias
                         capacidade = dto.Capacidade,
                         alertaCheio = dto.AlertaCheio,
                         bateria = dto.Bateria,
+                        tensaoBateria = dto.TensaoBateria,
+                        tensaoPainel = dto.TensaoPainel,
+                        correntePainel = dto.CorrentePainel,
+                        carregando = dto.Carregando,
                         timestamp = dto.DataHora
                     })
                 };

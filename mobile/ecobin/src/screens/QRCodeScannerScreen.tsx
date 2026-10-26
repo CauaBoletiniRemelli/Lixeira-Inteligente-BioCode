@@ -111,7 +111,7 @@ export const QRCodeScannerScreen: React.FC<QRCodeScannerScreenProps> = ({ onBack
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="light" />
 
             <View style={styles.header}>

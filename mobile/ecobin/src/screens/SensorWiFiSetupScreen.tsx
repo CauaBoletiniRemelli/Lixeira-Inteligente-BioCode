@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platfor
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Input, Button, PasswordInput, BackButton } from '../components';
+import { Input, Button, PasswordInput, BackButton, KeyboardAvoider } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -79,7 +79,7 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
 
             <View style={styles.header}>
@@ -88,8 +88,8 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                behavior="padding"
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
                 <ScrollView
                     style={styles.scrollView}
@@ -160,6 +160,7 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
                     animationType="fade"
                     onRequestClose={() => setShowCondominiumModal(false)}
                 >
+                    <KeyboardAvoider>
                     <TouchableOpacity
                         style={styles.modalOverlay}
                         activeOpacity={1}
@@ -235,6 +236,7 @@ export const SensorWiFiSetupScreen: React.FC<SensorWiFiSetupScreenProps> = ({
                             />
                         </View>
                     </TouchableOpacity>
+                    </KeyboardAvoider>
                 </Modal>
             )}
         </SafeAreaView>

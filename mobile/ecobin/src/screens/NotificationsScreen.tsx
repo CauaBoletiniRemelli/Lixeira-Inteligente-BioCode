@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { BackButton, Loading } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { notificationService, Notification } from '../services/notificationService';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { useAuth } from '../contexts/AuthContext';
 import Alerta from '../components/Alert';
 
@@ -81,6 +83,32 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
             console.error('Erro ao marcar todas como lidas:', error);
             showAlert('Não foi possível marcar todas como lidas', 'error');
         }
+    };
+
+    const handleClearAll = () => {
+        if (!user?.id || notifications.length === 0) return;
+
+        Alert.alert(
+            'Limpar notificações',
+            'Todas as notificações serão apagadas. Essa ação não pode ser desfeita.',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Limpar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        const success = await notificationService.clearAll(user.id);
+                        if (success) {
+                            setNotifications([]);
+                            setUnreadCount(0);
+                            showAlert('Notificações apagadas', 'success');
+                        } else {
+                            showAlert('Não foi possível apagar as notificações', 'error');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const getIconName = (dados?: string) => {
@@ -170,7 +198,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
                 <StatusBar style="dark" />
                 <Loading />
             </SafeAreaView>
@@ -178,13 +206,25 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <StatusBar style="dark" />
 
             <View style={styles.header}>
                 <BackButton onPress={onBack} />
-                <View style={styles.headerRight} />
+                {notifications.length > 0 ? (
+                    <TouchableOpacity
+                        style={styles.headerRight}
+                        onPress={handleClearAll}
+                        accessibilityRole="button"
+                        accessibilityLabel="Limpar notificações"
+                        hitSlop={8}
+                    >
+                        <Ionicons name="trash-outline" size={22} color={COLORS.error} />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={styles.headerRight} />
+                )}
             </View>
 
             {unreadCount > 0 && (
@@ -249,11 +289,13 @@ const styles = StyleSheet.create({
     },
     headerRight: {
         width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     unreadBanner: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
         backgroundColor: COLORS.primary + '15',
         paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.sm,
@@ -264,6 +306,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.text.primary,
         fontWeight: '500',
+        marginBottom: 4,
     },
     markAllButton: {
         fontSize: 14,
@@ -304,7 +347,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     notificationTitle: {
-        fontSize: 16,
+        fontSize: Math.max(14, Math.min(16, SCREEN_WIDTH * 0.042)),
         color: COLORS.text.primary,
         marginBottom: SPACING.xs,
     },
@@ -312,7 +355,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     notificationMessage: {
-        fontSize: 14,
+        fontSize: Math.max(12, Math.min(14, SCREEN_WIDTH * 0.037)),
         color: COLORS.text.secondary,
         lineHeight: 20,
         marginBottom: SPACING.xs,

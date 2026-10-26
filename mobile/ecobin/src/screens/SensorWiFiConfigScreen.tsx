@@ -11,6 +11,8 @@ import { SensorFormData } from './SensorFormScreen';
 import Alerta from '../components/Alert';
 import { NetworkInfo } from 'react-native-network-info';
 
+const DEV_MODE = true;
+
 interface SensorWiFiConfigScreenProps {
     onBack: () => void;
     onSuccess: () => void;
@@ -54,7 +56,6 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
         ]);
     };
 
-    // --- open wifi settings cross-platform
     const openWifiSettings = async () => {
         if (Platform.OS === 'ios') {
             Linking.openSettings();
@@ -71,16 +72,23 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
         }
     };
 
-    // --- ping the ESP device on AP
     const testSensorConnection = async () => {
         setLoading(true);
         try {
+            if (DEV_MODE) {
+                await new Promise(r => setTimeout(r, 800));
+                setIsConnectedToSensor(true);
+                showAlert('[DEV] Conectado ao sensor (simulado)!', 'success');
+                await activateSession();
+                setStep('wifi_form');
+                return;
+            }
+
             const resp = await fetchWithTimeout('http://192.168.4.1/ping', { method: 'GET' }, 5000);
             if (resp && (resp as Response).ok) {
                 setIsConnectedToSensor(true);
                 showAlert('Conectado ao sensor!', 'success');
 
-                // activate session AFTER confirming device reachable
                 await activateSession();
 
                 setStep('wifi_form');
@@ -105,6 +113,8 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                 nomeSensor: sensorData.nomeSensor,
                 latitude: sensorData.latitude,
                 longitude: sensorData.longitude,
+                tipoLixeira: sensorData.tipoLixeira,
+                capacidadeLitros: sensorData.capacidadeLitros,
             };
 
             const response = await provisionamentoService.ativarQR(activatePayload);
@@ -116,7 +126,19 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
             setSessionToken(response.dados.sessionToken);
             setDeviceId(response.dados.deviceId);
         } catch (error: any) {
-            console.error('Erro ao ativar sessão:', error);
+            console.error('Erro ao ativar sessão:', error?.message);
+            console.error('Response status:', error?.response?.status);
+            console.error('Response data:', JSON.stringify(error?.response?.data));
+            console.error('Payload enviado:', JSON.stringify({
+                provisionId: qrData.provisionId,
+                deviceId: qrData.deviceId,
+                token: qrData.token,
+                condominioId: sensorData.condominioId,
+                nomeSensor: sensorData.nomeSensor,
+                latitude: sensorData.latitude,
+                longitude: sensorData.longitude,
+                tipoLixeira: sensorData.tipoLixeira,
+            }));
             throw error;
         }
     };
@@ -141,6 +163,17 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
         setStep('sending');
 
         try {
+            if (DEV_MODE) {
+                await new Promise(r => setTimeout(r, 1000));
+                setStep('connecting');
+                showAlert('[DEV] Credenciais enviadas (simulado)!', 'success');
+                await new Promise(r => setTimeout(r, 1500));
+                setStep('success');
+                showAlert('[DEV] Sensor configurado com sucesso!', 'success');
+                setTimeout(onSuccess, 1200);
+                return;
+            }
+
             const url = 'http://192.168.4.1/config';
             const body = {
                 wifiSSID: ssid.trim(),
@@ -210,9 +243,6 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
         throw new Error('Tempo esgotado. Sensor não confirmou a conexão');
     };
 
-    // -------------------------
-    // Auto-detect SSID useEffect
-    // -------------------------
     const hasAutoActivatedRef = useRef(false);
     useEffect(() => {
         let mounted = true;
@@ -241,17 +271,14 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                 if (!mounted) return;
                 if (!currentSsid) return;
 
-                // Normaliza (remove aspas)
                 const cleaned = currentSsid.replace(/^"(.+)"$/, '$1');
 
-                // Se corresponde ao deviceId (preferido) ou começa com 'EcoBin-'
                 const expectedId = deviceId || qrData.deviceId;
                 if (expectedId && cleaned.startsWith(`EcoBin-${expectedId}`)) {
                     if (!hasAutoActivatedRef.current) {
                         hasAutoActivatedRef.current = true;
                         setIsConnectedToSensor(true);
                         try {
-                            // garante sessão
                             if (!sessionToken) await activateSession();
                         } catch (e) {
                             console.warn('Falha ao ativar sessão automaticamente', e);
@@ -259,7 +286,6 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                         setStep('wifi_form');
                     }
                 } else if (cleaned.startsWith('EcoBin-') && !hasAutoActivatedRef.current) {
-                    // detectou um EcoBin-xxx genérico
                     hasAutoActivatedRef.current = true;
                     setIsConnectedToSensor(true);
                     const parts = cleaned.split('-');
@@ -271,7 +297,6 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
                     setStep('wifi_form');
                 }
             } catch (err) {
-                // possivel falha por permissão ou iOS capability; ignora silenciosamente
             }
         };
 
@@ -279,11 +304,9 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
             const ok = await requestAndroidLocation();
             if (!mounted) return;
             if (!ok && Platform.OS === 'android') {
-                // permissão negada => não faremos auto-detect
                 return;
             }
-            // start polling SSID
-            await checkSSID(); // primeira checagem imediata
+            await checkSSID();
             intervalId = setInterval(checkSSID, 2000);
         })();
 
@@ -291,11 +314,8 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
             mounted = false;
             if (intervalId) clearInterval(intervalId);
         };
-    }, [deviceId, qrData.deviceId, sessionToken]); // re-run se deviceId/session mudar
+    }, [deviceId, qrData.deviceId, sessionToken]);
 
-    // -------------------------
-    // Renderers (same UI)
-    // -------------------------
     const renderConnectToSensor = () => (
         <View style={styles.stepContainer}>
             <View style={styles.iconContainer}>
@@ -520,7 +540,7 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
     );
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
@@ -532,7 +552,7 @@ export const SensorWiFiConfigScreen: React.FC<SensorWiFiConfigScreenProps> = ({
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView

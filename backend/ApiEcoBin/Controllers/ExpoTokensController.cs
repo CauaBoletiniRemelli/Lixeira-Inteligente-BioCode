@@ -1,4 +1,5 @@
 using ApiEcoBin.Dto.ExpoTokens;
+using ApiEcoBin.Enums;
 using ApiEcoBin.Models;
 using ApiEcoBin.Services.ExpoTokens;
 using Microsoft.AspNetCore.Authorization;
@@ -36,6 +37,14 @@ namespace ApiEcoBin.Controllers
         public async Task<IActionResult> DesativarToken(int tokenId)
         {
             var response = await _expoTokensService.DesativarTokenAsync(tokenId);
+            return response.Status ? Ok(response) : BadRequest(response);
+        }
+
+        // Chamado no logout: o aparelho deixa de receber notificações da conta que saiu
+        [HttpPost("token/desativar")]
+        public async Task<IActionResult> DesativarTokenPorPlayerId([FromBody] ExpoTokenDesativarDTO dto)
+        {
+            var response = await _expoTokensService.DesativarTokenPorPlayerIdAsync(dto.Token);
             return response.Status ? Ok(response) : BadRequest(response);
         }
 
@@ -99,6 +108,18 @@ namespace ApiEcoBin.Controllers
         public async Task<IActionResult> MarcarTodasComoLidas(int usuarioId)
         {
             var response = await _expoTokensService.MarcarTodasComoLidasAsync(usuarioId);
+            return response.Status ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpDelete("notificacoes/usuario/{usuarioId}")]
+        public async Task<IActionResult> LimparNotificacoesUsuario(int usuarioId)
+        {
+            // Cada usuário só limpa as próprias notificações; o administrador pode limpar as de qualquer um
+            bool ehAdmin = User.FindFirst("Tipo")?.Value == ((int)TipoUsuario.Administrador).ToString();
+            if (!ehAdmin && User.FindFirst("userId")?.Value != usuarioId.ToString())
+                return Forbid();
+
+            var response = await _expoTokensService.LimparNotificacoesUsuarioAsync(usuarioId);
             return response.Status ? Ok(response) : BadRequest(response);
         }
 

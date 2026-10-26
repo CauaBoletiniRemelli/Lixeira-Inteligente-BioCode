@@ -1,12 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { notificationService } from '../services/notificationService';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface MenuCardProps {
     title: string;
@@ -32,6 +34,8 @@ interface HomeScreenProps {
     onNavigateToQRCodeManagement?: () => void;
     onNavigateToMap?: () => void;
     onNavigateToNotifications?: () => void;
+    onNavigateToDashboard?: () => void;
+    onNavigateToCondominoHome?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ 
@@ -40,7 +44,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onNavigateToSensorSetup, 
     onNavigateToQRCodeManagement,
     onNavigateToMap, 
-    onNavigateToNotifications 
+    onNavigateToNotifications,
+    onNavigateToDashboard,
+    onNavigateToCondominoHome,
 }) => {
     const { user, logout, hasPermission } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
@@ -57,7 +63,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }, [user]);
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
 
             <View style={styles.header}>
@@ -137,6 +143,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     />
                 )}
 
+                {hasPermission(['sindico', 'admin', 'coletor']) && (
+                    <MenuCard
+                        title="Dashboard"
+                        subtitle="Gráficos de lixeiras do condomínio"
+                        iconComponent={<Ionicons name="bar-chart" size={60} color={COLORS.primary} />}
+                        onPress={() => onNavigateToDashboard?.()}
+                    />
+                )}
+
+                {hasPermission(['proprietario']) && (
+                    <MenuCard
+                        title="Meu Condomínio"
+                        subtitle="Status das lixeiras e impacto"
+                        iconComponent={<MaterialCommunityIcons name="home-city-outline" size={60} color={COLORS.primary} />}
+                        onPress={() => onNavigateToCondominoHome?.()}
+                    />
+                )}
+
                 {hasPermission(['admin']) && (
                     <>
                         <MenuCard
@@ -207,6 +231,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: SPACING.md,
+        paddingTop: SPACING.md,
         paddingBottom: SPACING.xl,
     },
     greeting: {
@@ -216,7 +241,9 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md,
     },
     mapContainer: {
-        height: 200,
+        height: Math.round(SCREEN_HEIGHT * 0.22),
+        minHeight: 140,
+        maxHeight: 220,
         backgroundColor: '#E0E0E0',
         borderRadius: BORDER_RADIUS.md,
         marginBottom: SPACING.md,
@@ -328,10 +355,10 @@ const styles = StyleSheet.create({
         borderRadius: BORDER_RADIUS.md,
         padding: SPACING.lg,
         marginBottom: SPACING.md,
-        minHeight: 120,
+        minHeight: 110,
     },
     cardTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         color: COLORS.text.primary,
         marginBottom: SPACING.xs,
@@ -339,7 +366,7 @@ const styles = StyleSheet.create({
     cardSubtitle: {
         fontSize: 12,
         color: COLORS.text.secondary,
-        marginBottom: SPACING.md,
+        marginBottom: SPACING.sm,
     },
     iconWrapper: {
         alignSelf: 'center',

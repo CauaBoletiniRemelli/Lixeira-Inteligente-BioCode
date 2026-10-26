@@ -1,6 +1,15 @@
-import { OneSignal } from 'react-native-onesignal';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { api } from './api';
+
+let OneSignal: any = null;
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+if (!isExpoGo) {
+  try {
+    OneSignal = require('react-native-onesignal').OneSignal;
+  } catch {
+  }
+}
 
 export type NotificationType = 'alert' | 'warning' | 'info';
 
@@ -63,12 +72,14 @@ class NotificationService {
       this.currentUserId = userId;
     }
 
-    OneSignal.Notifications.addEventListener('click', (event) => {
+    if (!OneSignal) return;
+
+    OneSignal.Notifications.addEventListener('click', (event: any) => {
       const data = event.notification.additionalData;
       this.handleNotificationOpened(data);
     });
 
-    OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
+    OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
       event.preventDefault();
       event.notification.display();
     });
@@ -78,14 +89,49 @@ class NotificationService {
     console.log('[OneSignal] Dados da notificação:', data);
   }
 
-  async registerDevice(usuarioId: number): Promise<boolean> {
+  private registering: Promise<boolean> | null = null;
+
+  // O AuthContext pode chamar isto duas vezes quase juntas (restaurar sessão + login); reaproveita a chamada em andamento
+  registerDevice(usuarioId: number): Promise<boolean> {
+    if (!this.registering) {
+      this.registering = this.doRegisterDevice(usuarioId).finally(() => {
+        this.registering = null;
+      });
+    }
+    return this.registering;
+  }
+
+  async unregisterDevice(): Promise<void> {
+    try {
+      if (!OneSignal) return;
+      const playerId: string | null = await OneSignal.User.pushSubscription.getIdAsync();
+      if (playerId) {
+        await api.post<ResponseModel<number>>('/ExpoTokens/token/desativar', { token: playerId });
+      }
+      OneSignal.logout();
+    } catch (error) {
+      console.error('[NotificationService] Erro ao desativar dispositivo:', error);
+    } finally {
+      this.currentUserId = null;
+    }
+  }
+
+  private async doRegisterDevice(usuarioId: number): Promise<boolean> {
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-      
+      let playerId: string | null = null;
+
+      if (OneSignal) {
+        playerId = await OneSignal.User.pushSubscription.getIdAsync();
+      }
+
       if (!playerId) {
-        console.error('[NotificationService] Player ID não disponível');
+        if (isExpoGo) {
+          console.log('[NotificationService] Expo Go detectado — registro de notificações ignorado.');
+        } else {
+          console.error('[NotificationService] Player ID não disponível');
+        }
         return false;
       }
 
@@ -103,6 +149,8 @@ class NotificationService {
 
       if (response.status) {
         this.currentUserId = usuarioId;
+        // Associa a inscrição deste aparelho ao usuário no OneSignal (desfeito no logout)
+        OneSignal?.login(String(usuarioId));
         return true;
       } else {
         console.error('[NotificationService] Erro ao registrar:', response.mensagem);
@@ -212,6 +260,24 @@ class NotificationService {
       return response.status;
     } catch (error) {
       console.error('[NotificationService] Erro ao marcar todas como lidas:', error);
+      return false;
+    }
+  }
+
+  async clearAll(usuarioId?: number): Promise<boolean> {
+    try {
+      const userId = usuarioId || this.currentUserId;
+      if (!userId) {
+        console.error('[NotificationService] ID do usuário não definido');
+        return false;
+      }
+
+      const response = await api.delete<ResponseModel<number>>(
+        `/ExpoTokens/notificacoes/usuario/${userId}`
+      );
+      return response.status;
+    } catch (error) {
+      console.error('[NotificationService] Erro ao limpar notificações:', error);
       return false;
     }
   }

@@ -10,6 +10,8 @@ export const mapTipoToRole = (tipo: number): UserRole => {
       return 'sindico';
     case 3:
       return 'coletor';
+    case 4:
+      return 'proprietario';
     default:
       return 'coletor';
   }
@@ -23,6 +25,8 @@ export const mapRoleToTipo = (role: UserRole): number => {
       return 2;
     case 'coletor':
       return 3;
+    case 'proprietario':
+      return 4;
     default:
       return 0;
   }

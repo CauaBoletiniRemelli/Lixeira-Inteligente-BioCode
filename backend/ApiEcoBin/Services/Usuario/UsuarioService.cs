@@ -75,6 +75,14 @@ namespace ApiEcoBin.Services.Usuarios
             
             try
             {
+                UsuariosModel? usuarioExistente = await _context.Usuarios.FirstOrDefaultAsync(user => user.Email == userCreateDTO.Email);
+                if (usuarioExistente != null)
+                {
+                    response.Mensagem = "Já existe um usuário cadastrado com este e-mail.";
+                    response.Status = false;
+                    return response;
+                }
+
                 UsuariosModel usuario = new()
                 {
                     Nome = userCreateDTO.Nome,

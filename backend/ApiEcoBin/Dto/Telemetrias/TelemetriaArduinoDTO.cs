@@ -22,6 +22,21 @@ namespace ApiEcoBin.Dto.Telemetrias
 
         public int? Bateria { get; set; }
 
+        // Alimentação solar (opcionais). Tensões medidas com divisor de tensão nos pinos analógicos.
+        public float? TensaoBateria { get; set; }
+
+        public float? TensaoPainel { get; set; }
+
+        /// <summary>
+        /// Corrente de carga do painel em mA. Requer sensor de corrente (ex.: INA219); omitir se não houver.
+        /// </summary>
+        public float? CorrentePainel { get; set; }
+
+        /// <summary>
+        /// Se omitido, o backend considera "carregando" quando TensaoPainel &gt; TensaoBateria.
+        /// </summary>
+        public bool? Carregando { get; set; }
+
         public string? DataHora { get; set; }
     }
 }

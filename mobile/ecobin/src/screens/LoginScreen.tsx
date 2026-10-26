@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, ScrollView, TouchableOpacity, TextInput, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Button, Input, PasswordInput } from '../components';
@@ -8,6 +8,9 @@ import { COLORS, SPACING } from '../constants';
 import { isValidEmail } from '../utils';
 import { handleApiError, showApiAlert } from '../utils';
 import Alerta from '../components/Alert';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const LOGO_SIZE = Math.min(180, SCREEN_WIDTH * 0.45);
 
 interface LoginScreenProps {
     onNavigateToSignUp?: () => void;
@@ -62,12 +65,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView
@@ -155,11 +158,12 @@ const styles = StyleSheet.create({
     logoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingTop: SPACING.md * 1.5,
+        paddingTop: SCREEN_HEIGHT * 0.04,
+        paddingBottom: SPACING.xs,
     },
     logo: {
-        width: 200,
-        height: 200,
+        width: LOGO_SIZE,
+        height: LOGO_SIZE,
     },
     formContainer: {
         flex: 1,

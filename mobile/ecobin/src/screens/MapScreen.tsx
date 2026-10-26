@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, FlatList, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, FlatList, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { MapView, Marker, type Region, type MapViewRef } from '../components';
+import { KeyboardAvoider, MapView, Marker, type Region, type MapViewRef } from '../components';
 import * as Location from 'expo-location';
 import { useAuth } from '../contexts/AuthContext';
 import { BackButton, Loading } from '../components';
@@ -27,6 +27,8 @@ interface Sensor {
     deviceId?: string;
     ultimaAtualizacao?: string;
 }
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const INITIAL_REGION = {
     latitude: -23.5013,
@@ -113,8 +115,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
             return null;
         }
 
-        const telemetria = apiSensor.telemetrias && apiSensor.telemetrias.length > 0
-            ? apiSensor.telemetrias[0]
+        const telemetrias = apiSensor.telemetrias;
+        const telemetria = telemetrias && telemetrias.length > 0
+            ? telemetrias.reduce((a, b) => (a.momento > b.momento ? a : b))
             : null;
 
         const level = telemetria?.nivelOcupacao || apiSensor.nivelAtual || 0;
@@ -144,33 +147,50 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
         };
     };
 
-    const loadSensors = async () => {
+    const loadSensors = async (condominiumList?: Condominium[]) => {
         try {
             setLoading(true);
-            let response;
+            const condoList = condominiumList ?? condominiums;
 
             if (isAdmin) {
                 if (selectedCondominium === 'Todos') {
-                    response = await sensorService.getAll();
-                } else {
-                    const selectedCondoId = condominiums.find(c => c.nome === selectedCondominium)?.id;
-                    if (selectedCondoId) {
-                        response = await sensorService.getByCondominio(parseInt(selectedCondoId));
+                    if (condoList.length > 0) {
+                        const results = await Promise.all(
+                            condoList.map(c => sensorService.getByCondominio(parseInt(c.id)).catch(() => null))
+                        );
+                        const allSensors = results
+                            .flatMap(r => r?.dados ?? [])
+                            .map(convertSensor)
+                            .filter((s): s is Sensor => s !== null);
+                        setSensors(allSensors);
                     } else {
-                        response = await sensorService.getAll();
+                        const response = await sensorService.getAll();
+                        if (response?.dados) {
+                            setSensors(
+                                response.dados.map(convertSensor).filter((s): s is Sensor => s !== null)
+                            );
+                        }
+                    }
+                } else {
+                    const selectedCondoId = condoList.find(c => c.nome === selectedCondominium)?.id;
+                    if (selectedCondoId) {
+                        const response = await sensorService.getByCondominio(parseInt(selectedCondoId));
+                        if (response?.dados) {
+                            setSensors(
+                                response.dados.map(convertSensor).filter((s): s is Sensor => s !== null)
+                            );
+                        }
                     }
                 }
             } else {
                 if (user?.condominiumId) {
-                    response = await sensorService.getByCondominio(user.condominiumId);
+                    const response = await sensorService.getByCondominio(user.condominiumId);
+                    if (response?.dados) {
+                        setSensors(
+                            response.dados.map(convertSensor).filter((s): s is Sensor => s !== null)
+                        );
+                    }
                 }
-            }
-
-            if (response?.dados) {
-                const convertedSensors = response.dados
-                    .map(convertSensor)
-                    .filter((sensor): sensor is Sensor => sensor !== null);
-                setSensors(convertedSensors);
             }
         } catch (error: any) {
             console.error('Erro ao carregar sensores:', error);
@@ -193,6 +213,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                         nome: cond.nome,
                     }));
                     setCondominiums(condoList);
+                    loadSensors(condoList);
                 }
             } catch (error) {
                 console.error('❌ Erro ao carregar condomínios:', error);
@@ -379,7 +400,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
 
             <View style={styles.header}>
@@ -435,8 +456,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                     ]}
                                     onPress={() => setSelectedFilter(selectedFilter === 'empty' ? 'all' : 'empty')}
                                 >
-                                    <Ionicons name="location" size={20} color={COLORS.success} />
-                                    <Text style={styles.filterButtonText}>Vazias/Baixo</Text>
+                                    <Ionicons name="location" size={16} color={COLORS.success} />
+                                    <Text style={styles.filterButtonText} numberOfLines={1}>Vazias/Baixo</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -446,8 +467,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                     ]}
                                     onPress={() => setSelectedFilter(selectedFilter === 'medium' ? 'all' : 'medium')}
                                 >
-                                    <Ionicons name="location" size={20} color={COLORS.warning} />
-                                    <Text style={styles.filterButtonText}>Médias</Text>
+                                    <Ionicons name="location" size={16} color={COLORS.warning} />
+                                    <Text style={styles.filterButtonText} numberOfLines={1}>Médias</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -457,8 +478,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                     ]}
                                     onPress={() => setSelectedFilter(selectedFilter === 'full' ? 'all' : 'full')}
                                 >
-                                    <Ionicons name="location" size={20} color={COLORS.error} />
-                                    <Text style={styles.filterButtonText}>Cheias</Text>
+                                    <Ionicons name="location" size={16} color={COLORS.error} />
+                                    <Text style={styles.filterButtonText} numberOfLines={1}>Cheias</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -475,7 +496,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                         <View style={styles.sensorListContainer}>
                             <View style={styles.sensorListHeader}>
                                 <Text style={styles.sensorListTitle}>
-                                    {isAdmin ? 'Sensores' : 'Meus Sensores'} ({filteredSensors.length})
+                                    {isAdmin ? 'Sensores' : `Sensores do ${user?.condominiumName}`} ({filteredSensors.length})
                                 </Text>
                             </View>
 
@@ -498,12 +519,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                                                         styles.levelText,
                                                         { color: getStatusColor(sensor.status) },
                                                     ]}
+                                                    numberOfLines={1}
+                                                    adjustsFontSizeToFit
+                                                    minimumFontScale={0.6}
                                                 >
                                                     {sensor.level}%
                                                 </Text>
                                             </View>
                                             <View style={styles.sensorInfo}>
-                                                <Text style={styles.sensorName}>{sensor.name}</Text>
+                                                <Text style={styles.sensorName} numberOfLines={1}>{sensor.name}</Text>
                                                 <Text
                                                     style={[
                                                         styles.sensorStatus,
@@ -666,6 +690,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                     animationType="fade"
                     onRequestClose={() => setShowCondominiumModal(false)}
                 >
+                    <KeyboardAvoider>
                     <TouchableOpacity
                         style={styles.modalOverlay}
                         activeOpacity={1}
@@ -744,6 +769,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ onNavigateToSensorSetup, o
                             />
                         </View>
                     </TouchableOpacity>
+                    </KeyboardAvoider>
                 </Modal>
             )}
         </SafeAreaView>
@@ -764,7 +790,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     mapContainer: {
-        height: 300,
+        height: Math.round(SCREEN_HEIGHT * 0.35),
         position: 'relative',
     },
     map: {
@@ -797,12 +823,12 @@ const styles = StyleSheet.create({
     },
     filterButton: {
         flex: 1,
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: SPACING.xs,
+        gap: 3,
         paddingVertical: SPACING.sm,
-        paddingHorizontal: SPACING.xs,
+        paddingHorizontal: 2,
         backgroundColor: COLORS.background,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -813,9 +839,10 @@ const styles = StyleSheet.create({
         borderColor: COLORS.primary,
     },
     filterButtonText: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: '500',
         color: COLORS.text.primary,
+        textAlign: 'center',
     },
     addButton: {
         backgroundColor: COLORS.success,
@@ -867,16 +894,19 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.sm,
     },
     levelCircle: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
         borderWidth: 3,
         justifyContent: 'center',
         alignItems: 'center',
+        flexShrink: 0,
+        paddingHorizontal: 4,
     },
     levelText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: 'bold',
+        textAlign: 'center',
     },
     sensorInfo: {
         flex: 1,
@@ -1073,7 +1103,7 @@ const styles = StyleSheet.create({
         color: COLORS.text.primary,
     },
     modalList: {
-        maxHeight: 400,
+        maxHeight: Math.round(SCREEN_HEIGHT * 0.4),
     },
     condominiumOption: {
         flexDirection: 'row',

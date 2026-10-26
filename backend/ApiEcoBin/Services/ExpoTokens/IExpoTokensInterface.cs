@@ -8,6 +8,8 @@ namespace ApiEcoBin.Services.ExpoTokens
         Task<ResponseModel<ExpoTokensModel>> SalvarTokenAsync(ExpoTokenCreateDTO dto);
         Task<ResponseModel<List<ExpoTokensModel>>> ListarTokensPorUsuarioAsync(int usuarioId);
         Task<ResponseModel<ExpoTokensModel>> DesativarTokenAsync(int tokenId);
+        Task<ResponseModel<int>> DesativarTokenPorPlayerIdAsync(string playerId);
+        Task<ResponseModel<int>> LimparNotificacoesUsuarioAsync(int usuarioId);
         Task<ResponseModel<List<NotificacoesModel>>> EnviarNotificacaoParaTodosAsync(NotificacaoCreateDTO dto);
         Task<ResponseModel<List<NotificacoesModel>>> EnviarNotificacaoParaUsuariosAsync(NotificacaoEnviarDTO dto);
         Task<ResponseModel<NotificacoesModel>> EnviarNotificacaoParaUsuarioAsync(int usuarioId, NotificacaoCreateDTO dto);

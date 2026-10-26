@@ -9,7 +9,7 @@ import { userService } from '../services';
 import { User } from '../types';
 import { mapTipoToRole } from '../utils';
 
-type UserRole = 'coletor' | 'sindico' | 'admin';
+type UserRole = 'coletor' | 'sindico' | 'admin' | 'proprietario';
 
 interface UserManagementScreenProps {
     onBack: () => void;
@@ -63,6 +63,7 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
             case 'coletor': return 'Coletor';
             case 'sindico': return 'Síndico';
             case 'admin': return 'Admin';
+            case 'proprietario': return 'Proprietário';
         }
     };
 
@@ -71,6 +72,7 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
             case 'coletor': return '#4CAF50';
             case 'sindico': return '#2196F3';
             case 'admin': return '#FF9800';
+            case 'proprietario': return '#9C27B0';
         }
     };
 
@@ -83,7 +85,7 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
                 <StatusBar style="dark" />
                 <Loading />
             </SafeAreaView>
@@ -91,7 +93,7 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
 
             <View style={styles.header}>
@@ -136,6 +138,15 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({
                     >
                         <Text style={[styles.chipText, selectedFilter === 'admin' && styles.chipTextActive]}>
                             Administradores
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.chip, selectedFilter === 'proprietario' && styles.chipActive]}
+                        onPress={() => setSelectedFilter(selectedFilter === 'proprietario' ? 'all' : 'proprietario')}
+                    >
+                        <Text style={[styles.chipText, selectedFilter === 'proprietario' && styles.chipTextActive]}>
+                            Proprietários
                         </Text>
                     </TouchableOpacity>
                 </View>

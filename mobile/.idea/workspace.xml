@@ -5,10 +5,50 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="058c9e4c-62e7-4f29-b746-af212f07b4e4" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../.vs/slnx.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/../.vs/slnx.sqlite" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Dto/Sensores/SensorCreateDTO.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Dto/Sensores/SensorCreateDTO.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Dto/Sensores/SensorEditDTO.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Dto/Sensores/SensorEditDTO.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Enums/TipoUsuario.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Enums/TipoUsuario.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Migrations/AppDbContextModelSnapshot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Migrations/AppDbContextModelSnapshot.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Models/SensoresModel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Models/SensoresModel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/Auth/AuthService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/Auth/AuthService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/ExpoTokens/ExpoTokensService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/ExpoTokens/ExpoTokensService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/Sensores/SensoresService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/Sensores/SensoresService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/TokenService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/TokenService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/Usuario/UsuarioService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/ApiEcoBin/Services/Usuario/UsuarioService.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/app.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ecobin/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ecobin/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/components/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/components/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/contexts/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/contexts/AuthContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/navigation/AuthNavigator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/navigation/AuthNavigator.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/navigation/MainNavigator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/navigation/MainNavigator.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/CondominiumFormScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/CondominiumFormScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/CondominiumManagementScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/CondominiumManagementScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/ForgotPasswordScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/ForgotPasswordScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/HomeScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/HomeScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/LoginScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/LoginScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/MapScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/MapScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/NotificationsScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/NotificationsScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/ProfileScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/ProfileScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/QRCodeManagementScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/QRCodeManagementScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/QRCodeScannerScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/QRCodeScannerScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorFormScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorFormScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorLocationEditScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorLocationEditScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorSetupSuccessScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorSetupSuccessScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiConfigScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiConfigScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiSetupScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/SensorWiFiSetupScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/UserFormScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/UserFormScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/UserManagementScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/UserManagementScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/screens/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/screens/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/services/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/services/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/services/notificationService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/services/notificationService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/services/provisionamentoService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/services/provisionamentoService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/utils/mockData.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ecobin/src/utils/roleMapper.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ecobin/src/utils/roleMapper.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
 import { 
     HomeScreen, 
     MapScreen, 
@@ -14,7 +16,10 @@ import {
     QRCodeManagementScreen,
     SensorWiFiConfigScreen,
     SensorWiFiSetupScreen,
-    NotificationsScreen
+    NotificationsScreen,
+    DashboardScreen,
+    ColetorDashboardScreen,
+    CondominoScreen,
 } from '../screens';
 import { COLORS, SPACING } from '../constants';
 import { User } from '../types';
@@ -32,7 +37,9 @@ type ManagementScreen =
     | 'qrScanner' 
     | 'sensorWiFiConfig'
     | 'sensorWiFiSetup' 
-    | 'notifications';
+    | 'notifications'
+    | 'dashboard'
+    | 'condominoHome';
 
 interface Condominium {
     id: number;
@@ -43,6 +50,8 @@ interface Condominium {
 }
 
 export const MainNavigator: React.FC = () => {
+    const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = React.useState<TabScreen>('home');
     const [managementScreen, setManagementScreen] = React.useState<ManagementScreen | null>(null);
     const [editingUser, setEditingUser] = React.useState<User | undefined>(undefined);
@@ -76,6 +85,14 @@ export const MainNavigator: React.FC = () => {
 
     const handleNavigateToNotifications = () => {
         setManagementScreen('notifications');
+    };
+
+    const handleNavigateToDashboard = () => {
+        setManagementScreen('dashboard');
+    };
+
+    const handleNavigateToCondominoHome = () => {
+        setManagementScreen('condominoHome');
     };
 
     const handleNavigateToQRCodeManagement = () => {
@@ -113,6 +130,44 @@ export const MainNavigator: React.FC = () => {
         setQRCodeData(null);
         setScannedSensorId('');
     };
+
+    useEffect(() => {
+        const backAction = () => {
+            if (managementScreen) {
+                switch (managementScreen) {
+                    case 'userForm':
+                        handleBackToUserManagement();
+                        return true;
+                    case 'condominiumForm':
+                        handleBackToCondominiumManagement();
+                        return true;
+                    case 'sensorForm':
+                        setManagementScreen('qrScanner');
+                        return true;
+                    case 'sensorWiFiConfig':
+                        setManagementScreen('sensorForm');
+                        return true;
+                    case 'sensorWiFiSetup':
+                        setManagementScreen('qrScanner');
+                        return true;
+                    default:
+                        handleBackToHome();
+                        return true;
+                }
+            }
+            if (activeTab === 'map') {
+                setActiveTab('home');
+                return true;
+            }
+            if (activeTab === 'profile') {
+                setActiveTab('home');
+                return true;
+            }
+            return false;
+        };
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, [managementScreen, activeTab]);
 
     const handleBackToUserManagement = () => {
         setManagementScreen('userManagement');
@@ -218,6 +273,17 @@ export const MainNavigator: React.FC = () => {
             );
         }
 
+        if (managementScreen === 'dashboard') {
+            // O coletor vê uma visão operacional (o que recolher); gestão fica para síndico e admin
+            return user?.role === 'coletor'
+                ? <ColetorDashboardScreen onBack={handleBackToHome} />
+                : <DashboardScreen onBack={handleBackToHome} />;
+        }
+
+        if (managementScreen === 'condominoHome') {
+            return <CondominoScreen onBack={handleBackToHome} />;
+        }
+
         return null;
     };
 
@@ -240,6 +306,8 @@ export const MainNavigator: React.FC = () => {
                         onNavigateToQRCodeManagement={handleNavigateToQRCodeManagement}
                         onNavigateToMap={handleNavigateToMap}
                         onNavigateToNotifications={handleNavigateToNotifications}
+                        onNavigateToDashboard={handleNavigateToDashboard}
+                        onNavigateToCondominoHome={handleNavigateToCondominoHome}
                     />
                 );
             case 'map':
@@ -258,6 +326,8 @@ export const MainNavigator: React.FC = () => {
                         onNavigateToCondominiumManagement={handleNavigateToCondominiumManagement}
                         onNavigateToSensorSetup={handleNavigateToSensorSetup}
                         onNavigateToMap={handleNavigateToMap}
+                        onNavigateToDashboard={handleNavigateToDashboard}
+                        onNavigateToCondominoHome={handleNavigateToCondominoHome}
                     />
                 );
         }
@@ -274,7 +344,7 @@ export const MainNavigator: React.FC = () => {
             <View style={styles.content}>{renderScreen()}</View>
 
             {!shouldHideTabBar && (
-                <View style={styles.tabBar}>
+                <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, SPACING.sm) }]}>
                     <TouchableOpacity
                         style={styles.tab}
                         onPress={() => setActiveTab('home')}
@@ -315,7 +385,6 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surface,
         borderTopWidth: 1,
         borderTopColor: COLORS.border,
-        paddingBottom: SPACING.sm,
         paddingTop: SPACING.xs,
         shadowColor: '#000',
         shadowOffset: {

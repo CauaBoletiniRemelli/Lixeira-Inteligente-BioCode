@@ -16,7 +16,13 @@ export const ProfileScreen: React.FC = () => {
 
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
-    const [userType, setUserType] = useState(user?.role === 'admin' ? 'Administrador' : user?.role === 'sindico' ? 'Síndico' : 'Coletor');
+    const [userType, setUserType] = useState(
+        user?.role === 'admin' ? 'Administrador' :
+        user?.role === 'sindico' ? 'Síndico' :
+        user?.role === 'proprietario' ? 'Morador' :
+        user?.role === 'coletor' ? 'Coletor' :
+        'Não Identificado'
+    );
     const [condominium, setCondominium] = useState(user?.condominiumName || 'Nenhum condomínio associado');
     const [loading, setLoading] = useState(false);
 
@@ -50,15 +56,25 @@ export const ProfileScreen: React.FC = () => {
             const response = await userService.getById(String(user.id));
 
             if (response.status && response.dados) {
+                console.log('✅ Dados do usuário carregados com sucesso:', response.dados);
                 const userData = response.dados;
                 setName(userData.nome || '');
                 setEmail(userData.email || '');
 
                 const role = mapTipoToRole(userData.tipo);
-                const roleLabel = role === 'admin' ? 'Administrador' : role === 'sindico' ? 'Síndico' : 'Coletor';
+                const roleLabel =
+                    role === 'admin' ? 'Administrador' :
+                    role === 'sindico' ? 'Síndico' :
+                    role === 'proprietario' ? 'Morador' :
+                    role === 'coletor' ? 'Coletor' :
+                    'Não Identificado'  ;
                 setUserType(roleLabel);
-
-                setCondominium(userData.condominio || 'Nenhum condomínio associado');
+                console.log('🏢 Condomínio do usuário:', userData.condominio, 'ID:', userData.condominioId);
+                setCondominium(
+                    userData.condominio ||
+                    user?.condominiumName ||
+                    'Nenhum condomínio associado'
+                );
             }
         } catch (error) {
             console.error('❌ Erro ao carregar dados do usuário:', error);
@@ -199,7 +215,7 @@ export const ProfileScreen: React.FC = () => {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
                 <StatusBar style="dark" />
                 <Loading />
             </SafeAreaView>
@@ -207,7 +223,7 @@ export const ProfileScreen: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <ScrollView
                 style={styles.scrollView}
