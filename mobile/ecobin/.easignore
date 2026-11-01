@@ -1,7 +1,0 @@
-backend/
-.vs/
-.git/
-bin/
-obj/
-android/.gradle
-.gradle

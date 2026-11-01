@@ -1,0 +1,14 @@
+# Lido pelo EAS a partir da raiz do repositório (substitui o .gitignore no upload)
+.git/
+.vs/
+.idea/
+backend/
+docs/
+**/bin/
+**/obj/
+**/node_modules/
+**/.gradle/
+**/android/build/
+**/android/app/build/
+**/android/app/.cxx/
+**/.expo/
