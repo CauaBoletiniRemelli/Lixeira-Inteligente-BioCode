@@ -30,6 +30,8 @@ export interface AtivarQRRequest {
   nomeSensor?: string;
   latitude?: number;
   longitude?: number;
+  tipoLixeira?: number;
+  capacidadeLitros?: number;
 }
 
 export interface AtivarQRResponse {

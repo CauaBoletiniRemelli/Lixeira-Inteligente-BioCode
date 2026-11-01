@@ -45,9 +45,12 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
         try {
             setRecovering(true);
             setLoading(true);
-            await authService.forgotPassword({ usuEmail: email });
+            const response = await authService.forgotPassword({ usuEmail: email.trim() });
+            if (__DEV__) console.log('[ForgotPassword] resposta:', JSON.stringify(response));
+            // Mensagem genérica de propósito: não revela se o e-mail está cadastrado
             showAlert('Caso o e-mail esteja cadastrado, você receberá instruções para recuperar sua senha.', 'success');
-        } catch (error) {
+        } catch (error: any) {
+            console.error('[ForgotPassword] erro:', error?.response?.status, JSON.stringify(error?.response?.data ?? error?.message));
             showAlert('Falha ao enviar email de recuperação. Tente novamente.', 'error');
         } finally {
             setLoading(false);
@@ -56,13 +59,13 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
             <HeaderWithLogo onBackPress={onBackToLogin} />
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

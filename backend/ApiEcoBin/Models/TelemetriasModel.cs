@@ -26,6 +26,21 @@ namespace ApiEcoBin.Models
         [Column("TELTemperatura", TypeName = "decimal(6,2)")]
         public decimal? Temperatura { get; set; }
 
+        [Column("TELTensaoBateria", TypeName = "decimal(5,2)")]
+        public decimal? TensaoBateria { get; set; }
+
+        [Column("TELTensaoPainel", TypeName = "decimal(5,2)")]
+        public decimal? TensaoPainel { get; set; }
+
+        /// <summary>
+        /// Corrente de carga vinda do painel, em mA. Só preenchida quando houver sensor de corrente (ex.: INA219).
+        /// </summary>
+        [Column("TELCorrentePainel", TypeName = "decimal(8,2)")]
+        public decimal? CorrentePainel { get; set; }
+
+        [Column("TELCarregando")]
+        public bool? Carregando { get; set; }
+
         [Column("TELDadosBrutos", TypeName = "nvarchar(max)")]
         public string? DadosBrutos { get; set; }
 

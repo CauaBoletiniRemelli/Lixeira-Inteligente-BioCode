@@ -14,3 +14,6 @@ export * from './SensorLocationEditScreen';
 export * from './SensorWiFiConfigScreen';
 export * from './SensorWiFiSetupScreen';
 export * from './NotificationsScreen';
+export * from './DashboardScreen';
+export * from './ColetorDashboardScreen';
+export * from './CondominoScreen';

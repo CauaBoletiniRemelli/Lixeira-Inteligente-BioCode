@@ -1,4 +1,4 @@
-using ApiEcoBin.Data;
+Ôªøusing ApiEcoBin.Data;
 using ApiEcoBin.Dto.ExpoTokens;
 using ApiEcoBin.Models;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +21,8 @@ namespace ApiEcoBin.Services.ExpoTokens
             _context = context;
             _logger = logger;
             _configuration = configuration;
-            _oneSignalAppId = _configuration["OneSignal:AppId"] ?? throw new InvalidOperationException("OneSignal AppId n„o configurado");
-            _oneSignalApiKey = _configuration["OneSignal:ApiKey"] ?? throw new InvalidOperationException("OneSignal ApiKey n„o configurada");
+            _oneSignalAppId = _configuration["OneSignal:AppId"] ?? throw new InvalidOperationException("OneSignal AppId n√£o configurado");
+            _oneSignalApiKey = _configuration["OneSignal:ApiKey"] ?? throw new InvalidOperationException("OneSignal ApiKey n√£o configurada");
         }
 
         public async Task<ResponseModel<ExpoTokensModel>> SalvarTokenAsync(ExpoTokenCreateDTO dto)
@@ -31,26 +31,24 @@ namespace ApiEcoBin.Services.ExpoTokens
 
             try
             {
+                // O Player ID identifica o aparelho: procura primeiro por ele, depois pelo aparelho do usu√°rio
                 var tokenExistente = await _context.ExpoTokens
-                    .FirstOrDefaultAsync(t => t.UsuarioId == dto.UsuarioId
-                                           && t.Dispositivo == dto.Dispositivo
-                                           && t.Ativo);
+                    .Where(t => t.UsuarioId == dto.UsuarioId && t.Ativo
+                             && (t.Token == dto.Token || t.Dispositivo == dto.Dispositivo))
+                    .OrderByDescending(t => t.Token == dto.Token)
+                    .FirstOrDefaultAsync();
 
                 if (tokenExistente != null)
                 {
                     tokenExistente.Token = dto.Token;
+                    tokenExistente.Dispositivo = dto.Dispositivo;
                     tokenExistente.Plataforma = dto.Plataforma;
                     tokenExistente.UltimaAtualizacao = DateTime.UtcNow;
-
-                    _context.ExpoTokens.Update(tokenExistente);
-                    await _context.SaveChangesAsync();
-
-                    response.Dados = tokenExistente;
                     response.Mensagem = "Token atualizado com sucesso!";
                 }
                 else
                 {
-                    var novoToken = new ExpoTokensModel
+                    tokenExistente = new ExpoTokensModel
                     {
                         UsuarioId = dto.UsuarioId,
                         Token = dto.Token,
@@ -59,13 +57,23 @@ namespace ApiEcoBin.Services.ExpoTokens
                         DataCriacao = DateTime.UtcNow,
                         Ativo = true
                     };
-
-                    await _context.ExpoTokens.AddAsync(novoToken);
-                    await _context.SaveChangesAsync();
-
-                    response.Dados = novoToken;
+                    await _context.ExpoTokens.AddAsync(tokenExistente);
                     response.Mensagem = "Token salvo com sucesso!";
                 }
+
+                // Um aparelho pertence s√≥ √† √∫ltima conta que entrou nele; desativa c√≥pias e registros de outras contas
+                var duplicados = await _context.ExpoTokens
+                    .Where(t => t.Ativo && t.Id != tokenExistente.Id
+                             && (t.Token == dto.Token || (t.UsuarioId == dto.UsuarioId && t.Dispositivo == dto.Dispositivo)))
+                    .ToListAsync();
+                foreach (var duplicado in duplicados)
+                {
+                    duplicado.Ativo = false;
+                    duplicado.UltimaAtualizacao = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                response.Dados = tokenExistente;
 
                 response.Status = true;
             }
@@ -115,7 +123,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (token == null)
                 {
                     response.Status = false;
-                    response.Mensagem = "Token n„o encontrado.";
+                    response.Mensagem = "Token n√£o encontrado.";
                     return response;
                 }
 
@@ -139,6 +147,100 @@ namespace ApiEcoBin.Services.ExpoTokens
             return response;
         }
 
+        public async Task<ResponseModel<int>> LimparNotificacoesUsuarioAsync(int usuarioId)
+        {
+            var response = new ResponseModel<int>();
+
+            try
+            {
+                int removidas = await _context.Notificacoes
+                    .Where(n => n.UsuarioId == usuarioId)
+                    .ExecuteDeleteAsync();
+
+                response.Dados = removidas;
+                response.Status = true;
+                response.Mensagem = $"{removidas} notifica√ß√£o(√µes) removida(s).";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao limpar notifica√ß√µes do usu√°rio");
+                response.Status = false;
+                response.Mensagem = $"Erro ao limpar notifica√ß√µes: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ResponseModel<int>> DesativarTokenPorPlayerIdAsync(string playerId)
+        {
+            var response = new ResponseModel<int>();
+
+            try
+            {
+                var tokens = await _context.ExpoTokens
+                    .Where(t => t.Token == playerId && t.Ativo)
+                    .ToListAsync();
+
+                foreach (var token in tokens)
+                {
+                    token.Ativo = false;
+                    token.UltimaAtualizacao = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                response.Dados = tokens.Count;
+                response.Status = true;
+                response.Mensagem = $"{tokens.Count} token(s) desativado(s).";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao desativar token por Player ID");
+                response.Status = false;
+                response.Mensagem = $"Erro ao desativar token: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        // Grava uma notifica√ß√£o por usu√°rio (n√£o por aparelho) e manda cada Player ID uma √∫nica vez ao OneSignal
+        private async Task<List<NotificacoesModel>> RegistrarEEnviarAsync(
+            List<ExpoTokensModel> tokens, string titulo, string mensagem, string? dadosRegistro, string? dadosPush)
+        {
+            var notificacoes = tokens
+                .GroupBy(t => t.UsuarioId)
+                .Select(g => new NotificacoesModel
+                {
+                    ExpoTokenId = g.OrderByDescending(t => t.UltimaAtualizacao ?? t.DataCriacao).First().Id,
+                    UsuarioId = g.Key,
+                    Titulo = titulo,
+                    Mensagem = mensagem,
+                    Dados = dadosRegistro,
+                    DataEnvio = DateTime.UtcNow
+                })
+                .ToList();
+
+            await _context.Notificacoes.AddRangeAsync(notificacoes);
+            await _context.SaveChangesAsync();
+
+            var playerIds = tokens
+                .Select(t => t.Token)
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Distinct()
+                .ToList();
+            var sucesso = await EnviarNotificacaoOneSignalAsync(playerIds!, titulo, mensagem, dadosPush);
+
+            notificacoes.ForEach(n =>
+            {
+                n.Enviada = sucesso;
+                if (!sucesso)
+                    n.Erro = "Erro ao enviar via OneSignal";
+            });
+            await _context.SaveChangesAsync();
+
+            return notificacoes;
+        }
+
         public async Task<ResponseModel<List<NotificacoesModel>>> EnviarNotificacaoParaTodosAsync(NotificacaoCreateDTO dto)
         {
             var response = new ResponseModel<List<NotificacoesModel>>();
@@ -157,46 +259,17 @@ namespace ApiEcoBin.Services.ExpoTokens
                     return response;
                 }
 
-                var notificacoes = new List<NotificacoesModel>();
-
-                foreach (var token in tokens)
-                {
-                    var notificacao = new NotificacoesModel
-                    {
-                        ExpoTokenId = token.Id,
-                        UsuarioId = token.UsuarioId,
-                        Titulo = dto.Titulo,
-                        Mensagem = dto.Mensagem,
-                        Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
-                    };
-
-                    notificacoes.Add(notificacao);
-                }
-
-                await _context.Notificacoes.AddRangeAsync(notificacoes);
-                await _context.SaveChangesAsync();
-
-                var playerIds = tokens.Select(t => t.Token!).ToList();
-                var sucesso = await EnviarNotificacaoOneSignalAsync(playerIds, dto.Titulo!, dto.Mensagem!, dto.Dados);
-
-                notificacoes.ForEach(n =>
-                {
-                    n.Enviada = sucesso;
-                    if (!sucesso)
-                        n.Erro = "Erro ao enviar via OneSignal";
-                });
-                await _context.SaveChangesAsync();
+                var notificacoes = await RegistrarEEnviarAsync(tokens, dto.Titulo!, dto.Mensagem!, dto.Dados, dto.Dados);
 
                 response.Dados = notificacoes;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) processada(s)!";
+                response.Mensagem = $"{notificacoes.Count} notifica√ß√£o(√µes) processada(s)!";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao enviar notificaÁıes para todos");
+                _logger.LogError(ex, "Erro ao enviar notifica√ß√µes para todos");
                 response.Status = false;
-                response.Mensagem = $"Erro ao enviar notificaÁıes: {ex.Message}";
+                response.Mensagem = $"Erro ao enviar notifica√ß√µes: {ex.Message}";
             }
 
             return response;
@@ -226,50 +299,21 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (!tokens.Any())
                 {
                     response.Status = false;
-                    response.Mensagem = "Nenhum token ativo encontrado para os usu·rios especificados.";
+                    response.Mensagem = "Nenhum token ativo encontrado para os usu√°rios especificados.";
                     return response;
                 }
 
-                var notificacoes = new List<NotificacoesModel>();
-
-                foreach (var token in tokens)
-                {
-                    var notificacao = new NotificacoesModel
-                    {
-                        ExpoTokenId = token.Id,
-                        UsuarioId = token.UsuarioId,
-                        Titulo = dto.Titulo,
-                        Mensagem = dto.Mensagem,
-                        Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
-                    };
-
-                    notificacoes.Add(notificacao);
-                }
-
-                await _context.Notificacoes.AddRangeAsync(notificacoes);
-                await _context.SaveChangesAsync();
-
-                var playerIds = tokens.Select(t => t.Token!).ToList();
-                var sucesso = await EnviarNotificacaoOneSignalAsync(playerIds, dto.Titulo!, dto.Mensagem!, dto.Dados);
-
-                notificacoes.ForEach(n =>
-                {
-                    n.Enviada = sucesso;
-                    if (!sucesso)
-                        n.Erro = "Erro ao enviar via OneSignal";
-                });
-                await _context.SaveChangesAsync();
+                var notificacoes = await RegistrarEEnviarAsync(tokens, dto.Titulo!, dto.Mensagem!, dto.Dados, dto.Dados);
 
                 response.Dados = notificacoes;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) processada(s)!";
+                response.Mensagem = $"{notificacoes.Count} notifica√ß√£o(√µes) processada(s)!";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao enviar notificaÁıes para usu·rios especÌficos");
+                _logger.LogError(ex, "Erro ao enviar notifica√ß√µes para usu√°rios espec√≠ficos");
                 response.Status = false;
-                response.Mensagem = $"Erro ao enviar notificaÁıes: {ex.Message}";
+                response.Mensagem = $"Erro ao enviar notifica√ß√µes: {ex.Message}";
             }
 
             return response;
@@ -288,43 +332,22 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (!tokens.Any())
                 {
                     response.Status = false;
-                    response.Mensagem = "Nenhum token ativo encontrado para este usu·rio.";
+                    response.Mensagem = "Nenhum token ativo encontrado para este usu√°rio.";
                     return response;
                 }
 
-                var token = tokens.First();
-
-                var notificacao = new NotificacoesModel
-                {
-                    ExpoTokenId = token.Id,
-                    UsuarioId = usuarioId,
-                    Titulo = dto.Titulo,
-                    Mensagem = dto.Mensagem,
-                    Dados = dto.Dados,
-                    DataEnvio = DateTime.UtcNow
-                };
-
-                await _context.Notificacoes.AddAsync(notificacao);
-                await _context.SaveChangesAsync();
-
-                var playerIds = new List<string> { token.Token! };
-                var sucesso = await EnviarNotificacaoOneSignalAsync(playerIds, dto.Titulo!, dto.Mensagem!, dto.Dados);
-
-                notificacao.Enviada = sucesso;
-                if (!sucesso)
-                    notificacao.Erro = "Erro ao enviar via OneSignal";
-
-                await _context.SaveChangesAsync();
+                // Envia para todos os aparelhos ativos do usu√°rio (antes ia s√≥ para o primeiro da lista)
+                var notificacao = (await RegistrarEEnviarAsync(tokens, dto.Titulo!, dto.Mensagem!, dto.Dados, dto.Dados)).Single();
 
                 response.Dados = notificacao;
                 response.Status = true;
-                response.Mensagem = sucesso ? "NotificaÁ„o enviada com sucesso!" : "NotificaÁ„o salva, mas houve erro no envio.";
+                response.Mensagem = notificacao.Enviada ? "Notifica√ß√£o enviada com sucesso!" : "Notifica√ß√£o salva, mas houve erro no envio.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao enviar notificaÁ„o para usu·rio");
+                _logger.LogError(ex, "Erro ao enviar notifica√ß√£o para usu√°rio");
                 response.Status = false;
-                response.Mensagem = $"Erro ao enviar notificaÁ„o: {ex.Message}";
+                response.Mensagem = $"Erro ao enviar notifica√ß√£o: {ex.Message}";
             }
 
             return response;
@@ -344,7 +367,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (!usuariosCondominio.Any())
                 {
                     response.Status = false;
-                    response.Mensagem = "Nenhum usu·rio encontrado neste condomÌnio.";
+                    response.Mensagem = "Nenhum usu√°rio encontrado neste condom√≠nio.";
                     return response;
                 }
 
@@ -356,57 +379,27 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (tokens.Count == 0)
                 {
                     response.Status = false;
-                    response.Mensagem = "Nenhum token ativo encontrado para os usu·rios deste condomÌnio.";
+                    response.Mensagem = "Nenhum token ativo encontrado para os usu√°rios deste condom√≠nio.";
                     return response;
                 }
 
-                var notificacoes = new List<NotificacoesModel>();
-
-                foreach (var token in tokens)
-                {
-                    var notificacao = new NotificacoesModel
-                    {
-                        ExpoTokenId = token.Id,
-                        UsuarioId = token.UsuarioId,
-                        Titulo = dto.Titulo,
-                        Mensagem = dto.Mensagem,
-                        Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
-                    };
-
-                    notificacoes.Add(notificacao);
-                }
-
-                await _context.Notificacoes.AddRangeAsync(notificacoes);
-                await _context.SaveChangesAsync();
-
-                var playerIds = tokens.Select(t => t.Token!).ToList();
-                var dadosExtras = new
+                var dadosJson = JsonSerializer.Serialize(new
                 {
                     tipo = "condominio",
                     condominioId
-                };
-
-                var dadosJson = JsonSerializer.Serialize(dadosExtras);
-                var sucesso = await EnviarNotificacaoOneSignalAsync(playerIds, dto.Titulo!, dto.Mensagem!, dadosJson);
-
-                notificacoes.ForEach(n =>
-                {
-                    n.Enviada = sucesso;
-                    if (!sucesso)
-                        n.Erro = "Erro ao enviar via OneSignal";
                 });
-                await _context.SaveChangesAsync();
+
+                var notificacoes = await RegistrarEEnviarAsync(tokens, dto.Titulo!, dto.Mensagem!, dto.Dados, dadosJson);
 
                 response.Dados = notificacoes;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) enviada(s) para o condomÌnio!";
+                response.Mensagem = $"{notificacoes.Count} notifica√ß√£o(√µes) enviada(s) para o condom√≠nio!";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao enviar notificaÁıes para condomÌnio");
+                _logger.LogError(ex, "Erro ao enviar notifica√ß√µes para condom√≠nio");
                 response.Status = false;
-                response.Mensagem = $"Erro ao enviar notificaÁıes: {ex.Message}";
+                response.Mensagem = $"Erro ao enviar notifica√ß√µes: {ex.Message}";
             }
 
             return response;
@@ -426,7 +419,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (usuariosCondominio.Count == 0)
                 {
                     response.Status = false;
-                    response.Mensagem = $"Nenhum usu·rio do tipo '{dto.TipoUsuario}' encontrado neste condomÌnio.";
+                    response.Mensagem = $"Nenhum usu√°rio do tipo '{dto.TipoUsuario}' encontrado neste condom√≠nio.";
                     return response;
                 }
 
@@ -438,59 +431,29 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (!tokens.Any())
                 {
                     response.Status = false;
-                    response.Mensagem = $"Nenhum token ativo encontrado para os usu·rios do tipo '{dto.TipoUsuario}' neste condomÌnio.";
+                    response.Mensagem = $"Nenhum token ativo encontrado para os usu√°rios do tipo '{dto.TipoUsuario}' neste condom√≠nio.";
                     return response;
                 }
 
-                var notificacoes = new List<NotificacoesModel>();
-
-                foreach (var token in tokens)
-                {
-                    var notificacao = new NotificacoesModel
-                    {
-                        ExpoTokenId = token.Id,
-                        UsuarioId = token.UsuarioId,
-                        Titulo = dto.Titulo,
-                        Mensagem = dto.Mensagem,
-                        Dados = dto.Dados,
-                        DataEnvio = DateTime.UtcNow
-                    };
-
-                    notificacoes.Add(notificacao);
-                }
-
-                await _context.Notificacoes.AddRangeAsync(notificacoes);
-                await _context.SaveChangesAsync();
-
-                var playerIds = tokens.Select(t => t.Token!).ToList();
-                var dadosExtras = new
+                var dadosJson = JsonSerializer.Serialize(new
                 {
                     tipo = "condominio_tipo",
                     condominioId = dto.CondominioId,
                     tipoUsuario = dto.TipoUsuario.ToString(),
                     tipoUsuarioId = (int)dto.TipoUsuario
-                };
-
-                var dadosJson = JsonSerializer.Serialize(dadosExtras);
-                var sucesso = await EnviarNotificacaoOneSignalAsync(playerIds, dto.Titulo!, dto.Mensagem!, dadosJson);
-
-                notificacoes.ForEach(n =>
-                {
-                    n.Enviada = sucesso;
-                    if (!sucesso)
-                        n.Erro = "Erro ao enviar via OneSignal";
                 });
-                await _context.SaveChangesAsync();
+
+                var notificacoes = await RegistrarEEnviarAsync(tokens, dto.Titulo!, dto.Mensagem!, dto.Dados, dadosJson);
 
                 response.Dados = notificacoes;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) enviada(s) para usu·rios do tipo '{dto.TipoUsuario}' do condomÌnio!";
+                response.Mensagem = $"{notificacoes.Count} notifica√ß√£o(√µes) enviada(s) para usu√°rios do tipo '{dto.TipoUsuario}' do condom√≠nio!";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao enviar notificaÁıes para condomÌnio por tipo de usu·rio");
+                _logger.LogError(ex, "Erro ao enviar notifica√ß√µes para condom√≠nio por tipo de usu√°rio");
                 response.Status = false;
-                response.Mensagem = $"Erro ao enviar notificaÁıes: {ex.Message}";
+                response.Mensagem = $"Erro ao enviar notifica√ß√µes: {ex.Message}";
             }
 
             return response;
@@ -509,13 +472,13 @@ namespace ApiEcoBin.Services.ExpoTokens
 
                 response.Dados = notificacoes;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) encontrada(s).";
+                response.Mensagem = $"{notificacoes.Count} notifica√ß√£o(√µes) encontrada(s).";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao listar notificaÁıes");
+                _logger.LogError(ex, "Erro ao listar notifica√ß√µes");
                 response.Status = false;
-                response.Mensagem = $"Erro ao listar notificaÁıes: {ex.Message}";
+                response.Mensagem = $"Erro ao listar notifica√ß√µes: {ex.Message}";
             }
 
             return response;
@@ -527,20 +490,18 @@ namespace ApiEcoBin.Services.ExpoTokens
 
             try
             {
-                var notificacoes = await _context.Notificacoes
-                    .Where(n => n.UsuarioId == usuarioId && !n.Lida)
-                    .OrderByDescending(n => n.DataEnvio)
+                var notificacoes = await _context.Notificacoes.Where(n => n.UsuarioId == usuarioId && !n.Lida).OrderByDescending(n => n.DataEnvio)
                     .ToListAsync();
 
                 response.Dados = notificacoes;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) n„o lida(s).";
+                response.Mensagem = (notificacoes.Count == 1 ? $"{notificacoes.Count} notifica√ß√£o n√£o lida!" : $"{notificacoes.Count} notifica√ß√µes n√£o lidas!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao listar notificaÁıes n„o lidas");
+                _logger.LogError(ex, "Erro ao listar notifica√ß√µes n√£o lidas");
                 response.Status = false;
-                response.Mensagem = $"Erro ao listar notificaÁıes: {ex.Message}";
+                response.Mensagem = $"Erro ao listar notifica√ß√µes: {ex.Message}";
             }
 
             return response;
@@ -557,7 +518,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 if (notificacao == null)
                 {
                     response.Status = false;
-                    response.Mensagem = "NotificaÁ„o n„o encontrada.";
+                    response.Mensagem = "Notifica√ß√£o n√£o encontrada.";
                     return response;
                 }
 
@@ -569,11 +530,11 @@ namespace ApiEcoBin.Services.ExpoTokens
 
                 response.Dados = notificacao;
                 response.Status = true;
-                response.Mensagem = "NotificaÁ„o marcada como lida!";
+                response.Mensagem = "Notifica√ß√£o marcada como lida!";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao marcar notificaÁ„o como lida");
+                _logger.LogError(ex, "Erro ao marcar notifica√ß√£o como lida");
                 response.Status = false;
                 response.Mensagem = $"Erro ao marcar como lida: {ex.Message}";
             }
@@ -595,7 +556,7 @@ namespace ApiEcoBin.Services.ExpoTokens
                 {
                     response.Dados = true;
                     response.Status = true;
-                    response.Mensagem = "N„o h· notificaÁıes n„o lidas.";
+                    response.Mensagem = "N√£o h√° notifica√ß√µes n√£o lidas.";
                     return response;
                 }
 
@@ -609,7 +570,7 @@ namespace ApiEcoBin.Services.ExpoTokens
 
                 response.Dados = true;
                 response.Status = true;
-                response.Mensagem = $"{notificacoes.Count} notificaÁ„o(ıes) marcada(s) como lida(s)!";
+                response.Mensagem = $"{notificacoes.Count} notifica√ß√£o(√µes) marcada(s) como lida(s)!";
             }
             catch (Exception ex)
             {
@@ -660,16 +621,37 @@ namespace ApiEcoBin.Services.ExpoTokens
                 string result = await response.Content.ReadAsStringAsync();
                 _logger.LogInformation($"Resposta OneSignal: {result}");
 
-                return response.StatusCode == HttpStatusCode.OK;
+                if (response.StatusCode != HttpStatusCode.OK)
+                    return false;
+
+                // O OneSignal responde 200 mesmo quando alguns Player IDs n√£o existem mais (app desinstalado)
+                using var doc = JsonDocument.Parse(result);
+                if (doc.RootElement.TryGetProperty("errors", out var errors)
+                    && errors.ValueKind == JsonValueKind.Object
+                    && errors.TryGetProperty("invalid_player_ids", out var invalidos))
+                {
+                    var ids = invalidos.EnumerateArray().Select(i => i.GetString()).Where(i => i != null).ToList();
+                    var tokensInvalidos = await _context.ExpoTokens.Where(t => t.Ativo && ids.Contains(t.Token)).ToListAsync();
+                    foreach (var token in tokensInvalidos)
+                    {
+                        token.Ativo = false;
+                        token.UltimaAtualizacao = DateTime.UtcNow;
+                    }
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"{tokensInvalidos.Count} token(s) inv√°lido(s) desativado(s) ap√≥s envio.");
+                }
+
+                // "id" vazio significa que nenhum aparelho recebeu
+                return doc.RootElement.TryGetProperty("id", out var id) && !string.IsNullOrEmpty(id.GetString());
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "HttpRequestException ao enviar notificaÁ„o OneSignal");
+                _logger.LogError(ex, "HttpRequestException ao enviar notifica√ß√£o OneSignal");
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao enviar notificaÁ„o OneSignal");
+                _logger.LogError(ex, "Erro ao enviar notifica√ß√£o OneSignal");
                 return false;
             }
         }
@@ -691,15 +673,15 @@ namespace ApiEcoBin.Services.ExpoTokens
 
                 response.Status = true;
                 response.Dados = count;
-                response.Mensagem = $"{count} notificaÁıes antigas removidas.";
+                response.Mensagem = $"{count} notifica√ß√µes antigas removidas.";
 
-                _logger.LogInformation($"Limpeza: {count} notificaÁıes anteriores a {dataLimite:yyyy-MM-dd} removidas.");
+                _logger.LogInformation($"Limpeza: {count} notifica√ß√µes anteriores a {dataLimite:yyyy-MM-dd} removidas.");
             }
             catch (Exception ex)
             {
                 response.Status = false;
                 response.Mensagem = ex.Message;
-                _logger.LogError(ex, "Erro ao deletar notificaÁıes antigas");
+                _logger.LogError(ex, "Erro ao deletar notifica√ß√µes antigas");
             }
 
             return response;

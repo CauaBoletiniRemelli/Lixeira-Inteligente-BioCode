@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using ApiEcoBin.Enums;
 
 namespace ApiEcoBin.Models
 {
@@ -31,6 +32,15 @@ namespace ApiEcoBin.Models
         [Column("SENNome")]
         [MaxLength(100)]
         public string? Nome { get; set; }
+
+        [Column("SENTipo")]
+        public TipoLixeira Tipo { get; set; } = TipoLixeira.NaoDefinido;
+
+        /// <summary>
+        /// Volume útil do recipiente em litros. Usado para converter o nível (%) em litros (ex.: galão de óleo).
+        /// </summary>
+        [Column("SENCapacidadeLitros", TypeName = "decimal(8,2)")]
+        public decimal? CapacidadeLitros { get; set; }
 
         [Column("SEN_CONId")]
         public int? CondominioId { get; set; }

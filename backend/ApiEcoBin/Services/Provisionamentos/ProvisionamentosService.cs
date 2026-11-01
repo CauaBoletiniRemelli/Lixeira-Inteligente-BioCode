@@ -1,6 +1,7 @@
 ﻿using ApiEcoBin.Data;
 using ApiEcoBin.Dto.Devices;
 using ApiEcoBin.Dto.Provisionamentos;
+using ApiEcoBin.Enums;
 using ApiEcoBin.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -260,6 +261,8 @@ namespace ApiEcoBin.Services.Provisionamentos
                         CondominioId = dto.CondominioId,
                         Latitude = dto.Latitude,
                         Longitude = dto.Longitude,
+                        Tipo = dto.TipoLixeira ?? TipoLixeira.NaoDefinido,
+                        CapacidadeLitros = dto.CapacidadeLitros,
                         Status = 0,
                         CriadoEm = DateTime.UtcNow
                     };
@@ -274,6 +277,8 @@ namespace ApiEcoBin.Services.Provisionamentos
                     sensor.CondominioId = dto.CondominioId;
                     sensor.Latitude = dto.Latitude ?? sensor.Latitude;
                     sensor.Longitude = dto.Longitude ?? sensor.Longitude;
+                    sensor.Tipo = dto.TipoLixeira ?? sensor.Tipo;
+                    sensor.CapacidadeLitros = dto.CapacidadeLitros ?? sensor.CapacidadeLitros;
                     _context.Sensores.Update(sensor);
                     await _context.SaveChangesAsync();
                 }

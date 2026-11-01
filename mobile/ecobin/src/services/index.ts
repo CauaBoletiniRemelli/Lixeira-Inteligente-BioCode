@@ -7,3 +7,6 @@ export { notificationService } from './notificationService';
 export { provisionamentoService } from './provisionamentoService';
 export { deviceService } from './deviceService';
 export { sensorService } from './sensorService';
+export { dashboardService } from './dashboardService';
+export { condominoService } from './condominoService';
+export { oleoService } from './oleoService';

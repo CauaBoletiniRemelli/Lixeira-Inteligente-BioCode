@@ -166,6 +166,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             if (!confirmed) return;
 
+            // Antes de apagar o token de acesso, para a API aceitar a chamada
+            await notificationService.unregisterDevice();
+
             const refreshToken = await storage.getRefreshToken();
 
             if (refreshToken) {

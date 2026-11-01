@@ -93,7 +93,7 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
                 <StatusBar style="dark" />
                 <Loading />
             </SafeAreaView>
@@ -101,7 +101,7 @@ export const CondominiumManagementScreen: React.FC<CondominiumManagementScreenPr
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
 
             <View style={styles.header}>

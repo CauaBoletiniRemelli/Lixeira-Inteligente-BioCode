@@ -199,7 +199,7 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
@@ -209,7 +209,7 @@ export const CondominiumFormScreen: React.FC<CondominiumFormScreenProps> = ({
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView

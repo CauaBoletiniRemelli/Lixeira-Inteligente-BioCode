@@ -26,6 +26,8 @@ namespace ApiEcoBin.Services.Sensores
                     DeviceKey = dto.DeviceKey ?? Guid.NewGuid().ToString("N"),
                     CondominioId = dto.CondominioId,
                     Nome = dto.Nome,
+                    Tipo = dto.Tipo,
+                    CapacidadeLitros = dto.CapacidadeLitros,
                     Latitude = dto.Latitude,
                     Longitude = dto.Longitude,
                     Status = 0,
@@ -60,6 +62,8 @@ namespace ApiEcoBin.Services.Sensores
             if (dto.CondominioId.HasValue) sensor.CondominioId = dto.CondominioId.Value;
             if (dto.Latitude.HasValue) sensor.Latitude = dto.Latitude.Value;
             if (dto.Longitude.HasValue) sensor.Longitude = dto.Longitude.Value;
+            if (dto.Tipo.HasValue) sensor.Tipo = dto.Tipo.Value;
+            if (dto.CapacidadeLitros.HasValue) sensor.CapacidadeLitros = dto.CapacidadeLitros.Value;
 
             await _context.SaveChangesAsync();
 

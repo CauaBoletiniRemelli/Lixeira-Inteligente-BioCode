@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { BackButton, Input, Button, PasswordInput, Loading } from '../components';
+import { BackButton, Input, Button, PasswordInput, Loading, KeyboardAvoider } from '../components';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 import { showApiAlert, handleApiError, showConfirmAlert } from '../utils';
 import { userService, condominiumService } from '../services';
 import Alerta from '../components/Alert';
 import { User } from '../types';
 
-type UserRole = 'coletor' | 'sindico' | 'admin';
+type UserRole = 'coletor' | 'sindico' | 'admin' | 'proprietario';
 
 interface UserFormScreenProps {
     onBack: () => void;
@@ -26,6 +26,7 @@ const ROLES = [
     { value: 'coletor' as UserRole, label: 'Coletor', icon: 'trash-outline' },
     { value: 'sindico' as UserRole, label: 'Síndico', icon: 'business-outline' },
     { value: 'admin' as UserRole, label: 'Administrador', icon: 'shield-checkmark-outline' },
+    { value: 'proprietario' as UserRole, label: 'Proprietário', icon: 'home-outline' },
 ];
 
 export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) => {
@@ -119,6 +120,12 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
             return;
         }
 
+        const requiresCondominium = ['sindico', 'coletor', 'proprietario'].includes(selectedRole);
+        if (requiresCondominium && !selectedCondominium) {
+            showAlert('Selecione um condomínio para este tipo de usuário', 'error');
+            return;
+        }
+
         if (saving) return;
 
         try {
@@ -129,7 +136,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                     Id: Number(user!.id),
                     Nome: name,
                     Email: email,
-                    Tipo: selectedRole === 'admin' ? 1 : selectedRole === 'sindico' ? 2 : 3,
+                    Tipo: selectedRole === 'admin' ? 1 : selectedRole === 'sindico' ? 2 : selectedRole === 'proprietario' ? 4 : 3,
                     CondominioId: selectedCondominium ? Number(selectedCondominium) : undefined,
                 };
 
@@ -144,7 +151,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                     Nome: name,
                     Email: email,
                     SenhaHash: password,
-                    Tipo: selectedRole === 'admin' ? 1 : selectedRole === 'sindico' ? 2 : 3,
+                    Tipo: selectedRole === 'admin' ? 1 : selectedRole === 'sindico' ? 2 : selectedRole === 'proprietario' ? 4 : 3,
                     CondominioId: selectedCondominium ? Number(selectedCondominium) : undefined,
                 };
                 
@@ -180,7 +187,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
@@ -190,7 +197,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView
@@ -376,6 +383,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                 animationType="fade"
                 onRequestClose={() => setShowCondominiumModal(false)}
             >
+                <KeyboardAvoider>
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
@@ -451,6 +459,7 @@ export const UserFormScreen: React.FC<UserFormScreenProps> = ({ onBack, user }) 
                         />
                     </View>
                 </TouchableOpacity>
+                </KeyboardAvoider>
             </Modal>
         </SafeAreaView>
     );

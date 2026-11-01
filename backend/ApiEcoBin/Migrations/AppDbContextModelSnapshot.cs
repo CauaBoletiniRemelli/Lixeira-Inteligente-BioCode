@@ -171,6 +171,60 @@ namespace ApiEcoBin.Migrations
                     b.ToTable("NOTificacoes");
                 });
 
+            modelBuilder.Entity("ApiEcoBin.Models.OleoColetasModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CondominioId")
+                        .HasColumnType("int")
+                        .HasColumnName("OLE_CONId");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("OLECriadoEm");
+
+                    b.Property<DateTime>("DataColeta")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("OLEDataColeta");
+
+                    b.Property<string>("Destino")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("OLEDestino");
+
+                    b.Property<decimal>("Litros")
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("OLELitros");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("OLEObservacao");
+
+                    b.Property<int?>("SensorId")
+                        .HasColumnType("int")
+                        .HasColumnName("OLE_SENId");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("int")
+                        .HasColumnName("OLE_USUId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CondominioId");
+
+                    b.HasIndex("SensorId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("OLEColetas");
+                });
+
             modelBuilder.Entity("ApiEcoBin.Models.ProvisionSession", b =>
                 {
                     b.Property<int>("Id")
@@ -325,6 +379,10 @@ namespace ApiEcoBin.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("CapacidadeLitros")
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("SENCapacidadeLitros");
+
                     b.Property<int?>("CondominioId")
                         .HasColumnType("int")
                         .HasColumnName("SEN_CONId");
@@ -362,6 +420,10 @@ namespace ApiEcoBin.Migrations
                         .HasColumnType("int")
                         .HasColumnName("SENStatus");
 
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int")
+                        .HasColumnName("SENTipo");
+
                     b.Property<DateTime?>("UltimaConexao")
                         .HasColumnType("datetime2")
                         .HasColumnName("SENUltimaConexao");
@@ -386,6 +448,14 @@ namespace ApiEcoBin.Migrations
                         .HasColumnType("int")
                         .HasColumnName("TELBateria");
 
+                    b.Property<bool?>("Carregando")
+                        .HasColumnType("bit")
+                        .HasColumnName("TELCarregando");
+
+                    b.Property<decimal?>("CorrentePainel")
+                        .HasColumnType("decimal(8,2)")
+                        .HasColumnName("TELCorrentePainel");
+
                     b.Property<string>("DadosBrutos")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("TELDadosBrutos");
@@ -405,6 +475,14 @@ namespace ApiEcoBin.Migrations
                     b.Property<decimal?>("Temperatura")
                         .HasColumnType("decimal(6,2)")
                         .HasColumnName("TELTemperatura");
+
+                    b.Property<decimal?>("TensaoBateria")
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("TELTensaoBateria");
+
+                    b.Property<decimal?>("TensaoPainel")
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("TELTensaoPainel");
 
                     b.HasKey("Id");
 
@@ -481,6 +559,29 @@ namespace ApiEcoBin.Migrations
                         .HasForeignKey("UsuarioId");
 
                     b.Navigation("ExpoToken");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ApiEcoBin.Models.OleoColetasModel", b =>
+                {
+                    b.HasOne("ApiEcoBin.Models.CondominiosModel", "Condominio")
+                        .WithMany()
+                        .HasForeignKey("CondominioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApiEcoBin.Models.SensoresModel", "Sensor")
+                        .WithMany()
+                        .HasForeignKey("SensorId");
+
+                    b.HasOne("ApiEcoBin.Models.UsuariosModel", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+
+                    b.Navigation("Condominio");
+
+                    b.Navigation("Sensor");
 
                     b.Navigation("Usuario");
                 });

@@ -147,7 +147,7 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
             <Alerta message={alertMessage} type={alertType} visible={alertVisible} />
 
@@ -157,7 +157,7 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView
@@ -281,7 +281,7 @@ export const SensorLocationEditScreen: React.FC<SensorLocationEditScreenProps> =
                 animationType="slide"
                 onRequestClose={() => setShowMapModal(false)}
             >
-                <SafeAreaView style={styles.mapModalContainer} edges={['top', 'left', 'right']}>
+                <SafeAreaView style={styles.mapModalContainer} edges={['top', 'left', 'right', 'bottom']}>
                     <View style={styles.mapModalHeader}>
                         <TouchableOpacity
                             style={styles.mapModalCloseButton}

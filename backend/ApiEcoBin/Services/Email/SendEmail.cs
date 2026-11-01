@@ -11,9 +11,9 @@ namespace ApiEcoBin.Services.Email
     {
         private readonly string Host = "smtp.gmail.com";
         private readonly int Port = 587; 
-        private readonly string User = "grupoecobin@gmail.com";
-        private readonly string Password = "tbvr zahn qtxv qakp";
-        private readonly string FromAddress = "grupoecobin@gmail.com";
+        private readonly string User = "biocodeecobin@gmail.com";
+        private readonly string Password = "hflmnhqfsgsrgees";
+        private readonly string FromAddress = "biocodeecobin@gmail.com";
         private readonly string FromName = "EcoBin";
 
         public void Send(string emailTo, string emailSubject, string emailBody)

@@ -140,8 +140,7 @@ namespace ApiEcoBin.Services.Auth
                     return response;
                 }
 
-                UsuariosModel? usuario = await _context.Usuarios
-                    .FirstOrDefaultAsync(u => u.Email == request.Email);
+                UsuariosModel? usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == request.Email);
 
                 if (usuario == null || string.IsNullOrEmpty(usuario.SenhaHash) || !_passwordHashService.VerifyPassword(request.Password, usuario.SenhaHash))
                 {

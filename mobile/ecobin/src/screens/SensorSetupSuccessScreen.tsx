@@ -12,7 +12,7 @@ interface SensorSetupSuccessScreenProps {
 
 export const SensorSetupSuccessScreen: React.FC<SensorSetupSuccessScreenProps> = ({ onFinish }) => {
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <StatusBar style="dark" />
 
             <View style={styles.container}>
